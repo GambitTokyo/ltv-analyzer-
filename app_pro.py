@@ -968,6 +968,35 @@ with exp1:
             lh = ltv_horizon(k, lam, arpu_daily, h)
             ws3.append([h, round(lh, 0), round(lh/ltv_val*100, 1), round(lh/cac_n, 0)])
 
+        # セグメント別シート追加
+        if segment_cols_input.strip():
+            seg_cols_xl = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
+            for sc in seg_cols_xl:
+                ws_seg = wb.create_sheet(f'SEG_{sc}'[:31])
+                ws_seg.append(['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', '総ポテンシャル', 'k', 'λ（日）', 'R²', '獲得効率'])
+                seg_vals = df[sc].dropna().unique()
+                seg_rows = []
+                for sv in sorted(seg_vals):
+                    df_s = df[df[sc] == sv]
+                    if len(df_s) < 10 or df_s['event'].sum() < 5:
+                        continue
+                    try:
+                        km_s = compute_km(df_s)
+                        k_s, lam_s, r2_s, _ = fit_weibull(km_s)
+                        if k_s is None: continue
+                        arpu_s = df_s['arpu_daily'].mean()
+                        gp_s   = arpu_s * gpm
+                        ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
+                        ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
+                        eff = round(ltv_g / cac_input, 2) if cac_known else '-'
+                        seg_rows.append([sv, len(df_s), round(ltv_r,0), round(ltv_g,0), round(ltv_g/cac_n,0), round(ltv_r*len(df_s),0), round(k_s,4), round(lam_s,1), round(r2_s,4), eff])
+                    except Exception:
+                        continue
+                seg_rows.sort(key=lambda x: x[2], reverse=True)
+                for row in seg_rows:
+                    ws_seg.append(row)
+                ws_seg.column_dimensions['A'].width = 20
+
         xl_buf = io.BytesIO()
         wb.save(xl_buf)
         xl_buf.seek(0)
@@ -1162,6 +1191,70 @@ with exp2:
         pb3.line.color.rgb = GOLD
         txbox(s6, p3_text, 0.65, 1.35, 12.0, 5.6, size=9, color=WHITE)
 
+        # ── セグメント別スライド追加 ──
+        if segment_cols_input.strip():
+            seg_cols_pp = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
+            for sc in seg_cols_pp:
+                # セグメント別データ計算
+                seg_vals = df[sc].dropna().unique()
+                pp_rows = []
+                for sv in sorted(seg_vals):
+                    df_s = df[df[sc] == sv]
+                    if len(df_s) < 10 or df_s['event'].sum() < 5:
+                        continue
+                    try:
+                        km_s = compute_km(df_s)
+                        k_s, lam_s, r2_s, _ = fit_weibull(km_s)
+                        if k_s is None: continue
+                        arpu_s = df_s['arpu_daily'].mean()
+                        gp_s   = arpu_s * gpm
+                        ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
+                        ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
+                        pp_rows.append({'seg': str(sv), 'n': len(df_s), 'ltv_r': ltv_r, 'ltv_g': ltv_g, 'cac': ltv_g/cac_n, 'total': ltv_r*len(df_s)})
+                    except Exception:
+                        continue
+                if not pp_rows:
+                    continue
+                pp_rows.sort(key=lambda x: x['ltv_r'], reverse=True)
+                top10 = pp_rows[:10]
+                best_pp = top10[0]
+                avg_ltv_pp = sum(r['ltv_r'] for r in pp_rows) / len(pp_rows)
+                premium_pp = (best_pp['ltv_r'] - avg_ltv_pp) / avg_ltv_pp * 100
+
+                # スライド追加
+                s_seg = prs.slides.add_slide(blank)
+                add_bg(s_seg, prs)
+                txbox(s_seg, f'セグメント別 LTV∞ 比較：{sc}', 0.5, 0.2, 12.3, 0.5, size=18, bold=True, color=WHITE)
+                txbox(s_seg, f'上位{len(top10)}セグメント（LTV∞降順）', 0.5, 0.75, 12.3, 0.3, size=9, color=GRAY)
+
+                # テーブル
+                col_x = [0.5, 2.8, 4.8, 6.6, 8.4, 10.2]
+                headers = ['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', '総ポテンシャル']
+                for cx, hd in zip(col_x, headers):
+                    txbox(s_seg, hd, cx, 1.1, 1.9, 0.3, size=8, bold=True, color=GOLD)
+                row_y = 1.45
+                for r in top10:
+                    vals = [r['seg'], f"{r['n']:,}", f"¥{r['ltv_r']:,.0f}", f"¥{r['ltv_g']:,.0f}", f"¥{r['cac']:,.0f}", f"¥{r['total']:,.0f}"]
+                    for cx, v in zip(col_x, vals):
+                        txbox(s_seg, v, cx, row_y, 1.9, 0.28, size=8, color=WHITE)
+                    row_y += 0.3
+
+                # 推奨ボックス
+                rec_box = s_seg.shapes.add_shape(1, Inches(0.5), Inches(5.0), Inches(12.3), Inches(1.8))
+                rec_box.fill.solid(); rec_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+                rec_box.line.color.rgb = GOLD
+                rec_text = (
+                    f"\U0001f3af 優先獲得推奨：{best_pp['seg']}\n"
+                    f"LTV∞（売上）¥{best_pp['ltv_r']:,.0f}（全平均比 +{premium_pp:.1f}%）　"
+                    f"LTV∞（粗利）¥{best_pp['ltv_g']:,.0f}　"
+                    f"CAC上限（粗利）¥{best_pp['cac']:,.0f}\n"
+                    f"→ このセグメントに広告予算を集中させることで、競合より高いCPAで入札しながら収益性を維持できます。"
+                )
+                if cac_known:
+                    ratio_pp = best_pp['ltv_g'] / cac_input
+                    judge_pp = "✓ 健全" if ratio_pp >= 3.0 else "⚠️ 要改善"
+                    rec_text += f"\nLTV:CAC比率（粗利）= {ratio_pp:.1f}:1　{judge_pp}"
+
         pptx_buf = io.BytesIO()
         prs.save(pptx_buf)
         pptx_buf.seek(0)
@@ -1275,6 +1368,64 @@ with exp3:
              f"4. {"解約日ベースで分析していますが、解約データの欠損や遅延がある場合にLTV推定にどんな影響が出ますか？" if dormancy_days is None else f"休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"}"),
         ]
 
+        # セグメント別セクション
+        if segment_cols_input.strip():
+            seg_cols_pdf = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
+            for sc in seg_cols_pdf:
+                story.append(Paragraph(f'セグメント別 LTV∞ 分析：{sc}', h2_style))
+                seg_vals = df[sc].dropna().unique()
+                pdf_rows = [['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', 'k', 'R²']]
+                best_pdf = None
+                avg_ltv_pdf = []
+                for sv in sorted(seg_vals):
+                    df_s = df[df[sc] == sv]
+                    if len(df_s) < 10 or df_s['event'].sum() < 5:
+                        continue
+                    try:
+                        km_s = compute_km(df_s)
+                        k_s, lam_s, r2_s, _ = fit_weibull(km_s)
+                        if k_s is None: continue
+                        arpu_s = df_s['arpu_daily'].mean()
+                        gp_s   = arpu_s * gpm
+                        ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
+                        ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
+                        pdf_rows.append([str(sv), f'{len(df_s):,}', f'¥{ltv_r:,.0f}', f'¥{ltv_g:,.0f}', f'¥{ltv_g/cac_n:,.0f}', f'{k_s:.3f}', f'{r2_s:.3f}'])
+                        avg_ltv_pdf.append(ltv_r)
+                        if best_pdf is None or ltv_r > best_pdf['ltv_r']:
+                            best_pdf = {'seg': str(sv), 'ltv_r': ltv_r, 'ltv_g': ltv_g, 'cac': ltv_g/cac_n}
+                    except Exception:
+                        continue
+                # テーブル（上位10件）
+                pdf_rows_show = [pdf_rows[0]] + sorted(pdf_rows[1:], key=lambda x: float(x[2].replace('¥','').replace(',','')), reverse=True)[:10]
+                t_seg = Table(pdf_rows_show, colWidths=[3*cm, 1.8*cm, 2.5*cm, 2.5*cm, 2.5*cm, 1.5*cm, 1.5*cm])
+                t_seg.setStyle(TableStyle([
+                    ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1a1a1a')),
+                    ('TEXTCOLOR',  (0,0), (-1,0), colors.HexColor('#56b4d3')),
+                    ('TEXTCOLOR',  (0,1), (-1,-1), colors.HexColor('#111111')),
+                    ('FONTNAME',   (0,0), (-1,-1), 'HeiseiMin-W3'),
+                    ('FONTSIZE',   (0,0), (-1,-1), 8),
+                    ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor('#f5f5f5'), colors.HexColor('#ffffff')]),
+                    ('GRID', (0,0), (-1,-1), 0.3, colors.HexColor('#cccccc')),
+                    ('LEFTPADDING', (0,0), (-1,-1), 6),
+                ]))
+                story.append(t_seg)
+                # 推奨セグメント
+                if best_pdf and avg_ltv_pdf:
+                    avg_pp = sum(avg_ltv_pdf) / len(avg_ltv_pdf)
+                    prem = (best_pdf['ltv_r'] - avg_pp) / avg_pp * 100
+                    rec_style = ParagraphStyle('R', fontName='HeiseiMin-W3', fontSize=9,
+                                               textColor=colors.HexColor('#111111'),
+                                               backColor=colors.HexColor('#e8f4fb'),
+                                               borderPadding=8, spaceAfter=4, spaceBefore=6,
+                                               leftIndent=8, rightIndent=8)
+                    story.append(Paragraph(
+                        f"🎯 優先獲得推奨：{best_pdf['seg']}　"
+                        f"LTV∞（売上）¥{best_pdf['ltv_r']:,.0f}（全平均比+{prem:.1f}%）　"
+                        f"CAC上限（粗利）¥{best_pdf['cac']:,.0f}",
+                        rec_style
+                    ))
+                story.append(Spacer(1, 0.3*cm))
+
         story.append(Paragraph('AIへの質問プロンプト', h2_style))
         story.append(Paragraph('以下のプロンプトをClaude / ChatGPT / Gemini にコピペしてご活用ください。', body_style))
         for label, prompt_text in prompts_pdf:
@@ -1296,6 +1447,9 @@ with exp3:
 # ══════════════════════════════════════════════════════════════
 # Segment Analysis (PRO)
 # ══════════════════════════════════════════════════════════════
+
+# セグメント結果を保存（エクスポート用）
+all_seg_results = {}  # {seg_col: seg_df}
 
 if segment_cols_input.strip():
     seg_cols = [c.strip() for c in segment_cols_input.split(',') if c.strip()]
@@ -1368,6 +1522,7 @@ if segment_cols_input.strip():
                 continue
 
             seg_df = pd.DataFrame(seg_results).sort_values('LTV∞（売上）', ascending=False).reset_index(drop=True)
+            all_seg_results[seg_col] = seg_df  # エクスポート用に保存
 
             progress_bar.empty()
 
