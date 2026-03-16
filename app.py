@@ -8,6 +8,7 @@ import matplotlib.patches as mpatches
 from matplotlib import rcParams
 import io
 import warnings
+import calendar
 warnings.filterwarnings('ignore')
 
 # ── Page config ──────────────────────────────────────────────
@@ -205,30 +206,71 @@ with st.sidebar:
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
     st.markdown("---")
-    st.markdown("### 💤 休眠顧客の判定")
-    st.caption("最終購買日からこの期間を超えた顧客を実質離脱とみなします。`last_purchase_date` 列がある場合のみ有効です。")
-    dormancy_option = st.radio(
-        "休眠判定期間",
+    st.markdown("### 🏷️ ビジネスタイプ")
+    business_type = st.radio(
+        "ビジネスタイプを選択してください",
         [
-            "解約日のみで判定（例：SaaS、継続課金など）",
-            "180日",
-            "365日",
-            "730日",
-            "カスタム入力",
+            "サブスク・継続課金型",
+            "都度課金型",
         ],
         index=0,
     )
-    st.caption(
-        "180日以上を選択する場合は、あなたのビジネスに合った休眠顧客の認定期間を設定してください。"
-        "判断が難しい場合は、自社データで最終購買から再購買が発生しなくなる日数を確認することをお勧めします。"
-        "また、CSVに `last_purchase_date`（最終購買日）列が必要です。"
-    )
-    if dormancy_option == "カスタム入力":
-        dormancy_days = st.number_input("休眠判定日数", min_value=30, max_value=3650, value=180)
-    elif dormancy_option == "解約日のみで判定（例：SaaS、継続課金など）":
-        dormancy_days = None
-    else:
-        dormancy_days = int(dormancy_option.split("日")[0])
+
+    if business_type == "サブスク・継続課金型":
+        st.caption(
+            "解約日（end_date）をベースに離脱を判定します。"
+            "end_dateが空欄の顧客は継続中として扱われます。"
+        )
+        dormancy_days = None  # 休眠判定なし
+        st.markdown("**契約期間**")
+        billing_cycle = st.radio(
+            "契約期間",
+            [
+                "カレンダーベース（月またぎ）← 月額サブスク推奨",
+                "30日固定 ← 30日プラン",
+                "365日固定 ← 年額サブスク",
+                "カスタム入力（日数固定）",
+            ],
+            index=0,
+        )
+        if billing_cycle == "カスタム入力（日数固定）":
+            custom_cycle_days = st.number_input("契約日数", min_value=1, max_value=365, value=30)
+        else:
+            custom_cycle_days = None
+        st.caption(
+            "**カレンダーベース**：実際の月の日数（28〜31日）で計算。日本の月額サブスクの大半はこちら。"
+            "　**30日固定**：1ヶ月を常に30日として計算。"
+            "　**年額**：1年を365日として計算。"
+        )
+
+    else:  # 都度課金型
+        st.caption(
+            "最終購買日（last_purchase_date）をベースに休眠判定します。"
+            "CSVに `last_purchase_date` 列が必要です。"
+            "ARPU = 累計売上 ÷ 継続日数で計算します。"
+        )
+        billing_cycle = "日次（都度課金）"
+        custom_cycle_days = None
+        st.markdown("**休眠判定期間**")
+        dormancy_option = st.radio(
+            "休眠判定期間",
+            [
+                "180日",
+                "365日",
+                "730日",
+                "カスタム入力",
+            ],
+            index=0,
+        )
+        st.caption(
+            "あなたのビジネスに合った休眠顧客の認定期間を設定してください。"
+            "判断が難しい場合は、自社データで最終購買から再購買が発生しなくなる日数を確認することをお勧めします。"
+        )
+        if dormancy_option == "カスタム入力":
+            dormancy_days = st.number_input("休眠判定日数", min_value=30, max_value=3650, value=180)
+        else:
+            dormancy_days = int(dormancy_option.split("日")[0])
+
     horizon_days = 730  # 内部計算用デフォルト
 
     st.markdown("---")
@@ -381,10 +423,63 @@ try:
     n_excluded = (df['duration'] < 0).sum()
     df = df[df['duration'] > 0]
 
-    # ── ARPU_daily：累計売上 ÷ duration ──
+    # ── ARPU_daily の計算 ──
     df['revenue_total'] = pd.to_numeric(df['revenue'], errors='coerce')
-    df['arpu_daily']    = df['revenue_total'] / df['duration']
-    df['gp_daily']      = df['arpu_daily'] * gpm
+
+    def calc_arpu_daily(row):
+        rev      = row['revenue_total']
+        dur      = row['duration']
+        start    = row['start_date']
+        end_r    = row['end_resolved']
+        if pd.isna(rev) or dur <= 0:
+            return np.nan
+
+        if billing_cycle == "日次（都度課金）":
+            # 都度課金：累計売上 ÷ 継続日数
+            return rev / dur
+
+        elif billing_cycle == "カレンダーベース（月またぎ）← 月額サブスク推奨":
+            # 契約開始日の「日」を基準に何ヶ月分更新されたかを数える
+            s, e = start, end_r
+            renewals = 0
+            cur = s
+            while True:
+                # 翌月の同日を計算
+                month = cur.month + 1 if cur.month < 12 else 1
+                year  = cur.year if cur.month < 12 else cur.year + 1
+                max_day = calendar.monthrange(year, month)[1]
+                day   = min(cur.day, max_day)
+                nxt   = pd.Timestamp(year, month, day)
+                if nxt > e:
+                    break
+                renewals += 1
+                cur = nxt
+            renewals = max(renewals, 1)
+            # 各月の実日数の平均で日次換算
+            total_days = (pd.Timestamp(e.year, e.month,
+                          calendar.monthrange(e.year, e.month)[1]) -
+                          pd.Timestamp(s.year, s.month, 1)).days / renewals
+            avg_days = max(total_days, 1)
+            return (rev / renewals) / avg_days
+
+        elif billing_cycle == "30日固定 ← 30日プラン":
+            import math
+            renewals = max(math.ceil(dur / 30), 1)
+            return (rev / renewals) / 30
+
+        elif billing_cycle == "365日固定 ← 年額サブスク":
+            import math
+            renewals = max(math.ceil(dur / 365), 1)
+            return (rev / renewals) / 365
+
+        else:  # カスタム入力
+            import math
+            cycle = custom_cycle_days or 30
+            renewals = max(math.ceil(dur / cycle), 1)
+            return (rev / renewals) / cycle
+
+    df['arpu_daily'] = df.apply(calc_arpu_daily, axis=1)
+    df['gp_daily']   = df['arpu_daily'] * gpm
     df = df.dropna(subset=['arpu_daily'])
     df = df[df['arpu_daily'] > 0]
     arpu_daily = df['arpu_daily'].mean()
