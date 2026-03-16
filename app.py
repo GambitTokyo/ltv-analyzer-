@@ -204,7 +204,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 📊 粗利率（GPM）")
     gpm = st.slider("Gross Profit Margin (%)", 0, 100, 54, 1) / 100
-    st.caption(f"LTVは売上ベースではなく粗利ベース（×{gpm:.0%}）で算出されます")
+    st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します")
 
     st.markdown("---")
     st.markdown("### 💰 CAC上限の算出")
@@ -557,8 +557,8 @@ with exp1:
             ('平均日次ARPU（売上ベース・¥）', round(arpu_daily, 2)),
             ('粗利率（GPM）', f'{gpm:.1%}'),
             ('平均日次GP（粗利ベース・¥）', round(gp_daily, 2)),
-            ('LTV∞（売上ベース・¥）', round(ltv_rev, 0)),
-            ('LTV∞（粗利ベース・¥）', round(ltv_val, 0)),
+            ('LTV∞ 売上ベース（¥）', round(ltv_rev, 0)),
+            ('LTV∞ 粗利ベース（CAC算出用）（¥）', round(ltv_val, 0)),
             (f'CAC上限（{cac_label}）（¥）', round(cac_upper, 0)),
             ('', ''),
             ('【Weibullパラメータ】', ''),
@@ -650,7 +650,7 @@ with exp2:
         txbox(s2, '分析結果サマリー', 0.5, 0.3, 10, 0.6, size=22, bold=True, color=WHITE)
 
         cards = [
-            ('LTV∞', f'¥{ltv_val:,.0f}', 0.5),
+            ('LTV∞（売上）', f'¥{ltv_rev:,.0f}', 0.5),
             (f'CAC上限\n({cac_label})', f'¥{cac_upper:,.0f}', 3.6),
             ('Weibull k', f'{k:.3f}', 6.7),
             ('R²', f'{r2:.3f}', 9.8),
@@ -666,7 +666,7 @@ with exp2:
         stats_text = (
             f"顧客数: {len(df):,}件  ／  解約済み: {df['event'].sum():,}件  ／  "
             f"継続中: {(df['event']==0).sum():,}件  ／  "
-            f"平均日次ARPU: ¥{arpu_daily:,.2f}  ／  λ: {lam:.1f}日"
+            f"平均日次ARPU: ¥{arpu_daily:,.2f}  ／  GPM: {gpm:.0%}  ／  LTV∞(売上): ¥{ltv_rev:,.0f}  ／  LTV∞(粗利): ¥{ltv_val:,.0f}  ／  λ: {lam:.1f}日"
         )
         txbox(s2, stats_text, 0.5, 3.3, 12.3, 0.5, size=10, color=GRAY)
 
