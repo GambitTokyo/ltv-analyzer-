@@ -1108,14 +1108,18 @@ with exp3:
         story.append(Paragraph('分析結果サマリー', h2_style))
         tdata = [
             ['指標', '値'],
-            ['LTV∞', f'¥{ltv_val:,.0f}'],
-            [f'CAC上限 ({cac_label})', f'¥{cac_upper:,.0f}'],
-            ['Weibull k（形状）', f'{k:.4f}'],
-            ['Weibull λ（尺度）', f'{lam:.1f}日'],
-            ['R²', f'{r2:.4f}'],
+            ['LTV∞（売上ベース）', f'¥{ltv_rev:,.0f}'],
+            ['LTV∞（粗利ベース・CAC算出用）', f'¥{ltv_val:,.0f}'],
+            [f'CAC上限（粗利ベース・{cac_label}）', f'¥{cac_upper:,.0f}'],
+            ['Weibull k（形状パラメータ）', f'{k:.4f}  →  {"k<1: 初期離脱型" if k < 1 else "k>1: 逓増離脱型"}'],
+            ['Weibull λ（尺度パラメータ）', f'{lam:.1f}日（約{lam/365:.1f}年）'],
+            ['R²（フィット精度）', f'{r2:.4f}  →  {"✓ 良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
             ['顧客数', f'{len(df):,}件'],
-            ['解約済み', f'{int(df["event"].sum()):,}件'],
-            ['平均日次ARPU', f'¥{arpu_daily:,.2f}'],
+            ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
+            ['平均日次ARPU（売上）', f'¥{arpu_daily:,.2f}'],
+            ['GPM（粗利率）', f'{gpm:.1%}'],
+            ['ビジネスタイプ', business_type],
+            ['休眠判定', dormancy_label],
         ]
         t = Table(tdata, colWidths=[9*cm, 6*cm])
         t.setStyle(TableStyle([
