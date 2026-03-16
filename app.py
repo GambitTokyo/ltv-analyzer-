@@ -173,40 +173,63 @@ with st.sidebar:
         else:
             end_dates.append('')
     revenues = np.random.choice([300, 500, 980], n_sample, p=[0.5, 0.35, 0.15])
+    # last_purchase_date: 継続中顧客の一部は休眠状態をシミュレート
+    last_purchase_dates = []
+    for i in range(n_sample):
+        if end_dates[i]:
+            last_purchase_dates.append(end_dates[i])
+        else:
+            # 継続中の20%は180〜730日前が最終購買（休眠シミュレート）
+            if np.random.random() < 0.2:
+                dormant_days = np.random.randint(180, 730)
+                lp = today_ts - pd.Timedelta(days=dormant_days)
+                last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
+            else:
+                # アクティブ：直近30日以内
+                lp = today_ts - pd.Timedelta(days=np.random.randint(1, 30))
+                last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
     sample = pd.DataFrame({
-        'customer_id':     [f'C{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':      [d.strftime('%Y-%m-%d') for d in start_dates],
-        'end_date':        end_dates,
-        'revenue_monthly': revenues,
+        'customer_id':        [f'C{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':         [d.strftime('%Y-%m-%d') for d in start_dates],
+        'end_date':           end_dates,
+        'last_purchase_date': last_purchase_dates,
+        'revenue_total':    revenues * np.random.randint(10, 40, n_sample),  # 累計売上（円）
     })
     st.download_button(
         "サンプルCSV（1万件）をダウンロード",
         sample.to_csv(index=False).encode('utf-8-sig'),
         "sample_customers_10000.csv", "text/csv"
     )
-    st.caption("列名 `revenue_monthly` は月次売上（円）のサンプルです")
+    st.caption("`revenue_total`: 累計売上（円）／ `end_date`: 解約日（サブスク向け）／ `last_purchase_date`: 最終購買日（都度課金向け）")
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
     st.markdown("---")
-    st.markdown("### ⚙️ 設定")
-    st.markdown("**CSVの売上列の単位を選択してください**")
-    st.caption("ツール内部で自動的に日次ARPUに変換して計算します")
-    revenue_unit_raw = st.selectbox(
-        "売上単位",
-        ['日次（1日あたりの売上）', '月次（1ヶ月あたりの売上）', '年次（1年あたりの売上）'],
-        index=1,
-        label_visibility='collapsed'
+    st.markdown("### 💤 休眠顧客の判定")
+    st.caption("最終購買日からこの期間を超えた顧客を実質離脱とみなします。`last_purchase_date` 列がある場合のみ有効です。")
+    dormancy_option = st.radio(
+        "休眠判定期間",
+        [
+            "解約日のみで判定（例：SaaS、継続課金など）",
+            "180日",
+            "365日",
+            "730日",
+            "カスタム入力",
+        ],
+        index=0,
     )
-    revenue_unit = revenue_unit_raw.split('（')[0]
-    horizon_days = st.number_input("観測期間上限（日）", 30, 3650, 730)
     st.caption(
-        "**観測期間とは？**\n\n"
-        "データの中で最も長い顧客継続日数の上限です。"
-        "この期間を超えた顧客は「継続中」として扱われます。\n\n"
-        "目安: 365日（1年）/ 730日（2年）/ 1095日（3年）\n"
-        "短すぎるとLTV∞が過小評価される可能性があります。"
+        "180日以上を選択する場合は、あなたのビジネスに合った休眠顧客の認定期間を設定してください。"
+        "判断が難しい場合は、自社データで最終購買から再購買が発生しなくなる日数を確認することをお勧めします。"
+        "また、CSVに `last_purchase_date`（最終購買日）列が必要です。"
     )
+    if dormancy_option == "カスタム入力":
+        dormancy_days = st.number_input("休眠判定日数", min_value=30, max_value=3650, value=180)
+    elif dormancy_option == "解約日のみで判定（例：SaaS、継続課金など）":
+        dormancy_days = None
+    else:
+        dormancy_days = int(dormancy_option.split("日")[0])
+    horizon_days = 730  # 内部計算用デフォルト
 
     st.markdown("---")
     st.markdown("### 📊 粗利率（GPM）")
@@ -254,11 +277,13 @@ if uploaded is None:
 | 列名 | 内容 | 形式 | 例 |
 |------|------|------|----|
 | `customer_id` | 顧客ID | 任意の文字列 | C0001 |
-| `start_date` | 契約開始日 | YYYY-MM-DD | 2023-10-01 |
-| `end_date` | 解約日（継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
-| `revenue` | 売上（サイドバーで単位を選択） | 数値 | 300 |
+| `start_date` | 契約開始日 | YYYY-MM-DD | 2023-01-01 |
+| `end_date` | 解約日（サブスク向け・継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
+| `last_purchase_date` | 最終購買日（都度課金向け・任意） | YYYY-MM-DD | 2024-06-01 |
+| `revenue` | **累計売上**（円） | 数値 | 48000 |
 
-> 列名は完全一致でなくてもOKです。`start`・`end`・`id`・`revenue`を含む列名は自動認識します。
+> 列名は完全一致でなくてもOKです。`start`・`end`・`last`・`revenue`を含む列名は自動認識します。
+> ARPU_daily は「累計売上 ÷ 顧客継続日数」で自動計算されます。
     """)
 
     st.markdown("<div class='section-title'>分析の流れ</div>", unsafe_allow_html=True)
@@ -295,9 +320,18 @@ try:
         st.error(f"❌ 列が見つかりません: {missing}\n\n列名に `start`・`end`・`revenue` を含む列が必要です。サイドバーからサンプルCSVをダウンロードして形式を確認してください。")
         st.stop()
 
+    # last_purchase_date 列の自動認識
+    for c in df_raw.columns:
+        if any(x in c for x in ['last','最終','purchase','購買','購入']):
+            col_map.setdefault('last_purchase_date', c)
+
     df = df_raw.rename(columns={v: k for k, v in col_map.items()})
     df['start_date'] = pd.to_datetime(df['start_date'], errors='coerce')
     df['end_date']   = pd.to_datetime(df['end_date'], errors='coerce')
+    if 'last_purchase_date' in df.columns:
+        df['last_purchase_date'] = pd.to_datetime(df['last_purchase_date'], errors='coerce')
+    else:
+        df['last_purchase_date'] = pd.NaT
 
     bad_dates = df['start_date'].isna().sum()
     if bad_dates > 0:
@@ -306,10 +340,40 @@ try:
 
     today = pd.Timestamp.today()
     n_input = len(df)
-    df['duration'] = (df['end_date'].fillna(today) - df['start_date']).dt.days
-    df['event']    = df['end_date'].notna().astype(int)
 
-    # duration=0 を1日に自動補正（入力件数＝分析件数を保証）
+    # 休眠判定：end_date がなく last_purchase_date が休眠期間を超えている場合は離脱とみなす
+    n_dormant = 0
+    if dormancy_days is not None and df['last_purchase_date'].notna().any():
+        dormant_mask = (
+            df['end_date'].isna() &
+            df['last_purchase_date'].notna() &
+            ((today - df['last_purchase_date']).dt.days > dormancy_days)
+        )
+        n_dormant = dormant_mask.sum()
+        df.loc[dormant_mask, 'end_date'] = df.loc[dormant_mask, 'last_purchase_date']
+
+    # ── duration・event の確定 ──
+    # サブスク（解約日のみ）：end_date あり→解約、なし→継続（今日まで）
+    # 都度課金（休眠判定あり）：end_date あり→解約、
+    #   end_date なし + last_purchase_date から dormancy_days 超→実質離脱（last_purchase_dateまで）
+    #   end_date なし + dormancy_days 未満→継続（今日まで）
+
+    # 期間の終端日を決定
+    def get_end(row):
+        if pd.notna(row['end_date']):
+            return row['end_date'], 1  # 解約済み
+        if dormancy_days is not None and pd.notna(row['last_purchase_date']):
+            days_since = (today - row['last_purchase_date']).days
+            if days_since > dormancy_days:
+                return row['last_purchase_date'], 1  # 実質離脱
+        return today, 0  # 継続中
+
+    result = df.apply(get_end, axis=1, result_type='expand')
+    df['end_resolved'] = result[0]
+    df['event']        = result[1]
+    df['duration']     = (df['end_resolved'] - df['start_date']).dt.days
+
+    # duration=0 を1日に自動補正
     n_corrected = (df['duration'] == 0).sum()
     df['duration'] = df['duration'].clip(lower=1)
 
@@ -317,23 +381,28 @@ try:
     n_excluded = (df['duration'] < 0).sum()
     df = df[df['duration'] > 0]
 
+    # ── ARPU_daily：累計売上 ÷ duration ──
+    df['revenue_total'] = pd.to_numeric(df['revenue'], errors='coerce')
+    df['arpu_daily']    = df['revenue_total'] / df['duration']
+    df['gp_daily']      = df['arpu_daily'] * gpm
+    df = df.dropna(subset=['arpu_daily'])
+    df = df[df['arpu_daily'] > 0]
+    arpu_daily = df['arpu_daily'].mean()
+    gp_daily   = df['gp_daily'].mean()
+
+    # ── 通知メッセージ ──
+    if n_dormant > 0:
+        st.info(f"💤 {n_dormant:,}件を休眠顧客（最終購買から{dormancy_days}日超）として実質離脱に変換しました。")
     if n_corrected > 0:
-        st.info(f"ℹ️ {n_corrected}件のデータで契約開始日と解約日が同日でした。自動的に1日に補正しました。")
+        st.info(f"ℹ️ {n_corrected}件：契約開始日と終端日が同日のため1日に補正しました。")
     if n_excluded > 0:
-        st.warning(f"⚠️ {n_excluded}件のデータで契約開始日が未来の日付でした。該当行を除外しました。")
-    if n_corrected == 0 and n_excluded == 0:
+        st.warning(f"⚠️ {n_excluded}件：契約開始日が未来のため除外しました。")
+    if n_dormant == 0 and n_corrected == 0 and n_excluded == 0:
         st.success(f"✅ 全{n_input:,}件のデータを正常に読み込みました。")
 
     if len(df) < 10:
         st.error("❌ 有効なデータが10件未満です。分析には最低10件の顧客データが必要です。")
         st.stop()
-
-    unit_div = {'日次': 1, '月次': 30.44, '年次': 365}
-    df['arpu_daily'] = pd.to_numeric(df['revenue'], errors='coerce') / unit_div[revenue_unit]
-    df['gp_daily']   = df['arpu_daily'] * gpm
-    df = df.dropna(subset=['arpu_daily'])
-    arpu_daily = df['arpu_daily'].mean()
-    gp_daily   = df['gp_daily'].mean()
 
 except Exception as e:
     st.error(f"❌ データ読み込みエラー: {e}\n\nCSVの形式を確認してください。サンプルCSVをダウンロードして参照してください。")
