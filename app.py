@@ -159,49 +159,88 @@ def weibull_s(t, k, lam):
 with st.sidebar:
     st.markdown("### 📥 データ入力")
 
-    # 1万件のリアルなサンプルデータ生成
+    # サンプルデータ生成
     np.random.seed(42)
     n_sample = 10000
+    today_ts = pd.Timestamp.today()
     start_dates = pd.date_range('2022-01-01', '2024-06-30', periods=n_sample)
     survival_days = np.random.weibull(1.2, n_sample) * 400
     churned = np.random.random(n_sample) < 0.65
-    today_ts = pd.Timestamp.today()
-    end_dates = []
+
+    # ── サブスク用サンプル ──
+    # end_date: 解約済みは解約日、継続中は空欄
+    # revenue_total: 月額×リニューアル回数の累計売上
+    monthly_fee = np.random.choice([300, 500, 980], n_sample, p=[0.5, 0.35, 0.15])
+    end_dates_sub = []
+    revenues_sub  = []
     for i in range(n_sample):
+        sd = start_dates[i]
         if churned[i]:
-            ed = start_dates[i] + pd.Timedelta(days=int(survival_days[i]))
-            end_dates.append(ed.strftime('%Y-%m-%d') if ed < today_ts else '')
-        else:
-            end_dates.append('')
-    revenues = np.random.choice([300, 500, 980], n_sample, p=[0.5, 0.35, 0.15])
-    # last_purchase_date: 継続中顧客の一部は休眠状態をシミュレート
-    last_purchase_dates = []
-    for i in range(n_sample):
-        if end_dates[i]:
-            last_purchase_dates.append(end_dates[i])
-        else:
-            # 継続中の20%は180〜730日前が最終購買（休眠シミュレート）
-            if np.random.random() < 0.2:
-                dormant_days = np.random.randint(180, 730)
-                lp = today_ts - pd.Timedelta(days=dormant_days)
-                last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
+            ed = sd + pd.Timedelta(days=int(survival_days[i]))
+            if ed < today_ts:
+                end_dates_sub.append(ed.strftime('%Y-%m-%d'))
+                months = max(1, round((ed - sd).days / 30))
             else:
-                # アクティブ：直近30日以内
-                lp = today_ts - pd.Timedelta(days=np.random.randint(1, 30))
-                last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
-    sample = pd.DataFrame({
-        'customer_id':        [f'C{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':         [d.strftime('%Y-%m-%d') for d in start_dates],
-        'end_date':           end_dates,
-        'last_purchase_date': last_purchase_dates,
-        'revenue_total':    revenues * np.random.randint(10, 40, n_sample),  # 累計売上（円）
+                end_dates_sub.append('')
+                months = max(1, round((today_ts - sd).days / 30))
+        else:
+            end_dates_sub.append('')
+            months = max(1, round((today_ts - sd).days / 30))
+        revenues_sub.append(monthly_fee[i] * months)
+
+    sample_sub = pd.DataFrame({
+        'customer_id':  [f'S{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':   [d.strftime('%Y-%m-%d') for d in start_dates],
+        'end_date':     end_dates_sub,
+        'revenue_total': revenues_sub,
     })
-    st.download_button(
-        "サンプルCSV（1万件）をダウンロード",
-        sample.to_csv(index=False).encode('utf-8-sig'),
-        "sample_customers_10000.csv", "text/csv"
-    )
-    st.caption("`revenue_total`: 累計売上（円）／ `end_date`: 解約日（サブスク向け）／ `last_purchase_date`: 最終購買日（都度課金向け）")
+
+    # ── 都度課金用サンプル ──
+    # end_dateは基本空欄、last_purchase_dateで休眠判定
+    # revenue_total: 実際の累計購買額
+    unit_price = np.random.choice([3000, 5000, 10000], n_sample, p=[0.5, 0.35, 0.15])
+    last_purchase_dates = []
+    revenues_spot = []
+    for i in range(n_sample):
+        sd = start_dates[i]
+        if churned[i]:
+            lp = sd + pd.Timedelta(days=int(survival_days[i]))
+            lp = min(lp, today_ts - pd.Timedelta(days=1))
+        else:
+            # アクティブ：直近180日以内にランダムに購買
+            if np.random.random() < 0.2:
+                lp = today_ts - pd.Timedelta(days=np.random.randint(200, 600))
+            else:
+                lp = today_ts - pd.Timedelta(days=np.random.randint(1, 180))
+        last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
+        purchases = max(1, round((lp - sd).days / 60))
+        revenues_spot.append(unit_price[i] * purchases)
+
+    sample_spot = pd.DataFrame({
+        'customer_id':        [f'D{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':         [d.strftime('%Y-%m-%d') for d in start_dates],
+        'end_date':           '',
+        'last_purchase_date': last_purchase_dates,
+        'revenue_total':      revenues_spot,
+    })
+
+    col_dl1, col_dl2 = st.columns(2)
+    with col_dl1:
+        st.download_button(
+            "📥 サブスク用サンプル（1万件）",
+            sample_sub.to_csv(index=False).encode('utf-8-sig'),
+            "sample_subscription.csv", "text/csv",
+            use_container_width=True
+        )
+        st.caption("`end_date`: 解約日（継続中は空欄）")
+    with col_dl2:
+        st.download_button(
+            "📥 都度課金用サンプル（1万件）",
+            sample_spot.to_csv(index=False).encode('utf-8-sig'),
+            "sample_spot_purchase.csv", "text/csv",
+            use_container_width=True
+        )
+        st.caption("`last_purchase_date`: 最終購買日")
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
@@ -686,13 +725,15 @@ with tab2:
 </div>""", unsafe_allow_html=True)
 
 with tab3:
-    p3 = prompt_base + """
+    dormancy_label = "なし（解約日ベース）" if dormancy_days is None else f"{dormancy_days}日"
+    p3 = prompt_base + f"""
 
 【質問】
 1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？
 2. R²の値は十分ですか？改善するにはどうすればよいですか？
 3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？
-4. セグメント分割（プラン別・属性別）をするメリットとデメリットを教えてください。"""
+4. セグメント分割（プラン別・属性別）をするメリットとデメリットを教えてください。
+5. 休眠判定を{dormancy_label}に設定しています。判定日数が短いとARPUは高くなる一方チャーン率も上がり、長いと逆になります。このビジネスに最適な休眠判定日数はどう決めればよいですか？"""
     st.code(p3, language=None)
     st.markdown("""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
