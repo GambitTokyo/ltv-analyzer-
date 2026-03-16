@@ -1451,7 +1451,7 @@ if segment_cols_input.strip():
   <div>・LTV∞（売上）: <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 <b style='color:#a8dadc;'>+{premium:.1f}%</b>）</div>
   <div>・{cac_str}</div>
   {"<div>・" + efficiency_str + "</div>" if efficiency_str else ""}
-  <div style='margin-top:10px; color:#56b4d3;'>💡 このセグメントに広告予算を集中させることで、競合より高いCPAで入札しながら収益性を維持できます。</div>
+  <div style='margin-top:10px; color:#56b4d3;'>💡 このセグメントに顧客獲得投資を集中させることで、CAC上限¥{cac_best:,.0f}の範囲内で収益性を維持しながら積極的な顧客獲得が可能です。</div>
 </div>
 """
                 st.markdown(insight_pro, unsafe_allow_html=True)
