@@ -25,8 +25,8 @@ st.markdown("""
 html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .stApp { background-color: #0d0d0d; color: #e8e4dc; }
 .metric-card {
-    background: #161616;
-    border: 1px solid #242424;
+    background: #0d1f2d;
+    border: 1px solid #1a3a4a;
     border-radius: 12px;
     padding: 20px 16px;
     text-align: center;
@@ -35,7 +35,7 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .metric-value {
     font-family: 'Syne', sans-serif;
     font-size: 2rem;
-    color: #c8b89a;
+    color: #56b4d3;
     line-height: 1.1;
     word-break: break-all;
 }
@@ -49,15 +49,15 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 .section-title {
     font-family: 'Syne', sans-serif;
     font-size: 1.1rem;
-    color: #e8e4dc;
-    border-bottom: 1px solid #222;
+    color: #56b4d3;
+    border-bottom: 1px solid #2a4a5a;
     padding-bottom: 6px;
     margin: 28px 0 16px 0;
 }
 .prompt-box {
     background: #161616;
     border: 1px solid #2a2a2a;
-    border-left: 3px solid #c8b89a;
+    border-left: 3px solid #56b4d3;
     border-radius: 8px;
     padding: 16px;
     font-family: 'DM Sans', monospace;
@@ -102,17 +102,17 @@ try:
 except Exception:
     rcParams['font.family'] = 'DejaVu Sans'
 for _k, _v in {
-    'figure.facecolor': '#161616', 'axes.facecolor': '#161616',
-    'axes.edgecolor': '#222', 'axes.labelcolor': '#888',
-    'xtick.color': '#555', 'ytick.color': '#555',
-    'grid.color': '#222', 'grid.linewidth': 0.5,
+    'figure.facecolor': '#111820', 'axes.facecolor': '#111820',
+    'axes.edgecolor': '#1a3040', 'axes.labelcolor': '#7ab8cc',
+    'xtick.color': '#4a8a9a', 'ytick.color': '#4a8a9a',
+    'grid.color': '#1a3040', 'grid.linewidth': 0.5,
     'axes.unicode_minus': False,
 }.items():
     rcParams[_k] = _v
 
-ACCENT  = '#c8b89a'
-ACCENT2 = '#7a9e9f'
-ACCENT3 = '#a0856c'
+ACCENT  = '#56b4d3'
+ACCENT2 = '#a8dadc'
+ACCENT3 = '#1d6fa4'
 
 # ══════════════════════════════════════════════════════════════
 # Analysis functions
@@ -230,7 +230,7 @@ with st.sidebar:
 
 st.markdown("""
 <div style='padding: 8px 0 24px 0;'>
-  <span style='font-family:Syne,sans-serif; font-size:2rem; color:#e8e4dc;'>LTV Analyzer</span>
+  <span style='font-family:Syne,sans-serif; font-size:2rem; color:#56b4d3;'>LTV Analyzer</span>
   <span style='font-size:0.8rem; color:#444; margin-left:12px;'>Kaplan–Meier × Weibull Model</span>
 </div>
 """, unsafe_allow_html=True)
@@ -381,43 +381,49 @@ S_wei    = weibull_s(t_smooth, k, lam)
 
 with c1:
     fig, ax = plt.subplots(figsize=(6, 3.8))
-    ax.step(km_df['t'], km_df['S'], where='post', color=ACCENT, lw=1.8, label='KM生存曲線（実測）')
-    ax.plot(t_smooth, S_wei, color=ACCENT2, lw=1.5, ls='--', label='Weibullフィット')
+    ax.step(km_df['t'], km_df['S'], where='post', color=ACCENT, lw=1.8, label='KM Curve (Observed)')
+    ax.plot(t_smooth, S_wei, color=ACCENT2, lw=1.5, ls='--', label='Weibull Fit')
     ax.fill_between(t_smooth, S_wei, alpha=0.06, color=ACCENT2)
-    ax.set(xlabel='生存日数（日）', ylabel='生存率 S(t)', ylim=(0,1.05))
+    ax.set(xlabel='Days', ylabel='Survival Rate S(t)', ylim=(0,1.05))
     ax.legend(fontsize=8, framealpha=0.15)
     ax.grid(True, alpha=0.25)
-    ax.set_title('生存曲線', color='#ccc', fontsize=10, pad=8)
+    ax.set_title('Survival Curve', color='#ccc', fontsize=10, pad=8)
     fig.tight_layout()
     st.pyplot(fig)
     plt.close()
 
+with c1:
+    st.caption("📌 生存曲線（Survival Curve）：実測のKM曲線（実線）にWeibullモデルをフィット（破線）。右に伸びるほど顧客が長く継続している。")
+
 with c2:
     fig, ax = plt.subplots(figsize=(6, 3.8))
     if fit_df is not None:
-        ax.scatter(fit_df['ln_t'], fit_df['ln_neg_ln_S'], color=ACCENT, s=18, alpha=0.7, label='実測点')
+        ax.scatter(fit_df['ln_t'], fit_df['ln_neg_ln_S'], color=ACCENT, s=18, alpha=0.7, label='Observed')
         x_r = np.linspace(fit_df['ln_t'].min(), fit_df['ln_t'].max(), 200)
         b   = np.log(-np.log(weibull_s(1, k, lam) + 1e-15))
-        ax.plot(x_r, k*x_r + b, color=ACCENT2, lw=1.5, ls='--', label=f'回帰直線 (R²={r2:.3f})')
+        ax.plot(x_r, k*x_r + b, color=ACCENT2, lw=1.5, ls='--', label=f'Regression Line (R²={r2:.3f})')
         ax.annotate(f'y = {k:.4f}x + {b:.4f}',
                     xy=(0.05,0.93), xycoords='axes fraction', color='#777', fontsize=8)
     ax.set(xlabel='ln(t)', ylabel='ln(−ln(S(t)))')
     ax.legend(fontsize=8, framealpha=0.15)
     ax.grid(True, alpha=0.25)
-    ax.set_title('Weibull直線化プロット', color='#ccc', fontsize=10, pad=8)
+    ax.set_title('Weibull Linearization Plot', color='#ccc', fontsize=10, pad=8)
     fig.tight_layout()
     st.pyplot(fig)
     plt.close()
 
+with c2:
+    st.caption("📌 Weibull直線化プロット：生存率を対数変換して直線化したもの。R²が1.0に近いほどWeibullモデルのフィット精度が高い。")
+
 # Save chart images for export
 fig1, ax1 = plt.subplots(figsize=(7, 4))
-ax1.step(km_df['t'], km_df['S'], where='post', color=ACCENT, lw=2, label='KM生存曲線')
-ax1.plot(t_smooth, S_wei, color=ACCENT2, lw=1.8, ls='--', label='Weibullフィット')
+ax1.step(km_df['t'], km_df['S'], where='post', color=ACCENT, lw=2, label='KM Curve')
+ax1.plot(t_smooth, S_wei, color=ACCENT2, lw=1.8, ls='--', label='Weibull Fit')
 ax1.fill_between(t_smooth, S_wei, alpha=0.07, color=ACCENT2)
-ax1.set(xlabel='生存日数（日）', ylabel='生存率 S(t)', ylim=(0,1.05))
+ax1.set(xlabel='Days', ylabel='Survival Rate S(t)', ylim=(0,1.05))
 ax1.legend(fontsize=9, framealpha=0.15)
 ax1.grid(True, alpha=0.25)
-ax1.set_title('生存曲線（KM × Weibull）', color='#ccc', fontsize=11, pad=10)
+ax1.set_title('Survival Curve (KM × Weibull)', color='#ccc', fontsize=11, pad=10)
 fig1.tight_layout()
 buf1 = io.BytesIO(); fig1.savefig(buf1, format='png', dpi=150, bbox_inches='tight'); buf1.seek(0)
 plt.close()
@@ -432,7 +438,7 @@ if fit_df is not None:
 ax2.set(xlabel='ln(t)', ylabel='ln(−ln(S(t)))')
 ax2.legend(fontsize=9, framealpha=0.15)
 ax2.grid(True, alpha=0.25)
-ax2.set_title('Weibull直線化プロット', color='#ccc', fontsize=11, pad=10)
+ax2.set_title('Weibull Linearization Plot', color='#ccc', fontsize=11, pad=10)
 fig2.tight_layout()
 buf2 = io.BytesIO(); fig2.savefig(buf2, format='png', dpi=150, bbox_inches='tight'); buf2.seek(0)
 plt.close()
@@ -533,11 +539,11 @@ with exp1:
         ws = wb.active
         ws.title = 'Summary'
         hdr_fill = PatternFill('solid', start_color='1a1a1a', end_color='1a1a1a')
-        hdr_font = Font(name='Calibri', bold=True, color='C8B89A', size=11)
-        val_font = Font(name='Calibri', size=11, color='E8E4DC')
+        hdr_font = Font(name='Calibri', bold=True, color='56B4D3', size=11)
+        val_font = Font(name='Calibri', size=11, color='111111')
 
         ws['A1'] = 'LTV分析 サマリー'
-        ws['A1'].font = Font(name='Calibri', bold=True, size=14, color='C8B89A')
+        ws['A1'].font = Font(name='Calibri', bold=True, size=14, color='56B4D3')
         if client_name:
             ws['A2'] = f'クライアント: {client_name}'
         if analyst_name:
@@ -561,14 +567,14 @@ with exp1:
             ('R²', round(r2, 4)),
         ]
         for i, (label, val) in enumerate(summary_data, start=5):
-            ws.cell(i, 1, label).font = Font(name='Calibri', bold=('【' in str(label)), color='888888', size=10)
-            ws.cell(i, 2, val).font   = Font(name='Calibri', size=10, color='E8E4DC')
+            ws.cell(i, 1, label).font = Font(name='Calibri', bold=('【' in str(label)), color='333333', size=10)
+            ws.cell(i, 2, val).font   = Font(name='Calibri', size=10, color='111111')
         ws.column_dimensions['A'].width = 32
         ws.column_dimensions['B'].width = 20
 
         # KM sheet
         ws2 = wb.create_sheet('KM_生存曲線')
-        ws2.append(['t（日）', 'S(t)_KM実測', 'S(t)_Weibullフィット'])
+        ws2.append(['t (days)', 'S(t) KM Observed', 'S(t) Weibull Fit'])
         for _, row in km_df.iterrows():
             t = row['t']
             ws2.append([int(t), round(row['S'], 6), round(float(weibull_s(t, k, lam)), 6)])
@@ -598,8 +604,8 @@ with exp2:
         from pptx.enum.text import PP_ALIGN
 
         BG    = RGBColor(0x0d, 0x0d, 0x0d)
-        GOLD  = RGBColor(0xc8, 0xb8, 0x9a)
-        TEAL  = RGBColor(0x7a, 0x9e, 0x9f)
+        GOLD  = RGBColor(0x56, 0xb4, 0xd3)
+        TEAL  = RGBColor(0xa8, 0xda, 0xdc)
         WHITE = RGBColor(0xe8, 0xe4, 0xdc)
         GRAY  = RGBColor(0x44, 0x44, 0x44)
 
@@ -684,7 +690,7 @@ with exp2:
         # ── Slide 3: Charts ──
         s3 = prs.slides.add_slide(blank)
         add_bg(s3, prs)
-        txbox(s3, '生存曲線 / Weibull直線化プロット', 0.5, 0.3, 12, 0.6, size=22, bold=True, color=WHITE)
+        txbox(s3, 'Survival Curve  /  Weibull Linearization Plot', 0.5, 0.3, 12, 0.6, size=22, bold=True, color=WHITE)
         buf1.seek(0); s3.shapes.add_picture(buf1, Inches(0.4), Inches(1.1), Inches(6.1), Inches(3.8))
         buf2.seek(0); s3.shapes.add_picture(buf2, Inches(6.8), Inches(1.1), Inches(6.1), Inches(3.8))
 
@@ -739,11 +745,11 @@ with exp3:
                                 topMargin=2*cm, bottomMargin=2*cm)
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle('T', fontName='HeiseiMin-W3', fontSize=18, spaceAfter=6,
-                                     textColor=colors.HexColor('#c8b89a'))
+                                     textColor=colors.HexColor('#56b4d3'))
         h2_style    = ParagraphStyle('H2', fontName='HeiseiMin-W3', fontSize=13, spaceAfter=4,
-                                     textColor=colors.HexColor('#e8e4dc'), spaceBefore=14)
+                                     textColor=colors.HexColor('#111111'), spaceBefore=14)
         body_style  = ParagraphStyle('B', fontName='HeiseiMin-W3', fontSize=9,
-                                     textColor=colors.HexColor('#888888'), spaceAfter=3)
+                                     textColor=colors.HexColor('#333333'), spaceAfter=3)
 
         story = []
         story.append(Paragraph('LTV Analysis Report', title_style))
@@ -775,11 +781,11 @@ with exp3:
         ]))
         story.append(t)
 
-        story.append(Paragraph('生存曲線', h2_style))
+        story.append(Paragraph('Survival Curve', h2_style))
         buf1.seek(0)
         story.append(Image(buf1, width=15*cm, height=9*cm))
 
-        story.append(Paragraph('Weibull直線化プロット', h2_style))
+        story.append(Paragraph('Weibull Linearization Plot', h2_style))
         buf2.seek(0)
         story.append(Image(buf2, width=15*cm, height=9*cm))
 
