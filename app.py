@@ -671,17 +671,74 @@ plt.close()
 
 st.markdown("<div class='section-title'>暫定LTV（観測期間別）</div>", unsafe_allow_html=True)
 
-horizons = sorted(set([30, 90, 180, 365, 730, int(horizon_days)]))
+horizons = [30, 90, 180, 365, 730, 1095, 1825]  # 30日・90日・180日・1年・2年・3年・5年
 rows = []
 for h in horizons:
     lh = ltv_horizon(k, lam, arpu_daily, h)
     rows.append({
-        'ホライズン': f'{h}日' if h < 365 else (f'{h//365}年' if h%365==0 else f'{h}日'),
+        'ホライズン': f'{h//365}年' if h >= 365 and h % 365 == 0 else f'{h}日',
         '暫定LTV': f'¥{lh:,.0f}',
         'LTV∞比': f'{lh/ltv_val*100:.1f}%',
         f'CAC上限 ({cac_label})': f'¥{lh/cac_n:,.0f}',
     })
 st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+
+# 解釈ガイドを自動生成
+ltv_1y  = ltv_horizon(k, lam, arpu_daily, 365)
+ltv_2y  = ltv_horizon(k, lam, arpu_daily, 730)
+ltv_3y  = ltv_horizon(k, lam, arpu_daily, 1095)
+pct_1y  = ltv_1y  / ltv_rev * 100
+pct_2y  = ltv_2y  / ltv_rev * 100
+pct_3y  = ltv_3y  / ltv_rev * 100
+
+# CAC回収期間を逆算（何日でCAC上限を回収できるか）
+from scipy.optimize import brentq
+try:
+    cac_recover_days = brentq(
+        lambda h: ltv_horizon(k, lam, arpu_daily, h) - cac_upper,
+        1, 9999
+    )
+    cac_recover_str = (
+        f"{cac_recover_days/365:.1f}年（{int(cac_recover_days)}日）"
+        if cac_recover_days >= 365
+        else f"{int(cac_recover_days)}日"
+    )
+except Exception:
+    cac_recover_str = "算出不可（LTV∞がCAC上限を下回っています）"
+
+# λの解釈
+if lam < 180:
+    lam_desc = f"λ={lam:.0f}日は非常に短く、顧客の大半が半年以内に離脱するビジネスです。"
+elif lam < 365:
+    lam_desc = f"λ={lam:.0f}日は比較的短く、多くの顧客が1年以内に離脱するビジネスです。"
+elif lam < 730:
+    lam_desc = f"λ={lam:.0f}日（約{lam/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。"
+else:
+    lam_desc = f"λ={lam:.0f}日（約{lam/365:.1f}年）は長く、顧客が数年にわたって継続するビジネスです。"
+
+# k の解釈
+if k < 0.8:
+    k_desc = f"k={k:.3f}は1より大きく小さいため、契約直後の離脱が特に多いパターンです。初期のオンボーディング改善が最優先です。"
+elif k < 1.0:
+    k_desc = f"k={k:.3f}は1に近いため、離脱率がほぼ一定（指数分布に近い）パターンです。"
+else:
+    k_desc = f"k={k:.3f}は1より大きいため、時間とともに離脱率が上がるパターンです。長期継続顧客のフォローが重要です。"
+
+insight_html = f"""
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:10px; padding:18px 20px; margin-top:12px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
+  <div style='color:#56b4d3; font-size:0.82rem; font-weight:500; margin-bottom:10px; letter-spacing:0.05em;'>💡 このテーブルの読み方</div>
+  <div>・{lam_desc}</div>
+  <div>・{k_desc}</div>
+  <div>・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。</div>
+  <div style='margin-top:8px;'>
+    <span style='color:#56b4d3;'>1年時点</span>でLTV∞の<b style='color:#a8dadc;'>{pct_1y:.1f}%</b>（¥{ltv_1y:,.0f}）、
+    <span style='color:#56b4d3;'>2年時点</span>で<b style='color:#a8dadc;'>{pct_2y:.1f}%</b>（¥{ltv_2y:,.0f}）、
+    <span style='color:#56b4d3;'>3年時点</span>で<b style='color:#a8dadc;'>{pct_3y:.1f}%</b>（¥{ltv_3y:,.0f}）を回収できます。
+  </div>
+  <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）を回収できるのは契約から約 <b style='color:#a8dadc;'>{cac_recover_str}</b> 後です。</div>
+</div>
+"""
+st.markdown(insight_html, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
 # AI Prompt Generator
