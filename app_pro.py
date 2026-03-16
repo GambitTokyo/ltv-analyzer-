@@ -1373,38 +1373,39 @@ if segment_cols_input.strip():
             # Plotlyで棒グラフ（日本語フォント問題を完全回避）
             n_seg = len(seg_df)
             bar_colors = [ACCENT if i == 0 else ACCENT2 for i in range(n_seg)]
-            fig_plotly = go.Figure(go.Bar(
-                x=seg_df['セグメント'].astype(str).tolist(),
-                y=seg_df['LTV∞（売上）'].tolist(),
-                marker_color=bar_colors,
-                text=[f'¥{v:,.0f}' for v in seg_df['LTV∞（売上）']],
-                textposition='outside' if n_seg <= 15 else 'none',
-                textfont=dict(size=10 if n_seg <= 10 else 8),
-            ))
             fig_height = 400 if n_seg <= 10 else 450 if n_seg <= 20 else 520
             tick_angle = 0 if n_seg <= 8 else -45 if n_seg <= 20 else -90
             tick_size  = 12 if n_seg <= 10 else 10 if n_seg <= 20 else 8
+
+            fig_plotly = go.Figure()
+            fig_plotly.add_trace(go.Bar(
+                x=seg_df['セグメント'].astype(str).tolist(),
+                y=seg_df['LTV∞（売上）'].tolist(),
+                marker=dict(color=bar_colors),
+                text=[f'¥{v:,.0f}' for v in seg_df['LTV∞（売上）']],
+                textposition='outside' if n_seg <= 15 else 'none',
+            ))
+            fig_plotly.update_xaxes(
+                tickfont=dict(color='#aaa', size=tick_size),
+                tickangle=tick_angle,
+                gridcolor='#1a3040',
+                linecolor='#1a3040',
+            )
+            fig_plotly.update_yaxes(
+                title_text='LTV∞（¥）',
+                tickfont=dict(color='#888'),
+                gridcolor='#1a3040',
+                tickprefix='¥',
+                tickformat=',',
+            )
             fig_plotly.update_layout(
-                title=dict(text=f'セグメント別 LTV∞ 比較（{seg_col}）', font=dict(color='#ccc', size=13)),
+                title_text=f'セグメント別 LTV∞ 比較（{seg_col}）',
                 paper_bgcolor='#111820',
                 plot_bgcolor='#111820',
                 height=fig_height,
-                margin=dict(t=50, b=120 if tick_angle != 0 else 60, l=60, r=20),
-                xaxis=dict(
-                    tickfont=dict(color='#aaa', size=tick_size),
-                    tickangle=tick_angle,
-                    gridcolor='#1a3040',
-                    linecolor='#1a3040',
-                ),
-                yaxis=dict(
-                    title='LTV∞（¥）',
-                    titlefont=dict(color='#888'),
-                    tickfont=dict(color='#888'),
-                    gridcolor='#1a3040',
-                    tickprefix='¥',
-                    tickformat=',',
-                ),
                 showlegend=False,
+                margin=dict(t=50, b=120 if tick_angle != 0 else 60, l=60, r=20),
+                font=dict(color='#ccc', size=12),
             )
             st.plotly_chart(fig_plotly, use_container_width=True)
 
