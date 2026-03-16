@@ -9,6 +9,7 @@ from matplotlib import rcParams
 import io
 import warnings
 import calendar
+import plotly.graph_objects as go
 warnings.filterwarnings('ignore')
 
 # ── Page config ──────────────────────────────────────────────
@@ -1369,47 +1370,43 @@ if segment_cols_input.strip():
 
             progress_bar.empty()
 
-            # 比較グラフ（セグメント数に応じてレイアウト動的調整）
+            # Plotlyで棒グラフ（日本語フォント問題を完全回避）
             n_seg = len(seg_df)
-            # 動的サイズ設定
-            fig_w  = max(10, min(n_seg * 0.6, 20))
-            fig_h  = 4.5 if n_seg <= 10 else 5.5 if n_seg <= 20 else 6.5
-            fs_val = 8 if n_seg <= 10 else 6 if n_seg <= 20 else 5   # 値ラベル
-            fs_tick= 9 if n_seg <= 10 else 7 if n_seg <= 20 else 5.5 # x軸ラベル
-            rot    = 0 if n_seg <= 8 else 45 if n_seg <= 20 else 90   # x軸回転
-            ha     = 'center' if n_seg <= 8 else 'right' if n_seg <= 20 else 'right'
-
-            fig_seg, ax_seg = plt.subplots(figsize=(fig_w, fig_h))
-            colors_bar = [ACCENT if i == 0 else ACCENT2 for i in range(n_seg)]
-            bars = ax_seg.bar(
-                range(n_seg),
-                seg_df['LTV∞（売上）'],
-                color=colors_bar, alpha=0.85, edgecolor='none', width=0.7
+            bar_colors = [ACCENT if i == 0 else ACCENT2 for i in range(n_seg)]
+            fig_plotly = go.Figure(go.Bar(
+                x=seg_df['セグメント'].astype(str).tolist(),
+                y=seg_df['LTV∞（売上）'].tolist(),
+                marker_color=bar_colors,
+                text=[f'¥{v:,.0f}' for v in seg_df['LTV∞（売上）']],
+                textposition='outside' if n_seg <= 15 else 'none',
+                textfont=dict(size=10 if n_seg <= 10 else 8),
+            ))
+            fig_height = 400 if n_seg <= 10 else 450 if n_seg <= 20 else 520
+            tick_angle = 0 if n_seg <= 8 else -45 if n_seg <= 20 else -90
+            tick_size  = 12 if n_seg <= 10 else 10 if n_seg <= 20 else 8
+            fig_plotly.update_layout(
+                title=dict(text=f'セグメント別 LTV∞ 比較（{seg_col}）', font=dict(color='#ccc', size=13)),
+                paper_bgcolor='#111820',
+                plot_bgcolor='#111820',
+                height=fig_height,
+                margin=dict(t=50, b=120 if tick_angle != 0 else 60, l=60, r=20),
+                xaxis=dict(
+                    tickfont=dict(color='#aaa', size=tick_size),
+                    tickangle=tick_angle,
+                    gridcolor='#1a3040',
+                    linecolor='#1a3040',
+                ),
+                yaxis=dict(
+                    title='LTV∞（¥）',
+                    titlefont=dict(color='#888'),
+                    tickfont=dict(color='#888'),
+                    gridcolor='#1a3040',
+                    tickprefix='¥',
+                    tickformat=',',
+                ),
+                showlegend=False,
             )
-            ax_seg.set_xticks(range(n_seg))
-            ax_seg.set_xticklabels(
-                seg_df['セグメント'].astype(str),
-                rotation=rot, ha=ha, fontsize=fs_tick
-            )
-            ax_seg.set_ylabel('LTV∞（¥）', color='#888', fontsize=9)
-            ax_seg.set_title(f'セグメント別 LTV∞ 比較（{seg_col}）', color='#ccc', fontsize=10, pad=8)
-            ax_seg.grid(True, alpha=0.2, axis='y')
-            # 値ラベル（セグメント数が多い場合は上位5つのみ表示）
-            show_labels = n_seg <= 15
-            for i, (bar, val) in enumerate(zip(bars, seg_df['LTV∞（売上）'])):
-                if show_labels or i < 5:
-                    ax_seg.text(
-                        bar.get_x() + bar.get_width()/2,
-                        bar.get_height() + max(seg_df['LTV∞（売上）'])*0.01,
-                        f'¥{val:,.0f}', ha='center', va='bottom',
-                        fontsize=fs_val, color='#ccc'
-                    )
-            # 余白調整
-            bottom_margin = 0.25 if rot >= 45 else 0.12
-            fig_seg.subplots_adjust(bottom=bottom_margin)
-            fig_seg.tight_layout()
-            st.pyplot(fig_seg)
-            plt.close()
+            st.plotly_chart(fig_plotly, use_container_width=True)
 
             # 結果テーブル
             display_df = seg_df.copy()
