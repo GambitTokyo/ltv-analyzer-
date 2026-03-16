@@ -356,13 +356,10 @@ m1, m2, m3, m4, m5 = st.columns(5)
 
 metrics = [
     (f"¥{ltv_rev:,.0f}", "LTV∞（売上ベース）"),
-    (f"¥{cac_upper:,.0f}", f"CAC上限\n{cac_label}"),
-    (f"{k:.3f}", f"Weibull k（形状）
-{k_interp}"),
-    (f"{lam:.1f}日", f"Weibull λ（尺度）
-{lam_interp}"),
-    (f"{r2:.3f}", f"R²（フィット精度）
-{r2_interp}"),
+    (f"¥{cac_upper:,.0f}", f"CAC上限 {cac_label}"),
+    (f"{k:.3f}", "Weibull k（形状） k<1:初期離脱多い / k>1:時間とともに離脱増"),
+    (f"{lam:.1f}日", "Weibull λ（尺度） 顧客の典型的な生存日数の目安"),
+    (f"{r2:.3f}", "R² 1.0に近いほど精度高い（0.9以上が理想）"),
 ]
 for col, (val, label) in zip([m1,m2,m3,m4,m5], metrics):
     with col:
