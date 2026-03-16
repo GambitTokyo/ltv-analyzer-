@@ -1434,11 +1434,13 @@ if segment_cols_input.strip():
                 cac_avg  = ltv_val / cac_n
 
                 if cac_known:
-                    efficiency_str = f"LTV:CAC比率 = {best_seg['LTV∞（売上）']*gpm/cac_input:.1f}:1（全体平均の{best_seg['LTV∞（売上）']*gpm/cac_input/(ltv_val/cac_input):.1f}倍）"
+                    ltv_cac_ratio = best_seg['LTV∞（売上）'] * gpm / cac_input
+                    ratio_judge = "✓ 健全" if ltv_cac_ratio >= 3.0 else "⚠️ 要改善（推奨3:1以上）"
+                    efficiency_str = f"LTV:CAC比率（粗利ベース）= {ltv_cac_ratio:.1f}:1　{ratio_judge}"
                     cac_uplift = ((cac_best - cac_avg) / cac_avg * 100)
                     cac_str = f"許容CAC上限 ¥{cac_best:,.0f}（平均より{cac_uplift:+.1f}%高く設定可能）"
                 else:
-                    efficiency_str = f"平均LTV∞比 +{premium:.1f}%"
+                    efficiency_str = None
                     cac_str = f"許容CAC上限 ¥{cac_best:,.0f}（平均より¥{cac_best - cac_avg:,.0f}高く設定可能）"
 
                 insight_pro = f"""
@@ -1446,7 +1448,7 @@ if segment_cols_input.strip():
   <div style='color:#56b4d3; font-size:0.9rem; font-weight:500; margin-bottom:10px;'>🎯 優先獲得推奨セグメント：<b style='color:#a8dadc;'>{best_seg['セグメント']}</b></div>
   <div>・LTV∞（売上）: <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 <b style='color:#a8dadc;'>+{premium:.1f}%</b>）</div>
   <div>・{cac_str}</div>
-  <div>・{efficiency_str}</div>
+  {"<div>・" + efficiency_str + "</div>" if efficiency_str else ""}
   <div style='margin-top:10px; color:#56b4d3;'>💡 このセグメントに広告予算を集中させることで、競合より高いCPAで入札しながら収益性を維持できます。</div>
 </div>
 """
