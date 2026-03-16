@@ -95,17 +95,49 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 
 # ── Matplotlib theme ──────────────────────────────────────────
 plt.style.use('dark_background')
-import matplotlib.font_manager as _fm, subprocess as _sp
-try:
-    _jp = [f.name for f in _fm.fontManager.ttflist
-           if any(x in f.name for x in ['Noto Sans CJK', 'IPAexGothic', 'Hiragino'])]
-    if not _jp:
-        _sp.run(['apt-get','install','-y','-q','fonts-noto-cjk'], capture_output=True)
+
+import matplotlib.font_manager as _fm
+import urllib.request as _ur, os as _os, tempfile as _tf
+
+@st.cache_resource
+def _load_jp_font():
+    # Try multiple font sources
+    candidates = ['Noto Sans CJK JP', 'Noto Sans CJK', 'NotoSansCJK', 'IPAexGothic', 'Hiragino Sans', 'Yu Gothic']
+    for f in _fm.fontManager.ttflist:
+        if any(x in f.name for x in candidates):
+            return f.name, f.fname
+    # Download from GitHub
+    urls = [
+        ("https://github.com/googlefonts/noto-cjk/raw/main/Sans/SubsetOTF/JP/NotoSansCJKjp-Regular.otf", "NotoSansCJKjp.otf"),
+        ("https://moji.or.jp/wp-content/ipafont/IPAexfont/ipaexg00401.zip", None),
+    ]
+    for url, fname in urls[:1]:
+        try:
+            fp = _os.path.join(_tf.gettempdir(), fname)
+            if not _os.path.exists(fp):
+                _ur.urlretrieve(url, fp)
+            _fm.fontManager.addfont(fp)
+            prop = _fm.FontProperties(fname=fp)
+            return prop.get_name(), fp
+        except Exception:
+            pass
+    # apt-get fallback
+    try:
+        import subprocess
+        subprocess.run(['apt-get','install','-y','-q','fonts-noto-cjk'], capture_output=True)
         _fm.fontManager.__init__()
-        _jp = [f.name for f in _fm.fontManager.ttflist if 'Noto Sans CJK' in f.name]
-    rcParams['font.family'] = _jp[0] if _jp else 'DejaVu Sans'
-except Exception:
-    rcParams['font.family'] = 'DejaVu Sans'
+        for f in _fm.fontManager.ttflist:
+            if 'Noto Sans CJK' in f.name:
+                return f.name, f.fname
+    except Exception:
+        pass
+    return 'DejaVu Sans', None
+
+_jp_font_name, _jp_font_path = _load_jp_font()
+rcParams['font.family'] = _jp_font_name
+if _jp_font_path:
+    from matplotlib import font_manager as _fm2
+    _fm2.fontManager.addfont(_jp_font_path)
 for _k, _v in {
     'figure.facecolor': '#111820', 'axes.facecolor': '#111820',
     'axes.edgecolor': '#1a3040', 'axes.labelcolor': '#7ab8cc',
@@ -114,6 +146,7 @@ for _k, _v in {
     'axes.unicode_minus': False,
 }.items():
     rcParams[_k] = _v
+
 
 ACCENT  = '#56b4d3'
 ACCENT2 = '#a8dadc'
@@ -1336,20 +1369,44 @@ if segment_cols_input.strip():
 
             progress_bar.empty()
 
-            # 比較グラフ
-            fig_seg, ax_seg = plt.subplots(figsize=(10, 3.5))
-            colors_bar = [ACCENT if i == 0 else ACCENT2 for i in range(len(seg_df))]
+            # 比較グラフ（セグメント数に応じてレイアウト動的調整）
+            n_seg = len(seg_df)
+            # 動的サイズ設定
+            fig_w  = max(10, min(n_seg * 0.6, 20))
+            fig_h  = 4.5 if n_seg <= 10 else 5.5 if n_seg <= 20 else 6.5
+            fs_val = 8 if n_seg <= 10 else 6 if n_seg <= 20 else 5   # 値ラベル
+            fs_tick= 9 if n_seg <= 10 else 7 if n_seg <= 20 else 5.5 # x軸ラベル
+            rot    = 0 if n_seg <= 8 else 45 if n_seg <= 20 else 90   # x軸回転
+            ha     = 'center' if n_seg <= 8 else 'right' if n_seg <= 20 else 'right'
+
+            fig_seg, ax_seg = plt.subplots(figsize=(fig_w, fig_h))
+            colors_bar = [ACCENT if i == 0 else ACCENT2 for i in range(n_seg)]
             bars = ax_seg.bar(
-                seg_df['セグメント'].astype(str),
+                range(n_seg),
                 seg_df['LTV∞（売上）'],
-                color=colors_bar, alpha=0.85, edgecolor='none'
+                color=colors_bar, alpha=0.85, edgecolor='none', width=0.7
             )
-            ax_seg.set_ylabel('LTV∞（¥）', color='#888')
+            ax_seg.set_xticks(range(n_seg))
+            ax_seg.set_xticklabels(
+                seg_df['セグメント'].astype(str),
+                rotation=rot, ha=ha, fontsize=fs_tick
+            )
+            ax_seg.set_ylabel('LTV∞（¥）', color='#888', fontsize=9)
             ax_seg.set_title(f'セグメント別 LTV∞ 比較（{seg_col}）', color='#ccc', fontsize=10, pad=8)
             ax_seg.grid(True, alpha=0.2, axis='y')
-            for bar, val in zip(bars, seg_df['LTV∞（売上）']):
-                ax_seg.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(seg_df['LTV∞（売上）'])*0.01,
-                           f'¥{val:,.0f}', ha='center', va='bottom', fontsize=8, color='#ccc')
+            # 値ラベル（セグメント数が多い場合は上位5つのみ表示）
+            show_labels = n_seg <= 15
+            for i, (bar, val) in enumerate(zip(bars, seg_df['LTV∞（売上）'])):
+                if show_labels or i < 5:
+                    ax_seg.text(
+                        bar.get_x() + bar.get_width()/2,
+                        bar.get_height() + max(seg_df['LTV∞（売上）'])*0.01,
+                        f'¥{val:,.0f}', ha='center', va='bottom',
+                        fontsize=fs_val, color='#ccc'
+                    )
+            # 余白調整
+            bottom_margin = 0.25 if rot >= 45 else 0.12
+            fig_seg.subplots_adjust(bottom=bottom_margin)
             fig_seg.tight_layout()
             st.pyplot(fig_seg)
             plt.close()
