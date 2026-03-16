@@ -192,11 +192,33 @@ with st.sidebar:
             months = max(1, round((today_ts - sd).days / 30))
         revenues_sub.append(monthly_fee[i] * months)
 
+    plans    = np.random.choice(['月額300', '月額500', '月額980'], n_sample, p=[0.5, 0.35, 0.15])
+    channels = np.random.choice(['SNS', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.3, 0.3, 0.2, 0.2])
+    ages     = np.random.choice(['10代以下', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.10, 0.25, 0.35, 0.20, 0.10])
+
+    regions = np.random.choice(
+        ['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
+        n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09]
+    )
+    prefs = np.random.choice(
+        ['東京', '神奈川', '大阪', '愛知', '埼玉', '千葉', '福岡', '北海道',
+         '兵庫', '静岡', '茨城', '広島', '京都', '宮城', '新潟', '長野',
+         '栃木', '岐阜', '群馬', '岡山', '三重', '熊本', '鹿児島', '山口',
+         '愛媛', '長崎', '奈良', '青森', '岩手', '大分', '石川', '山形',
+         '富山', '秋田', '香川', '和歌山', '佐賀', '福井', '徳島', '高知',
+         '島根', '宮崎', '鳥取', '沖縄', '滋賀', '山梨', '福島'],
+        n_sample
+    )
     sample_sub = pd.DataFrame({
         'customer_id':  [f'S{i:05d}' for i in range(1, n_sample+1)],
         'start_date':   [d.strftime('%Y-%m-%d') for d in start_dates],
         'end_date':     end_dates_sub,
         'revenue_total': revenues_sub,
+        'plan':         plans,
+        'channel':      channels,
+        'age_group':    ages,
+        'region':       regions,
+        'prefecture':   prefs,
     })
 
     # ── 都度課金用サンプル ──
@@ -226,6 +248,11 @@ with st.sidebar:
         'end_date':           '',
         'last_purchase_date': last_purchase_dates,
         'revenue_total':      revenues_spot,
+        'plan':               np.random.choice(['ベーシック', 'スタンダード', 'プレミアム'], n_sample, p=[0.5, 0.35, 0.15]),
+        'channel':            np.random.choice(['SNS', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.3, 0.3, 0.2, 0.2]),
+        'age_group':          np.random.choice(['10代以下', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.10, 0.25, 0.35, 0.20, 0.10]),
+        'region':             np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'], n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09]),
+        'prefecture':         np.random.choice(['東京', '神奈川', '大阪', '愛知', '埼玉', '千葉', '福岡', '北海道', '兵庫', '静岡', '茨城', '広島', '京都', '宮城', '新潟', '長野', '栃木', '岐阜', '群馬', '岡山', '三重', '熊本', '鹿児島', '山口', '愛媛', '長崎', '奈良', '青森', '岩手', '大分', '石川', '山形', '富山', '秋田', '香川', '和歌山', '佐賀', '福井', '徳島', '高知', '島根', '宮崎', '鳥取', '沖縄', '滋賀', '山梨', '福島'], n_sample),
     })
 
     col_dl1, col_dl2 = st.columns(2)
@@ -333,16 +360,35 @@ with st.sidebar:
         cac_label = f"{cac_n}ヶ月回収"
 
     st.markdown("---")
-    st.markdown("### 🔬 セグメント分析")
-    st.caption("CSVにセグメント列を追加してください。複数列を選択できます。")
+    st.markdown("### 🔬 セグメント分析設定")
+    st.caption(
+        "**セグメント列とは？**\n\n"
+        "顧客を分類するための列です。CSVに追加しておくことで、"
+        "セグメント別のLTV∞を自動比較し、最も収益性の高い"
+        "優先獲得セグメントを特定します。\n\n"
+        "**指定方法：** CSVの列名をカンマ区切りで入力\n"
+        "例：`plan, channel, age_group`\n\n"
+        "**1列あたりのユニーク値：** 最大20種類\n"
+        "**列数：** 制限なし（複数列同時分析可）\n\n"
+        "**代表的なセグメント軸：**\n"
+        "・プラン別（月額・年額・プランA/B）\n"
+        "・獲得チャネル別（SNS・検索・紹介・自然流入）\n"
+        "・デモグラフィック（年齢層・性別・地域）\n"
+        "・行動（初回購買金額・利用頻度・登録経路）"
+    )
     segment_cols_input = st.text_input(
         "セグメント列名（カンマ区切りで複数指定可）",
         placeholder="例：plan, channel, age_group",
     )
+    st.markdown("---")
+    st.markdown("### 💰 CAC（顧客獲得コスト）")
+    st.caption(
+        "平均CACを入力すると、セグメント別の獲得効率スコア（LTV:CAC比率）も算出されます。"
+        "不明な場合は空欄のままでOKです。LTV∞ベースの優先スコアのみ表示されます。"
+    )
     cac_input = st.number_input(
         "平均CAC（任意・円）",
         min_value=0, value=0, step=1000,
-        help="入力すると獲得効率スコアも算出されます。不明な場合は0のままでOKです。"
     )
     cac_known = cac_input > 0
 
@@ -378,9 +424,12 @@ if uploaded is None:
 | `end_date` | 解約日（サブスク向け・継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
 | `last_purchase_date` | 最終購買日（都度課金向け・任意） | YYYY-MM-DD | 2024-06-01 |
 | `revenue` | **累計売上**（円） | 数値 | 48000 |
+| `セグメント列`（任意の列名） | **PRO機能**：プラン・チャネル・年齢層など | 文字列 | 月額300 |
 
-> 列名は完全一致でなくてもOKです。`start`・`end`・`last`・`revenue`を含む列名は自動認識します。
-> ARPU_daily は「累計売上 ÷ 顧客継続日数」で自動計算されます。
+> **PRO版では必ずセグメント列を追加してください。**複数列追加可能です。\n
+> 列名は完全一致でなくてもOKです。`start`・`end`・`last`・`revenue`を含む列名は自動認識します。\n
+> ARPU_daily は「累計売上 ÷ 顧客継続日数」で自動計算されます。\n
+> セグメント列は1列あたり最大50種類のユニーク値まで対応しています（都道府県47個も対応）。
     """)
 
     st.markdown("<div class='section-title'>分析の流れ</div>", unsafe_allow_html=True)
@@ -1229,14 +1278,21 @@ if segment_cols_input.strip():
             st.markdown(f"#### 📊 セグメント：`{seg_col}`")
 
             seg_values = df[seg_col].dropna().unique()
-            if len(seg_values) > 20:
-                st.warning(f"⚠️ `{seg_col}` のユニーク値が{len(seg_values)}個あります。20個以下を推奨します。")
+            if len(seg_values) > 50:
+                st.warning(f"⚠️ `{seg_col}` のユニーク値が{len(seg_values)}個あります。50個以下にしてください。")
                 continue
+            elif len(seg_values) > 20:
+                st.info(f"ℹ️ `{seg_col}` のユニーク値が{len(seg_values)}個あります。計算に少し時間がかかります。")
 
             seg_results = []
             seg_figs = []
 
-            for seg_val in sorted(seg_values):
+            progress_bar = st.progress(0, text=f"`{seg_col}` を分析中...")
+            for seg_idx, seg_val in enumerate(sorted(seg_values)):
+                progress_bar.progress(
+                    int((seg_idx + 1) / len(seg_values) * 100),
+                    text=f"`{seg_col}` 分析中... {seg_val} ({seg_idx+1}/{len(seg_values)})"
+                )
                 df_seg = df[df[seg_col] == seg_val].copy()
                 if len(df_seg) < 10 or df_seg['event'].sum() < 5:
                     continue
@@ -1277,6 +1333,8 @@ if segment_cols_input.strip():
                 continue
 
             seg_df = pd.DataFrame(seg_results).sort_values('LTV∞（売上）', ascending=False).reset_index(drop=True)
+
+            progress_bar.empty()
 
             # 比較グラフ
             fig_seg, ax_seg = plt.subplots(figsize=(10, 3.5))
