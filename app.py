@@ -90,13 +90,25 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 
 # ── Matplotlib theme ──────────────────────────────────────────
 plt.style.use('dark_background')
-for k, v in {
+import matplotlib.font_manager as _fm, subprocess as _sp
+try:
+    _jp = [f.name for f in _fm.fontManager.ttflist
+           if any(x in f.name for x in ['Noto Sans CJK', 'IPAexGothic', 'Hiragino'])]
+    if not _jp:
+        _sp.run(['apt-get','install','-y','-q','fonts-noto-cjk'], capture_output=True)
+        _fm.fontManager.__init__()
+        _jp = [f.name for f in _fm.fontManager.ttflist if 'Noto Sans CJK' in f.name]
+    rcParams['font.family'] = _jp[0] if _jp else 'DejaVu Sans'
+except Exception:
+    rcParams['font.family'] = 'DejaVu Sans'
+for _k, _v in {
     'figure.facecolor': '#161616', 'axes.facecolor': '#161616',
     'axes.edgecolor': '#222', 'axes.labelcolor': '#888',
     'xtick.color': '#555', 'ytick.color': '#555',
     'grid.color': '#222', 'grid.linewidth': 0.5,
+    'axes.unicode_minus': False,
 }.items():
-    rcParams[k] = v
+    rcParams[_k] = _v
 
 ACCENT  = '#c8b89a'
 ACCENT2 = '#7a9e9f'
@@ -187,7 +199,7 @@ with st.sidebar:
         label_visibility='collapsed'
     )
     revenue_unit = revenue_unit_raw.split('（')[0]
-    horizon_days = st.number_input("観測期間上限（日）", 30, 3650, 670)
+    horizon_days = st.number_input("観測期間上限（日）", 30, 3650, 730, help="730日=2年、365日=1年が目安")
 
     st.markdown("---")
     st.markdown("### 📊 粗利率（GPM）")
@@ -286,9 +298,24 @@ try:
     df = df.dropna(subset=['start_date'])
 
     today = pd.Timestamp.today()
+    n_input = len(df)
     df['duration'] = (df['end_date'].fillna(today) - df['start_date']).dt.days
     df['event']    = df['end_date'].notna().astype(int)
+
+    # duration=0 を1日に自動補正（入力件数＝分析件数を保証）
+    n_corrected = (df['duration'] == 0).sum()
+    df['duration'] = df['duration'].clip(lower=1)
+
+    # duration<0（開始日が未来）は除外
+    n_excluded = (df['duration'] < 0).sum()
     df = df[df['duration'] > 0]
+
+    if n_corrected > 0:
+        st.info(f"ℹ️ {n_corrected}件のデータで契約開始日と解約日が同日でした。自動的に1日に補正しました。")
+    if n_excluded > 0:
+        st.warning(f"⚠️ {n_excluded}件のデータで契約開始日が未来の日付でした。該当行を除外しました。")
+    if n_corrected == 0 and n_excluded == 0:
+        st.success(f"✅ 全{n_input:,}件のデータを正常に読み込みました。")
 
     if len(df) < 10:
         st.error("❌ 有効なデータが10件未満です。分析には最低10件の顧客データが必要です。")
@@ -328,11 +355,14 @@ st.markdown("<div class='section-title'>分析結果サマリー</div>", unsafe_
 m1, m2, m3, m4, m5 = st.columns(5)
 
 metrics = [
-    (f"¥{ltv_val:,.0f}", f"LTV∞（粗利ベース・GPM {gpm:.0%}）"),
+    (f"¥{ltv_rev:,.0f}", "LTV∞（売上ベース）"),
     (f"¥{cac_upper:,.0f}", f"CAC上限\n{cac_label}"),
-    (f"{k:.3f}", "Weibull k（形状）"),
-    (f"{lam:.1f}日", "Weibull λ（尺度）"),
-    (f"{r2:.3f}", "R²（フィット精度）"),
+    (f"{k:.3f}", f"Weibull k（形状）
+{k_interp}"),
+    (f"{lam:.1f}日", f"Weibull λ（尺度）
+{lam_interp}"),
+    (f"{r2:.3f}", f"R²（フィット精度）
+{r2_interp}"),
 ]
 for col, (val, label) in zip([m1,m2,m3,m4,m5], metrics):
     with col:
