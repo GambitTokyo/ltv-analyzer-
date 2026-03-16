@@ -678,67 +678,63 @@ st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 st.markdown("<div class='section-title'>🤖 AIに質問するプロンプト</div>", unsafe_allow_html=True)
 st.markdown("<div class='help-box'>この結果の読み方や戦略への活用方法がわからない場合は、以下のプロンプトをClaude・ChatGPT・Geminiにコピペしてください。</div>", unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["📊 結果の読み方", "📈 マーケ戦略への活用", "⚠️ 精度の検証"])
+tab1, tab2, tab3 = st.tabs(["📊 分析結果の解釈", "📈 マーケティング意思決定", "⚠️ 分析の限界と改善"])
 
-prompt_base = f"""私はLTV分析ツールを使い、以下の結果を得ました。
+dormancy_label = "なし（解約日ベース）" if dormancy_days is None else f"{dormancy_days}日"
+churned_count  = int(df['event'].sum())
+active_count   = int((df['event']==0).sum())
+churn_rate     = churned_count / len(df) * 100
+k_pattern      = "初期集中型（契約直後の離脱が多い）" if k < 1 else "逓増型（時間とともに離脱が増える）"
+
+prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル）を使い、以下の結果を得ました。
 
 【分析結果】
-・顧客数: {len(df):,}件（うち解約済み: {df['event'].sum():,}件）
-・平均日次ARPU（売上ベース）: ¥{arpu_daily:,.2f}
-・粗利率（GPM）: {gpm:.1%}
-・平均日次GP（粗利ベース）: ¥{gp_daily:,.2f}
-・LTV∞（売上ベース）: ¥{ltv_rev:,.0f}
-・LTV∞（粗利ベース）: ¥{ltv_val:,.0f}
-・CAC上限 ({cac_label}): ¥{cac_upper:,.0f}
-・Weibull 形状パラメータ k: {k:.4f}
-・Weibull 尺度パラメータ λ: {lam:.1f}日
-・R²（フィット精度）: {r2:.4f}
-・観測期間上限: {horizon_days}日\n・分析手法: Kaplan-Meier法 + Weibullモデルによる生存分析"""
+・ビジネスタイプ: {business_type} / 休眠判定: {dormancy_label}
+・顧客数: {len(df):,}件（解約済み: {churned_count:,}件 / 継続中: {active_count:,}件 / 解約率: {churn_rate:.1f}%）
+・平均日次ARPU（売上）: ¥{arpu_daily:,.2f} / 平均日次GP（粗利）: ¥{gp_daily:,.2f} / GPM: {gpm:.1%}
+・LTV∞（売上ベース）: ¥{ltv_rev:,.0f} / LTV∞（粗利ベース）: ¥{ltv_val:,.0f}
+・CAC上限（{cac_label}）: ¥{cac_upper:,.0f}
+・Weibull k（形状）: {k:.4f} → {k_pattern}
+・Weibull λ（尺度）: {lam:.1f}日 / R²（フィット精度）: {r2:.4f}
+・分析手法: Kaplan-Meier法 + Weibullモデルによる生存分析"""
+
+copy_html = """<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
+📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
+</div>"""
 
 with tab1:
-    p1 = prompt_base + """
+    p1 = prompt_base + f"""
 
-【質問】
-1. Weibullのkとλの値は何を意味していますか？このビジネスの顧客離脱パターンはどう解釈すればよいですか？
-2. LTV∞の値は適切な水準ですか？
-3. R²の値からフィット精度はどう評価できますか？
-4. この結果で特に注意すべき点があれば教えてください。"""
+【質問】―― 以下の数値を具体的に使って答えてください ――
+1. k={k:.4f}・λ={lam:.1f}日という値は、このビジネスの顧客離脱パターンをどう示していますか？k<1・k>1それぞれの意味と今回の値の解釈を教えてください。
+2. 解約率{churn_rate:.1f}%（解約{churned_count:,}件・継続{active_count:,}件）という比率から、このビジネスの健全性をどう評価しますか？
+3. LTV∞（売上）¥{ltv_rev:,.0f}に対してCAC上限¥{cac_upper:,.0f}という比率は適切ですか？業界水準と比較して教えてください。
+4. R²={r2:.4f}のフィット精度はWeibull分析として許容範囲ですか？この値が示す信頼性の限界を教えてください。"""
     st.code(p1, language=None)
-    st.markdown("""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
-📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
-</div>""", unsafe_allow_html=True)
+    st.markdown(copy_html, unsafe_allow_html=True)
 
 with tab2:
     p2 = prompt_base + f"""
-・観測期間: {horizon_days}日
 
-【質問】
-1. このLTV∞とCAC上限をもとに、広告予算の上限をどう設定すべきですか？
-2. 顧客獲得チャネル別にROIを評価するには何が必要ですか？
-3. LTVを高めるために優先すべき施策は何ですか？
-4. このビジネスに最適なLTV:CAC比率の目安を教えてください。"""
+【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
+1. CAC上限¥{cac_upper:,.0f}（粗利ベースLTV÷{cac_n}）をもとに、CPAとROASの目標値をどう設定すべきですか？計算式も示してください。
+2. λ={lam:.1f}日（典型的な継続期間）を踏まえると、契約後何日目にリテンション施策を打つのが最も効果的ですか？推奨タイミングと施策内容を教えてください。
+3. ARPU_daily¥{arpu_daily:,.2f}・LTV∞¥{ltv_rev:,.0f}の水準で費用対効果的に合いやすい広告チャネルはどれですか？CPAとの関係で説明してください。
+4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
-    st.markdown("""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
-📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
-</div>""", unsafe_allow_html=True)
+    st.markdown(copy_html, unsafe_allow_html=True)
 
 with tab3:
-    dormancy_label = "なし（解約日ベース）" if dormancy_days is None else f"{dormancy_days}日"
     p3 = prompt_base + f"""
 
-【質問】
-1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？
-2. R²の値は十分ですか？改善するにはどうすればよいですか？
-3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？
-4. セグメント分割（プラン別・属性別）をするメリットとデメリットを教えてください。
-5. 休眠判定を{dormancy_label}に設定しています。判定日数が短いとARPUは高くなる一方チャーン率も上がり、長いと逆になります。このビジネスに最適な休眠判定日数はどう決めればよいですか？"""
+【質問】―― モデルの信頼性・限界・改善策を具体的に答えてください ――
+1. {len(df):,}件・解約{churned_count:,}件のサンプルサイズでWeibull推定の信頼区間はどの程度ですか？十分なサンプル数の目安を教えてください。
+2. k={k:.4f}はWeibull分布の単調ハザード率の仮定を満たしていますか？仮定が崩れる典型例とチェック方法を教えてください。
+3. R²={r2:.4f}を改善するにはどうすればよいですか？データ量・期間・外れ値処理の観点から具体的に教えてください。
+4. 休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。
+5. セグメント別（プラン・属性・獲得チャネル）に分析した場合、k・λ・LTVにどんな差が出やすいですか？優先すべき分析軸を教えてください。"""
     st.code(p3, language=None)
-    st.markdown("""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
-📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
-</div>""", unsafe_allow_html=True)
+    st.markdown(copy_html, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
 # Export buttons
