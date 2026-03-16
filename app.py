@@ -323,13 +323,11 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### 💰 CAC上限の算出")
-    cac_mode = st.radio("算出方法", ['LTV ÷ N', 'LTV : CAC = N : 1', '回収期間（月）'])
-    if cac_mode == 'LTV ÷ N':
-        cac_n = st.slider("N（分母）", 1.0, 10.0, 3.0, 0.5)
-        cac_label = f"LTV ÷ {cac_n}"
-    elif cac_mode == 'LTV : CAC = N : 1':
-        cac_n = st.slider("N", 1.0, 10.0, 3.0, 0.5)
+    cac_mode = st.radio("算出方法", ['LTV : CAC = N : 1', '回収期間（月）'])
+    if cac_mode == 'LTV : CAC = N : 1':
+        cac_n = st.slider("N（LTV:CAC = N:1）", 1.0, 10.0, 3.0, 0.5)
         cac_label = f"LTV:CAC = {cac_n}:1"
+        st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV ÷ 3")
     else:
         cac_n = st.slider("回収期間（月）", 1, 36, 12)
         cac_label = f"{cac_n}ヶ月回収"
@@ -800,7 +798,7 @@ with tab3:
 1. {len(df):,}件・解約{churned_count:,}件のサンプルサイズでWeibull推定の信頼区間はどの程度ですか？十分なサンプル数の目安を教えてください。
 2. k={k:.4f}はWeibull分布の単調ハザード率の仮定を満たしていますか？仮定が崩れる典型例とチェック方法を教えてください。
 3. R²={r2:.4f}を改善するにはどうすればよいですか？データ量・期間・外れ値処理の観点から具体的に教えてください。
-4. 休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。
+{"4. 解約日ベースで分析していますが、解約データの欠損や遅延がある場合にLTV推定にどんな影響が出ますか？" if dormancy_days is None else f"4. 休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"}
 """
     st.code(p3, language=None)
     st.markdown(copy_html, unsafe_allow_html=True)
@@ -1054,12 +1052,13 @@ with exp2:
         add_bg(s6, prs)
         txbox(s6, 'AIプロンプト ③  精度の検証', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
         txbox(s6, 'Claude / ChatGPT / Gemini にコピペしてください', 0.5, 0.8, 12, 0.3, size=9, color=GRAY)
+        dormancy_q = "4. 解約日ベースで分析していますが、解約データの欠損や遅延がある場合にLTV推定にどんな影響が出ますか？" if dormancy_days is None else f"4. 休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"
         p3_text = (
             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
             f"1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？\n"
             f"2. R²={r2:.4f}は十分ですか？改善するにはどうすればよいですか？\n"
             f"3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？\n"
-            f"4. セグメント分割（プラン別・属性別）をするメリットとデメリットを教えてください。"
+            f"{dormancy_q}"
         )
         pb3 = s6.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
         pb3.fill.solid(); pb3.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
@@ -1172,7 +1171,7 @@ with exp3:
              f"1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？\n"
              f"2. R²={r2:.4f}は十分ですか？改善するにはどうすればよいですか？\n"
              f"3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？\n"
-             f"4. 休眠判定の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"),
+             f"4. {"解約日ベースで分析していますが、解約データの欠損や遅延がある場合にLTV推定にどんな影響が出ますか？" if dormancy_days is None else f"休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"}"),
         ]
 
         story.append(Paragraph('AIへの質問プロンプト', h2_style))
