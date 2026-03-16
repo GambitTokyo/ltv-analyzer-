@@ -31,7 +31,11 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     border-radius: 12px;
     padding: 20px 16px;
     text-align: center;
-    height: 100%;
+    height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 .metric-value {
     font-family: 'Syne', sans-serif;
@@ -564,16 +568,24 @@ cac_upper = ltv_val / cac_n
 st.markdown("<div class='section-title'>分析結果サマリー</div>", unsafe_allow_html=True)
 m1, m2, m3, m4, m5 = st.columns(5)
 
+k_desc  = "k<1: 初期離脱が多い" if k < 1 else "k>1: 時間とともに離脱増"
 metrics = [
-    (f"¥{ltv_rev:,.0f}", "LTV∞（売上ベース）"),
-    (f"¥{cac_upper:,.0f}", f"CAC上限 {cac_label}"),
-    (f"{k:.3f}", "Weibull k（形状） k<1:初期離脱多い / k>1:時間とともに離脱増"),
-    (f"{lam:.1f}日", "Weibull λ（尺度） 顧客の典型的な生存日数の目安"),
-    (f"{r2:.3f}", "R² 1.0に近いほど精度高い（0.9以上が理想）"),
+    (f"¥{ltv_rev:,.0f}", "LTV∞",       "売上ベース"),
+    (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}"),
+    (f"{k:.3f}",           "Weibull k", f"形状パラメータ / {k_desc}"),
+    (f"{lam:.1f}日",       "Weibull λ", "尺度 / 典型的な継続期間の目安"),
+    (f"{r2:.3f}",          "R²",        "0.9以上が理想 / 1.0が最高精度"),
 ]
-for col, (val, label) in zip([m1,m2,m3,m4,m5], metrics):
+for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
     with col:
-        st.markdown(f"<div class='metric-card'><div class='metric-value'>{val}</div><div class='metric-label'>{label}</div></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='metric-card'>"
+            f"<div class='metric-value'>{val}</div>"
+            f"<div class='metric-label' style='font-size:0.72rem; color:#56b4d3; margin-top:6px; letter-spacing:0.05em;'>{title}</div>"
+            f"<div class='metric-label' style='font-size:0.65rem; color:#444; margin-top:3px; letter-spacing:0.03em; line-height:1.4;'>{desc}</div>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
 
 # R² warning
 if r2 < 0.85:
@@ -732,7 +744,7 @@ with tab3:
 2. k={k:.4f}はWeibull分布の単調ハザード率の仮定を満たしていますか？仮定が崩れる典型例とチェック方法を教えてください。
 3. R²={r2:.4f}を改善するにはどうすればよいですか？データ量・期間・外れ値処理の観点から具体的に教えてください。
 4. 休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。
-5. セグメント別（プラン・属性・獲得チャネル）に分析した場合、k・λ・LTVにどんな差が出やすいですか？優先すべき分析軸を教えてください。"""
+"""
     st.code(p3, language=None)
     st.markdown(copy_html, unsafe_allow_html=True)
 
@@ -1104,7 +1116,7 @@ with exp3:
              f"1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？\n"
              f"2. R²={r2:.4f}は十分ですか？改善するにはどうすればよいですか？\n"
              f"3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？\n"
-             f"4. セグメント分割（プラン別・属性別）をするメリットとデメリットを教えてください。"),
+             f"4. 休眠判定の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"),
         ]
 
         story.append(Paragraph('AIへの質問プロンプト', h2_style))
