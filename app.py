@@ -493,9 +493,11 @@ with tab1:
 2. LTV∞の値は適切な水準ですか？
 3. R²の値からフィット精度はどう評価できますか？
 4. この結果で特に注意すべき点があれば教えてください。"""
-    st.markdown(f"<div class='prompt-box'>{p1}</div>", unsafe_allow_html=True)
-    st.button("📋 コピー（結果の読み方）", on_click=lambda: st.write(""), key="copy1",
-              help="上のテキストを選択してCtrl+CでコピーできますClaude/ChatGPT/Geminiに貼り付けてください")
+    st.code(p1, language=None)
+    st.markdown("""
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
+📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
+</div>""", unsafe_allow_html=True)
 
 with tab2:
     p2 = prompt_base + f"""
@@ -506,7 +508,11 @@ with tab2:
 2. 顧客獲得チャネル別にROIを評価するには何が必要ですか？
 3. LTVを高めるために優先すべき施策は何ですか？
 4. このビジネスに最適なLTV:CAC比率の目安を教えてください。"""
-    st.markdown(f"<div class='prompt-box'>{p2}</div>", unsafe_allow_html=True)
+    st.code(p2, language=None)
+    st.markdown("""
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
+📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
+</div>""", unsafe_allow_html=True)
 
 with tab3:
     p3 = prompt_base + """
@@ -516,7 +522,11 @@ with tab3:
 2. R²の値は十分ですか？改善するにはどうすればよいですか？
 3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？
 4. セグメント分割（プラン別・属性別）をするメリットとデメリットを教えてください。"""
-    st.markdown(f"<div class='prompt-box'>{p3}</div>", unsafe_allow_html=True)
+    st.code(p3, language=None)
+    st.markdown("""
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
+📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
+</div>""", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
 # Export buttons
@@ -697,24 +707,67 @@ with exp2:
         note_text = f"k={k:.3f} (形状) ／ λ={lam:.1f}日 (尺度) ／ R²={r2:.3f}  ※ k<1: 初期離脱が多い、k>1: 時間とともに離脱が増加"
         txbox(s3, note_text, 0.4, 5.1, 12.5, 0.5, size=9, color=GRAY)
 
-        # ── Slide 4: AI Prompt ──
+        # 共通データ部分
+        pdata = (
+            f"【分析結果】\n"
+            f"顧客数: {len(df):,}件（解約済み: {df['event'].sum():,}件）\n"
+            f"平均日次ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
+            f"LTV∞ 売上ベース: ¥{ltv_rev:,.0f} / 粗利ベース: ¥{ltv_val:,.0f}\n"
+            f"CAC上限 ({cac_label}): ¥{cac_upper:,.0f}\n"
+            f"Weibull k={k:.4f} / λ={lam:.1f}日 / R²={r2:.4f}\n"
+            f"分析手法: Kaplan-Meier法 + Weibullモデル"
+        )
+
+        # ── Slide 4: AI Prompt 1 - 結果の読み方 ──
         s4 = prs.slides.add_slide(blank)
         add_bg(s4, prs)
-        txbox(s4, 'AIへの質問プロンプト', 0.5, 0.3, 12, 0.6, size=22, bold=True, color=WHITE)
-        txbox(s4, 'この結果についてClaude / ChatGPT / Geminiに質問する際のプロンプトです。コピペしてご活用ください。', 0.5, 1.0, 12, 0.4, size=10, color=GRAY)
-
-        prompt_short = (
-            f"LTV分析の結果です。\n"
-            f"顧客数: {len(df):,}件、LTV∞: ¥{ltv_val:,.0f}、CAC上限({cac_label}): ¥{cac_upper:,.0f}\n"
-            f"Weibull k={k:.4f}、λ={lam:.1f}日、R²={r2:.4f}\n\n"
-            f"1. kとλの値はどう解釈すればよいですか？\n"
-            f"2. このLTVとCACをもとに広告予算をどう設定すべきですか？\n"
-            f"3. LTVを高めるために優先すべき施策は何ですか？"
+        txbox(s4, 'AIプロンプト ①  結果の読み方', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
+        txbox(s4, 'Claude / ChatGPT / Gemini にコピペしてください', 0.5, 0.8, 12, 0.3, size=9, color=GRAY)
+        p1_text = (
+            f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
+            f"1. Weibullのkとλの値は何を意味していますか？顧客離脱パターンはどう解釈すればよいですか？\n"
+            f"2. LTV∞（売上ベース¥{ltv_rev:,.0f}）の値は適切な水準ですか？\n"
+            f"3. R²={r2:.4f}からフィット精度はどう評価できますか？\n"
+            f"4. この結果で特に注意すべき点があれば教えてください。"
         )
-        pbox = s4.shapes.add_shape(1, Inches(0.5), Inches(1.6), Inches(12.3), Inches(4.5))
-        pbox.fill.solid(); pbox.fill.fore_color.rgb = RGBColor(0x14,0x14,0x14)
-        pbox.line.color.rgb = GOLD
-        txbox(s4, prompt_short, 0.7, 1.75, 11.9, 4.2, size=10, color=WHITE)
+        pb1 = s4.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
+        pb1.fill.solid(); pb1.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+        pb1.line.color.rgb = GOLD
+        txbox(s4, p1_text, 0.65, 1.35, 12.0, 5.6, size=9, color=WHITE)
+
+        # ── Slide 5: AI Prompt 2 - マーケ戦略 ──
+        s5 = prs.slides.add_slide(blank)
+        add_bg(s5, prs)
+        txbox(s5, 'AIプロンプト ②  マーケ戦略への活用', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
+        txbox(s5, 'Claude / ChatGPT / Gemini にコピペしてください', 0.5, 0.8, 12, 0.3, size=9, color=GRAY)
+        p2_text = (
+            f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n観測期間: {horizon_days}日\n\n【質問】\n"
+            f"1. このLTV∞とCAC上限をもとに、広告予算の上限をどう設定すべきですか？\n"
+            f"2. 顧客獲得チャネル別にROIを評価するには何が必要ですか？\n"
+            f"3. LTVを高めるために優先すべき施策は何ですか？\n"
+            f"4. このビジネスに最適なLTV:CAC比率の目安を教えてください。"
+        )
+        pb2 = s5.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
+        pb2.fill.solid(); pb2.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+        pb2.line.color.rgb = GOLD
+        txbox(s5, p2_text, 0.65, 1.35, 12.0, 5.6, size=9, color=WHITE)
+
+        # ── Slide 6: AI Prompt 3 - 精度の検証 ──
+        s6 = prs.slides.add_slide(blank)
+        add_bg(s6, prs)
+        txbox(s6, 'AIプロンプト ③  精度の検証', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
+        txbox(s6, 'Claude / ChatGPT / Gemini にコピペしてください', 0.5, 0.8, 12, 0.3, size=9, color=GRAY)
+        p3_text = (
+            f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
+            f"1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？\n"
+            f"2. R²={r2:.4f}は十分ですか？改善するにはどうすればよいですか？\n"
+            f"3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？\n"
+            f"4. セグメント分割（プラン別・属性別）をするメリットとデメリットを教えてください。"
+        )
+        pb3 = s6.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
+        pb3.fill.solid(); pb3.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+        pb3.line.color.rgb = GOLD
+        txbox(s6, p3_text, 0.65, 1.35, 12.0, 5.6, size=9, color=WHITE)
 
         pptx_buf = io.BytesIO()
         prs.save(pptx_buf)
@@ -788,6 +841,51 @@ with exp3:
         story.append(Paragraph('Weibull Linearization Plot', h2_style))
         buf2.seek(0)
         story.append(Image(buf2, width=15*cm, height=9*cm))
+
+        # AI Prompts
+        pdata_pdf = (
+            f"顧客数: {len(df):,}件（解約済み: {df['event'].sum():,}件）\n"
+            f"平均日次ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
+            f"LTV∞ 売上ベース: ¥{ltv_rev:,.0f} / 粗利ベース: ¥{ltv_val:,.0f}\n"
+            f"CAC上限 ({cac_label}): ¥{cac_upper:,.0f}\n"
+            f"Weibull k={k:.4f} / λ={lam:.1f}日 / R²={r2:.4f}"
+        )
+        prompt_style = ParagraphStyle('P', fontName='HeiseiMin-W3', fontSize=8,
+                                      textColor=colors.HexColor('#111111'),
+                                      backColor=colors.HexColor('#f0f8fb'),
+                                      borderPadding=8, spaceAfter=4,
+                                      leftIndent=8, rightIndent=8)
+        label_style = ParagraphStyle('L', fontName='HeiseiMin-W3', fontSize=8,
+                                     textColor=colors.HexColor('#1d6fa4'), spaceAfter=2, spaceBefore=10)
+
+        prompts_pdf = [
+            ('AIプロンプト① 結果の読み方',
+             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n\n【質問】\n"
+             f"1. Weibullのkとλの値は何を意味していますか？顧客離脱パターンはどう解釈すればよいですか？\n"
+             f"2. LTV∞（売上ベース¥{ltv_rev:,.0f}）の値は適切な水準ですか？\n"
+             f"3. R²={r2:.4f}からフィット精度はどう評価できますか？\n"
+             f"4. この結果で特に注意すべき点があれば教えてください。"),
+            ('AIプロンプト② マーケ戦略への活用',
+             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n観測期間: {horizon_days}日\n\n【質問】\n"
+             f"1. このLTV∞とCAC上限をもとに、広告予算の上限をどう設定すべきですか？\n"
+             f"2. 顧客獲得チャネル別にROIを評価するには何が必要ですか？\n"
+             f"3. LTVを高めるために優先すべき施策は何ですか？\n"
+             f"4. このビジネスに最適なLTV:CAC比率の目安を教えてください。"),
+            ('AIプロンプト③ 精度の検証',
+             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n\n【質問】\n"
+             f"1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？\n"
+             f"2. R²={r2:.4f}は十分ですか？改善するにはどうすればよいですか？\n"
+             f"3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？\n"
+             f"4. セグメント分割（プラン別・属性別）をするメリットとデメリットを教えてください。"),
+        ]
+
+        story.append(Paragraph('AIへの質問プロンプト', h2_style))
+        story.append(Paragraph('以下のプロンプトをClaude / ChatGPT / Gemini にコピペしてご活用ください。', body_style))
+        for label, prompt_text in prompts_pdf:
+            story.append(Paragraph(label, label_style))
+            for line in prompt_text.split('\n'):
+                story.append(Paragraph(line if line else ' ', prompt_style))
+            story.append(Spacer(1, 0.2*cm))
 
         doc.build(story)
         pdf_buf.seek(0)
