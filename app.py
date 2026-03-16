@@ -571,7 +571,7 @@ m1, m2, m3, m4, m5 = st.columns(5)
 k_desc  = "k<1: 初期離脱が多い" if k < 1 else "k>1: 時間とともに離脱増"
 metrics = [
     (f"¥{ltv_rev:,.0f}", "LTV∞",       "売上ベース"),
-    (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}"),
+    (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
     (f"{k:.3f}",           "Weibull k", f"形状パラメータ / {k_desc}"),
     (f"{lam:.1f}日",       "Weibull λ", "尺度 / 典型的な継続期間の目安"),
     (f"{r2:.3f}",          "R²",        "0.9以上が理想 / 1.0が最高精度"),
@@ -677,9 +677,9 @@ for h in horizons:
     lh = ltv_horizon(k, lam, arpu_daily, h)
     rows.append({
         'ホライズン': f'{h//365}年' if h >= 365 and h % 365 == 0 else f'{h}日',
-        '暫定LTV': f'¥{lh:,.0f}',
-        'LTV∞比': f'{lh/ltv_val*100:.1f}%',
-        f'CAC上限 ({cac_label})': f'¥{lh/cac_n:,.0f}',
+        '暫定LTV（売上ベース）': f'¥{lh:,.0f}',
+        'LTV∞比（売上）': f'{lh/ltv_rev*100:.1f}%',
+        f'CAC上限（粗利ベース）({cac_label})': f'¥{lh/cac_n:,.0f}',
     })
 st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
@@ -1038,7 +1038,7 @@ with exp2:
         txbox(s5, 'AIプロンプト ②  マーケ戦略への活用', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
         txbox(s5, 'Claude / ChatGPT / Gemini にコピペしてください', 0.5, 0.8, 12, 0.3, size=9, color=GRAY)
         p2_text = (
-            f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n観測期間: {horizon_days}日\n\n【質問】\n"
+            f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
             f"1. このLTV∞とCAC上限をもとに、広告予算の上限をどう設定すべきですか？\n"
             f"2. 顧客獲得チャネル別にROIを評価するには何が必要ですか？\n"
             f"3. LTVを高めるために優先すべき施策は何ですか？\n"
@@ -1133,11 +1133,11 @@ with exp3:
 
         story.append(Paragraph('Survival Curve', h2_style))
         buf1.seek(0)
-        story.append(Image(buf1, width=15*cm, height=9*cm))
+        story.append(Image(buf1, width=13*cm, height=7.5*cm))
 
         story.append(Paragraph('Weibull Linearization Plot', h2_style))
         buf2.seek(0)
-        story.append(Image(buf2, width=15*cm, height=9*cm))
+        story.append(Image(buf2, width=13*cm, height=7.5*cm))
 
         # AI Prompts
         pdata_pdf = (
@@ -1149,8 +1149,7 @@ with exp3:
         )
         prompt_style = ParagraphStyle('P', fontName='HeiseiMin-W3', fontSize=8,
                                       textColor=colors.HexColor('#111111'),
-                                      backColor=colors.HexColor('#f0f8fb'),
-                                      borderPadding=8, spaceAfter=4,
+                                      spaceAfter=2, leading=12,
                                       leftIndent=8, rightIndent=8)
         label_style = ParagraphStyle('L', fontName='HeiseiMin-W3', fontSize=8,
                                      textColor=colors.HexColor('#1d6fa4'), spaceAfter=2, spaceBefore=10)
@@ -1163,7 +1162,7 @@ with exp3:
              f"3. R²={r2:.4f}からフィット精度はどう評価できますか？\n"
              f"4. この結果で特に注意すべき点があれば教えてください。"),
             ('AIプロンプト② マーケ戦略への活用',
-             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n観測期間: {horizon_days}日\n\n【質問】\n"
+             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n\n【質問】\n"
              f"1. このLTV∞とCAC上限をもとに、広告予算の上限をどう設定すべきですか？\n"
              f"2. 顧客獲得チャネル別にROIを評価するには何が必要ですか？\n"
              f"3. LTVを高めるために優先すべき施策は何ですか？\n"
