@@ -1351,7 +1351,8 @@ if segment_cols_input.strip():
                         'セグメント': seg_val,
                         '顧客数': len(df_seg),
                         'LTV∞（売上）': ltv_rev_s,
-                        'CAC上限': cac_s,
+                        'LTV∞（粗利）': ltv_gp_s,
+                        'CAC上限（粗利）': cac_s,
                         '総ポテンシャル': total_ltv_s,
                         'k': k_s,
                         'λ（日）': lam_s,
@@ -1412,7 +1413,8 @@ if segment_cols_input.strip():
             # 結果テーブル
             display_df = seg_df.copy()
             display_df['LTV∞（売上）'] = display_df['LTV∞（売上）'].apply(lambda x: f'¥{x:,.0f}')
-            display_df['CAC上限'] = display_df['CAC上限'].apply(lambda x: f'¥{x:,.0f}')
+            display_df['LTV∞（粗利）'] = display_df['LTV∞（粗利）'].apply(lambda x: f'¥{x:,.0f}')
+            display_df['CAC上限（粗利）'] = display_df['CAC上限（粗利）'].apply(lambda x: f'¥{x:,.0f}')
             display_df['総ポテンシャル'] = display_df['総ポテンシャル'].apply(lambda x: f'¥{x:,.0f}')
             display_df['k'] = display_df['k'].apply(lambda x: f'{x:.3f}')
             display_df['λ（日）'] = display_df['λ（日）'].apply(lambda x: f'{x:.1f}')
@@ -1430,11 +1432,11 @@ if segment_cols_input.strip():
                 best_seg = seg_df.iloc[0]
                 avg_ltv  = seg_df['LTV∞（売上）'].mean()
                 premium  = (best_seg['LTV∞（売上）'] - avg_ltv) / avg_ltv * 100
-                cac_best = best_seg['CAC上限']
+                cac_best = best_seg['CAC上限（粗利）']
                 cac_avg  = ltv_val / cac_n
 
                 if cac_known:
-                    ltv_cac_ratio = best_seg['LTV∞（売上）'] * gpm / cac_input
+                    ltv_cac_ratio = best_seg['LTV∞（粗利）'] / cac_input
                     ratio_judge = "✓ 健全" if ltv_cac_ratio >= 3.0 else "⚠️ 要改善（推奨3:1以上）"
                     efficiency_str = f"LTV:CAC比率（粗利ベース）= {ltv_cac_ratio:.1f}:1　{ratio_judge}"
                     cac_uplift = ((cac_best - cac_avg) / cac_avg * 100)
