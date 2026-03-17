@@ -10,6 +10,7 @@ import io
 import warnings
 import calendar
 import plotly.graph_objects as go
+from scipy.optimize import brentq
 warnings.filterwarnings('ignore')
 
 # ── Page config ──────────────────────────────────────────────
@@ -96,49 +97,7 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 
 # ── Matplotlib theme ──────────────────────────────────────────
 plt.style.use('dark_background')
-
-import matplotlib.font_manager as _fm
-import urllib.request as _ur, os as _os, tempfile as _tf
-
-@st.cache_resource
-def _load_jp_font():
-    # Try multiple font sources
-    candidates = ['Noto Sans CJK JP', 'Noto Sans CJK', 'NotoSansCJK', 'IPAexGothic', 'Hiragino Sans', 'Yu Gothic']
-    for f in _fm.fontManager.ttflist:
-        if any(x in f.name for x in candidates):
-            return f.name, f.fname
-    # Download from GitHub
-    urls = [
-        ("https://github.com/googlefonts/noto-cjk/raw/main/Sans/SubsetOTF/JP/NotoSansCJKjp-Regular.otf", "NotoSansCJKjp.otf"),
-        ("https://moji.or.jp/wp-content/ipafont/IPAexfont/ipaexg00401.zip", None),
-    ]
-    for url, fname in urls[:1]:
-        try:
-            fp = _os.path.join(_tf.gettempdir(), fname)
-            if not _os.path.exists(fp):
-                _ur.urlretrieve(url, fp)
-            _fm.fontManager.addfont(fp)
-            prop = _fm.FontProperties(fname=fp)
-            return prop.get_name(), fp
-        except Exception:
-            pass
-    # apt-get fallback
-    try:
-        import subprocess
-        subprocess.run(['apt-get','install','-y','-q','fonts-noto-cjk'], capture_output=True)
-        _fm.fontManager.__init__()
-        for f in _fm.fontManager.ttflist:
-            if 'Noto Sans CJK' in f.name:
-                return f.name, f.fname
-    except Exception:
-        pass
-    return 'DejaVu Sans', None
-
-_jp_font_name, _jp_font_path = _load_jp_font()
-rcParams['font.family'] = _jp_font_name
-if _jp_font_path:
-    from matplotlib import font_manager as _fm2
-    _fm2.fontManager.addfont(_jp_font_path)
+rcParams['font.family'] = 'DejaVu Sans'
 for _k, _v in {
     'figure.facecolor': '#111820', 'axes.facecolor': '#111820',
     'axes.edgecolor': '#1a3040', 'axes.labelcolor': '#7ab8cc',
@@ -787,7 +746,6 @@ pct_2y  = ltv_2y  / ltv_rev * 100
 pct_3y  = ltv_3y  / ltv_rev * 100
 
 # CAC回収期間を逆算（何日でCAC上限を回収できるか）
-from scipy.optimize import brentq
 try:
     cac_recover_days = brentq(
         lambda h: ltv_horizon(k, lam, arpu_daily, h) - cac_upper,
