@@ -1268,7 +1268,7 @@ with exp2:
                 except Exception:
                     pass
 
-        # 全セグメント詳細スライド（暫定LTV＋生存曲線）
+        # 全セグメント詳細スライド（4分割レイアウト）
         if segment_cols_input.strip():
             seg_cols_all = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
             for sc_all in seg_cols_all:
@@ -1279,57 +1279,110 @@ with exp2:
                         continue
                     try:
                         km_sv_all = compute_km(df_sv_all)
-                        k_sv_all, lam_sv_all, r2_sv_all, _ = fit_weibull(km_sv_all)
-                        if k_sv_all is None: continue
-                        arpu_sv_all = df_sv_all['arpu_daily'].mean()
-                        ltv_inf_sv_all = lam_sv_all * __import__('scipy').special.gamma(1 + 1/k_sv_all) * arpu_sv_all
+                        k_sv, lam_sv, r2_sv, _ = fit_weibull(km_sv_all)
+                        if k_sv is None: continue
+                        arpu_sv = df_sv_all['arpu_daily'].mean()
+                        ltv_inf_sv = lam_sv * __import__('scipy').special.gamma(1 + 1/k_sv) * arpu_sv
 
                         s_all = prs.slides.add_slide(blank)
                         add_bg(s_all, prs)
-                        txbox(s_all, f'{sc_all}：{str(sv_all)}　詳細分析', 0.5, 0.2, 12.3, 0.5, size=16, bold=True, color=WHITE)
-                        txbox(s_all, f'顧客数 {len(df_sv_all):,}件　LTV∞（売上）¥{ltv_inf_sv_all:,.0f}　k={k_sv_all:.3f}　λ={lam_sv_all:.1f}日　R²={r2_sv_all:.3f}', 0.5, 0.75, 12.3, 0.3, size=9, color=GRAY)
 
-                        # 暫定LTVテーブル
+                        # タイトル
+                        txbox(s_all, f'{sc_all}：{str(sv_all)}　詳細分析', 0.5, 0.1, 12.3, 0.45, size=15, bold=True, color=WHITE)
+                        txbox(s_all, f'顧客数 {len(df_sv_all):,}件　LTV∞（売上）¥{ltv_inf_sv:,.0f}　k={k_sv:.3f}　λ={lam_sv:.1f}日　R²={r2_sv:.3f}', 0.5, 0.58, 12.3, 0.28, size=8, color=GRAY)
+
+                        # ── 上段左：生存曲線 ──
+                        import matplotlib.pyplot as plt_sv1
+                        fig_sv1, ax_sv1 = plt_sv1.subplots(figsize=(5.5, 3.2))
+                        fig_sv1.patch.set_facecolor('#111820')
+                        ax_sv1.set_facecolor('#111820')
+                        ax_sv1.step(km_sv_all['t'], km_sv_all['S'], color='#56b4d3', lw=1.5, label='KM Curve (Observed)')
+                        t_ra = km_sv_all['t'].values
+                        ax_sv1.plot(t_ra, [float(weibull_s(t, k_sv, lam_sv)) for t in t_ra],
+                                   '--', color='#a8dadc', lw=1.2, label='Weibull Fit')
+                        ax_sv1.set_xlabel('Days', color='#888', fontsize=8)
+                        ax_sv1.set_ylabel('Survival Rate S(t)', color='#888', fontsize=8)
+                        ax_sv1.tick_params(colors='#666', labelsize=7)
+                        ax_sv1.legend(fontsize=7, framealpha=0.2)
+                        ax_sv1.grid(True, alpha=0.2)
+                        ax_sv1.set_title('Survival Curve', color='#ccc', fontsize=9)
+                        fig_sv1.tight_layout()
+                        buf_sv1 = io.BytesIO()
+                        fig_sv1.savefig(buf_sv1, format='png', dpi=120, bbox_inches='tight', facecolor='#111820')
+                        buf_sv1.seek(0)
+                        plt_sv1.close()
+                        s_all.shapes.add_picture(buf_sv1, Inches(0.3), Inches(0.9), Inches(6.0), Inches(3.5))
+
+                        # ── 上段右：Weibull直線化プロット ──
+                        import numpy as np_sv2
+                        km_fit2 = km_sv_all[km_sv_all['S'] > 0]
+                        ln_t2 = np_sv2.log(km_fit2['t'].values.astype(float) + 1e-10)
+                        ln_neg2 = np_sv2.log(-np_sv2.log(km_fit2['S'].values.astype(float) + 1e-15))
+                        valid2 = np_sv2.isfinite(ln_t2) & np_sv2.isfinite(ln_neg2)
+                        ln_t2, ln_neg2 = ln_t2[valid2], ln_neg2[valid2]
+                        slope2, int2, _, _, _ = __import__('scipy').stats.linregress(ln_t2, ln_neg2)
+                        x_l2 = np_sv2.linspace(ln_t2.min(), ln_t2.max(), 100)
+
+                        fig_sv2, ax_sv2 = plt_sv1.subplots(figsize=(5.5, 3.2))
+                        fig_sv2.patch.set_facecolor('#111820')
+                        ax_sv2.set_facecolor('#111820')
+                        ax_sv2.scatter(ln_t2, ln_neg2, color='#56b4d3', s=18, alpha=0.75, label='Observed')
+                        ax_sv2.plot(x_l2, slope2 * x_l2 + int2, '--', color='#a8dadc', lw=1.5, label=f'R²={r2_sv:.3f}')
+                        ax_sv2.annotate(f'y = {slope2:.4f}x + {int2:.4f}', xy=(0.05, 0.93), xycoords='axes fraction', color='#777', fontsize=8)
+                        ax_sv2.set_xlabel('ln(t)', color='#888', fontsize=8)
+                        ax_sv2.set_ylabel('ln(−ln(S(t)))', color='#888', fontsize=8)
+                        ax_sv2.tick_params(colors='#666', labelsize=7)
+                        ax_sv2.legend(fontsize=7, framealpha=0.2)
+                        ax_sv2.grid(True, alpha=0.2)
+                        ax_sv2.set_title('Weibull Linearization Plot', color='#ccc', fontsize=9)
+                        fig_sv2.tight_layout()
+                        buf_sv2 = io.BytesIO()
+                        fig_sv2.savefig(buf_sv2, format='png', dpi=120, bbox_inches='tight', facecolor='#111820')
+                        buf_sv2.seek(0)
+                        plt_sv1.close()
+                        s_all.shapes.add_picture(buf_sv2, Inches(6.6), Inches(0.9), Inches(6.0), Inches(3.5))
+
+                        # ── 下段左：暫定LTVテーブル ──
                         cols_ha = ['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']
-                        col_xa = [0.5, 3.3, 7.0, 9.8]
+                        col_xa = [0.3, 1.9, 4.1, 5.4]
                         for cx, ch in zip(col_xa, cols_ha):
-                            txbox(s_all, ch, cx, 1.2, 3.0, 0.35, size=9, bold=True, color=GOLD)
-                        hl_a = s_all.shapes.add_shape(1, Inches(0.5), Inches(1.57), Inches(12.3), Inches(0.02))
+                            txbox(s_all, ch, cx, 4.55, 1.5, 0.3, size=7, bold=True, color=GOLD)
+                        hl_a = s_all.shapes.add_shape(1, Inches(0.3), Inches(4.85), Inches(6.0), Inches(0.02))
                         hl_a.fill.solid(); hl_a.fill.fore_color.rgb = GOLD; hl_a.line.fill.background()
-                        row_ya = 1.65
+                        row_ya = 4.92
                         for i_h, h in enumerate(horizons):
-                            lh_a = ltv_horizon(k_sv_all, lam_sv_all, arpu_sv_all, h)
+                            lh_a = ltv_horizon(k_sv, lam_sv, arpu_sv, h)
                             label_a = f'{h}日' if h < 365 else f'{h//365}年'
-                            row_vals_a = [label_a, f'¥{lh_a:,.0f}', f'{lh_a/ltv_inf_sv_all*100:.1f}%', f'¥{lh_a*gpm/cac_n:,.0f}']
-                            bg_a = s_all.shapes.add_shape(1, Inches(0.5), Inches(row_ya - 0.02), Inches(12.3), Inches(0.38))
+                            row_vals_a = [label_a, f'¥{lh_a:,.0f}', f'{lh_a/ltv_inf_sv*100:.1f}%', f'¥{lh_a*gpm/cac_n:,.0f}']
+                            bg_a = s_all.shapes.add_shape(1, Inches(0.3), Inches(row_ya - 0.02), Inches(6.0), Inches(0.32))
                             bg_a.fill.solid()
                             bg_a.fill.fore_color.rgb = RGBColor(0x1a,0x3a,0x4a) if i_h%2==0 else RGBColor(0x0d,0x1f,0x2d)
                             bg_a.line.fill.background()
                             for cx, rv in zip(col_xa, row_vals_a):
-                                txbox(s_all, rv, cx, row_ya, 3.0, 0.35, size=10, color=WHITE)
-                            row_ya += 0.4
+                                txbox(s_all, rv, cx, row_ya, 1.5, 0.3, size=8, color=WHITE)
+                            row_ya += 0.33
 
-                        # 生存曲線
-                        import matplotlib.pyplot as plt_pa
-                        fig_pa, ax_pa = plt_pa.subplots(figsize=(5, 3))
-                        fig_pa.patch.set_facecolor('#111820')
-                        ax_pa.set_facecolor('#111820')
-                        ax_pa.step(km_sv_all['t'], km_sv_all['S'], color='#56b4d3', lw=1.5, label='KM observed')
-                        t_ra = km_sv_all['t'].values
-                        ax_pa.plot(t_ra, [float(weibull_s(t, k_sv_all, lam_sv_all)) for t in t_ra],
-                                  '--', color='#a8dadc', lw=1.2, label=f'Weibull (R²={r2_sv_all:.3f})')
-                        ax_pa.set_xlabel('Days', color='#888', fontsize=8)
-                        ax_pa.set_ylabel('Survival Rate', color='#888', fontsize=8)
-                        ax_pa.tick_params(colors='#666', labelsize=7)
-                        ax_pa.legend(fontsize=7, framealpha=0.2)
-                        ax_pa.grid(True, alpha=0.2)
-                        ax_pa.set_title(f'Survival Curve: {str(sv_all)}', color='#ccc', fontsize=9)
-                        fig_pa.tight_layout()
-                        buf_pa = io.BytesIO()
-                        fig_pa.savefig(buf_pa, format='png', dpi=120, bbox_inches='tight', facecolor='#111820')
-                        buf_pa.seek(0)
-                        plt_pa.close()
-                        s_all.shapes.add_picture(buf_pa, Inches(0.5), Inches(4.55), Inches(12.3), Inches(2.7))
+                        # ── 下段右：コメント欄 ──
+                        comment_box = s_all.shapes.add_shape(1, Inches(6.6), Inches(4.55), Inches(6.0), Inches(2.85))
+                        comment_box.fill.solid(); comment_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+                        comment_box.line.color.rgb = GOLD
+                        k_desc_c = "初期離脱型（契約直後の離脱が多い）" if k_sv < 1 else "逓増離脱型（時間とともに離脱増）"
+                        ltv_1y_c = ltv_horizon(k_sv, lam_sv, arpu_sv, 365)
+                        ltv_2y_c = ltv_horizon(k_sv, lam_sv, arpu_sv, 730)
+                        pct_1y_c = ltv_1y_c / ltv_inf_sv * 100
+                        pct_2y_c = ltv_2y_c / ltv_inf_sv * 100
+                        k_desc_c = "初期離脱型" if k_sv < 1 else "逓増離脱型"
+                        comment_text = (
+                            "【分析コメント】\n"
+                            f"k={k_sv:.3f}（{k_desc_c}）\n"
+                            f"λ={lam_sv:.1f}日（約{lam_sv/365:.1f}年）\n\n"
+                            f"LTV∞（売上）：¥{ltv_inf_sv:,.0f}\n"
+                            f"CAC上限（粗利）：¥{ltv_inf_sv*gpm/cac_n:,.0f}\n\n"
+                            f"1年時点：LTV∞の{pct_1y_c:.1f}%（¥{ltv_1y_c:,.0f}）\n"
+                            f"2年時点：LTV∞の{pct_2y_c:.1f}%（¥{ltv_2y_c:,.0f}）"
+                        )
+                        txbox(s_all, comment_text, 6.65, 4.62, 5.85, 2.7, size=8, color=WHITE)
+
                     except Exception:
                         continue
 
@@ -1557,7 +1610,7 @@ with exp3:
                     except Exception:
                         pass
 
-                # 全セグメントの暫定LTV＋生存曲線
+                # 全セグメントの詳細分析（2グラフ横並び）
                 story.append(Paragraph(f'全セグメント詳細（{sc}）', h2_style))
                 for sv in sorted(seg_vals):
                     df_sv2 = df[df[sc] == sv]
@@ -1569,10 +1622,56 @@ with exp3:
                         if k_sv2 is None: continue
                         arpu_sv2 = df_sv2['arpu_daily'].mean()
                         ltv_inf_sv2 = lam_sv2 * __import__('scipy').special.gamma(1 + 1/k_sv2) * arpu_sv2
+
                         story.append(Paragraph(
                             f'{str(sv)}　（{len(df_sv2):,}件 / LTV∞ ¥{ltv_inf_sv2:,.0f} / k={k_sv2:.3f} / λ={lam_sv2:.1f}日 / R²={r2_sv2:.3f}）',
                             label_style
                         ))
+
+                        # 生存曲線＋Weibull直線化プロット（横並び）
+                        import matplotlib.pyplot as plt_pdf_all
+                        import numpy as np_pdf_all
+                        fig_2g, (ax_g1, ax_g2) = plt_pdf_all.subplots(1, 2, figsize=(14, 4.5))
+                        fig_2g.patch.set_facecolor('white')
+
+                        # 左：生存曲線
+                        ax_g1.step(km_sv2['t'], km_sv2['S'], color='#1d6fa4', lw=1.5, label='KM Curve (Observed)')
+                        t_r2 = km_sv2['t'].values
+                        ax_g1.plot(t_r2, [float(weibull_s(t, k_sv2, lam_sv2)) for t in t_r2],
+                                  '--', color='#56b4d3', lw=1.2, label=f'Weibull Fit')
+                        ax_g1.set_xlabel('Days', fontsize=9)
+                        ax_g1.set_ylabel('Survival Rate S(t)', fontsize=9)
+                        ax_g1.tick_params(labelsize=8)
+                        ax_g1.legend(fontsize=8)
+                        ax_g1.grid(True, alpha=0.3)
+                        ax_g1.set_title(f'Survival Curve: {str(sv)}', fontsize=10)
+
+                        # 右：Weibull直線化プロット
+                        km_fit_p = km_sv2[km_sv2['S'] > 0]
+                        ln_t_p = np_pdf_all.log(km_fit_p['t'].values.astype(float) + 1e-10)
+                        ln_neg_p = np_pdf_all.log(-np_pdf_all.log(km_fit_p['S'].values.astype(float) + 1e-15))
+                        valid_p = np_pdf_all.isfinite(ln_t_p) & np_pdf_all.isfinite(ln_neg_p)
+                        ln_t_p, ln_neg_p = ln_t_p[valid_p], ln_neg_p[valid_p]
+                        slope_p, int_p, _, _, _ = __import__('scipy').stats.linregress(ln_t_p, ln_neg_p)
+                        x_lp = np_pdf_all.linspace(ln_t_p.min(), ln_t_p.max(), 100)
+                        ax_g2.scatter(ln_t_p, ln_neg_p, color='#1d6fa4', s=18, alpha=0.75, label='Observed')
+                        ax_g2.plot(x_lp, slope_p * x_lp + int_p, '--', color='#56b4d3', lw=1.5, label=f'R²={r2_sv2:.3f}')
+                        ax_g2.annotate(f'y = {slope_p:.4f}x + {int_p:.4f}', xy=(0.05, 0.93), xycoords='axes fraction', fontsize=8)
+                        ax_g2.set_xlabel('ln(t)', fontsize=9)
+                        ax_g2.set_ylabel('ln(−ln(S(t)))', fontsize=9)
+                        ax_g2.tick_params(labelsize=8)
+                        ax_g2.legend(fontsize=8)
+                        ax_g2.grid(True, alpha=0.3)
+                        ax_g2.set_title(f'Weibull Linearization Plot: {str(sv)}', fontsize=10)
+
+                        fig_2g.tight_layout()
+                        buf_2g = io.BytesIO()
+                        fig_2g.savefig(buf_2g, format='png', dpi=100, bbox_inches='tight')
+                        buf_2g.seek(0)
+                        plt_pdf_all.close()
+                        story.append(Image(buf_2g, width=16*cm, height=5.5*cm))
+
+                        # 暫定LTVテーブル
                         hor_data2 = [['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']]
                         for h in horizons:
                             lh_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, h)
@@ -1590,30 +1689,12 @@ with exp3:
                             ('LEFTPADDING', (0,0), (-1,-1), 4),
                         ]))
                         story.append(t_sv2)
-                        import matplotlib.pyplot as plt_all
-                        fig_all, ax_all = plt_all.subplots(figsize=(7, 2.8))
-                        fig_all.patch.set_facecolor('white')
-                        ax_all.step(km_sv2['t'], km_sv2['S'], color='#1d6fa4', lw=1.5, label='KM observed')
-                        t_r2 = km_sv2['t'].values
-                        ax_all.plot(t_r2, [float(weibull_s(t, k_sv2, lam_sv2)) for t in t_r2],
-                                   '--', color='#56b4d3', lw=1.2, label=f'Weibull (R²={r2_sv2:.3f})')
-                        ax_all.set_xlabel('Days', fontsize=8)
-                        ax_all.set_ylabel('Survival Rate', fontsize=8)
-                        ax_all.tick_params(labelsize=7)
-                        ax_all.legend(fontsize=7)
-                        ax_all.grid(True, alpha=0.3)
-                        ax_all.set_title(f'Survival Curve: {str(sv)}', fontsize=9)
-                        fig_all.tight_layout()
-                        buf_all = io.BytesIO()
-                        fig_all.savefig(buf_all, format='png', dpi=100, bbox_inches='tight')
-                        buf_all.seek(0)
-                        plt_all.close()
-                        story.append(Image(buf_all, width=13*cm, height=5.2*cm))
-                        story.append(Spacer(1, 0.3*cm))
+                        story.append(Spacer(1, 0.4*cm))
                     except Exception:
                         continue
 
                 story.append(Spacer(1, 0.3*cm))
+
 
         story.append(Paragraph('AIへの質問プロンプト', h2_style))
         story.append(Paragraph('以下のプロンプトをClaude / ChatGPT / Gemini にコピペしてご活用ください。', body_style))
@@ -1800,22 +1881,100 @@ if segment_cols_input.strip():
 """
                 st.markdown(insight_pro, unsafe_allow_html=True)
 
-            # ── 全セグメントの暫定LTV＋生存曲線 ──
-            st.markdown(f"#### 📅 セグメント別 暫定LTV（観測期間別）& 生存曲線")
+            # ── 全セグメントの詳細分析（全体と同じレイアウト）──
+            st.markdown(f"#### 📅 セグメント別 詳細分析")
             for sr in seg_results:
-                sv   = sr['セグメント']
-                k_s  = sr['k']
-                lam_s= sr['λ（日）']
-                r2_s = sr['R²']
-                n_s  = sr['顧客数']
-                arpu_s = df[df[seg_col] == sv]['arpu_daily'].mean()
+                sv    = sr['セグメント']
+                k_s   = sr['k']
+                lam_s = sr['λ（日）']
+                r2_s  = sr['R²']
+                n_s   = sr['顧客数']
+                df_sv  = df[df[seg_col] == sv]
+                arpu_s = df_sv['arpu_daily'].mean()
+                gp_s   = arpu_s * gpm
                 ltv_inf_s = lam_s * __import__('scipy').special.gamma(1 + 1/k_s) * arpu_s
+                is_best = (sv == seg_df.iloc[0]['セグメント'])
 
-                with st.expander(f"📊 {sv}（顧客数 {n_s:,}件 / LTV∞ ¥{sr['LTV∞（売上）']:,.0f} / k={k_s:.3f} / λ={lam_s:.1f}日）", expanded=(sv == seg_df.iloc[0]['セグメント'])):
-                    col_hor, col_surv = st.columns([1, 1])
+                with st.expander(
+                    f"{'🥇' if is_best else '📊'} {sv}（顧客数 {n_s:,}件 / LTV∞ ¥{sr['LTV∞（売上）']:,.0f} / k={k_s:.3f} / λ={lam_s:.1f}日 / R²={r2_s:.3f}）",
+                    expanded=is_best
+                ):
+                    try:
+                        km_sv = compute_km(df_sv)
 
-                    with col_hor:
-                        st.caption("暫定LTV（観測期間別）")
+                        # ── グラフ2枚（全体と同じ）──
+                        col_g1, col_g2 = st.columns(2)
+
+                        with col_g1:
+                            fig_sv1 = go.Figure()
+                            fig_sv1.add_trace(go.Scatter(
+                                x=km_sv['t'].tolist(), y=km_sv['S'].tolist(),
+                                mode='lines', name='KM Curve (Observed)',
+                                line=dict(color=ACCENT, width=2, shape='hv')
+                            ))
+                            t_max_s = int(km_sv['t'].max())
+                            t_range_s = list(range(0, t_max_s + 30, max(1, t_max_s // 200)))
+                            fig_sv1.add_trace(go.Scatter(
+                                x=t_range_s,
+                                y=[float(weibull_s(t, k_s, lam_s)) for t in t_range_s],
+                                mode='lines', name=f'Weibull Fit',
+                                line=dict(color=ACCENT2, width=1.5, dash='dash')
+                            ))
+                            fig_sv1.update_layout(
+                                title=dict(text='Survival Curve', font=dict(color='#ccc', size=12)),
+                                paper_bgcolor='#111820', plot_bgcolor='#111820',
+                                height=300, margin=dict(t=40, b=50, l=50, r=10),
+                                font=dict(color='#ccc', size=10),
+                                legend=dict(font=dict(size=9), bgcolor='rgba(0,0,0,0)'),
+                                xaxis=dict(title='Days', gridcolor='#1a3040', tickfont=dict(color='#888')),
+                                yaxis=dict(title='Survival Rate S(t)', gridcolor='#1a3040', tickfont=dict(color='#888'), range=[0, 1.05]),
+                            )
+                            st.plotly_chart(fig_sv1, use_container_width=True)
+                            st.caption(f"📌 生存曲線：実測KM曲線（実線）にWeibullフィット（破線）。k={k_s:.3f}・λ={lam_s:.1f}日")
+
+                        with col_g2:
+                            # Weibull直線化プロット
+                            import numpy as np_sv
+                            km_fit = km_sv[km_sv['S'] > 0].copy()
+                            ln_t_s = np_sv.log(km_fit['t'].values.astype(float) + 1e-10)
+                            ln_neg_ln_S_s = np_sv.log(-np_sv.log(km_fit['S'].values.astype(float) + 1e-15))
+                            valid_s = np_sv.isfinite(ln_t_s) & np_sv.isfinite(ln_neg_ln_S_s)
+                            ln_t_s = ln_t_s[valid_s]
+                            ln_neg_ln_S_s = ln_neg_ln_S_s[valid_s]
+                            slope_s, intercept_s, _, _, _ = __import__('scipy').stats.linregress(ln_t_s, ln_neg_ln_S_s)
+                            x_line_s = [float(ln_t_s.min()), float(ln_t_s.max())]
+                            y_line_s = [slope_s * x + intercept_s for x in x_line_s]
+
+                            fig_sv2 = go.Figure()
+                            fig_sv2.add_trace(go.Scatter(
+                                x=ln_t_s.tolist(), y=ln_neg_ln_S_s.tolist(),
+                                mode='markers', name='Observed',
+                                marker=dict(color=ACCENT, size=5, opacity=0.7)
+                            ))
+                            fig_sv2.add_trace(go.Scatter(
+                                x=x_line_s, y=y_line_s,
+                                mode='lines', name=f'Regression Line (R²={r2_s:.3f})',
+                                line=dict(color=ACCENT2, width=1.5, dash='dash')
+                            ))
+                            fig_sv2.add_annotation(
+                                x=0.05, y=0.93, xref='paper', yref='paper',
+                                text=f'y = {slope_s:.4f}x + {intercept_s:.4f}',
+                                showarrow=False, font=dict(color='#777', size=9)
+                            )
+                            fig_sv2.update_layout(
+                                title=dict(text='Weibull Linearization Plot', font=dict(color='#ccc', size=12)),
+                                paper_bgcolor='#111820', plot_bgcolor='#111820',
+                                height=300, margin=dict(t=40, b=50, l=50, r=10),
+                                font=dict(color='#ccc', size=10),
+                                legend=dict(font=dict(size=9), bgcolor='rgba(0,0,0,0)'),
+                                xaxis=dict(title='ln(t)', gridcolor='#1a3040', tickfont=dict(color='#888')),
+                                yaxis=dict(title='ln(−ln(S(t)))', gridcolor='#1a3040', tickfont=dict(color='#888')),
+                            )
+                            st.plotly_chart(fig_sv2, use_container_width=True)
+                            st.caption(f"📌 Weibull直線化プロット：R²={r2_s:.3f}（1.0に近いほど精度高い）")
+
+                        # ── 暫定LTVテーブル ──
+                        st.markdown("**暫定LTV（観測期間別）**")
                         hor_rows = []
                         for h in horizons:
                             lh_s = ltv_horizon(k_s, lam_s, arpu_s, h)
@@ -1828,37 +1987,23 @@ if segment_cols_input.strip():
                             })
                         st.dataframe(pd.DataFrame(hor_rows), hide_index=True, use_container_width=True)
 
-                    with col_surv:
-                        st.caption("生存曲線（KM × Weibull）")
-                        try:
-                            df_sv = df[df[seg_col] == sv]
-                            km_sv = compute_km(df_sv)
-                            import plotly.graph_objects as go_sv
-                            fig_sv = go_sv.Figure()
-                            fig_sv.add_trace(go_sv.Scatter(
-                                x=km_sv['t'].tolist(), y=km_sv['S'].tolist(),
-                                mode='lines', name='KM observed',
-                                line=dict(color='#56b4d3', width=2, shape='hv')
-                            ))
-                            t_max = int(km_sv['t'].max())
-                            t_range = list(range(0, t_max + 30, max(1, t_max // 100)))
-                            fig_sv.add_trace(go_sv.Scatter(
-                                x=t_range,
-                                y=[float(weibull_s(t, k_s, lam_s)) for t in t_range],
-                                mode='lines', name=f'Weibull (R²={r2_s:.3f})',
-                                line=dict(color='#a8dadc', width=1.5, dash='dash')
-                            ))
-                            fig_sv.update_layout(
-                                paper_bgcolor='#111820', plot_bgcolor='#111820',
-                                height=250, margin=dict(t=20, b=40, l=40, r=10),
-                                font=dict(color='#ccc', size=10),
-                                legend=dict(font=dict(size=9)),
-                                xaxis=dict(title='Days', gridcolor='#1a3040', tickfont=dict(color='#888')),
-                                yaxis=dict(title='Survival Rate', gridcolor='#1a3040', tickfont=dict(color='#888'), range=[0, 1.05]),
-                            )
-                            st.plotly_chart(fig_sv, use_container_width=True)
-                        except Exception:
-                            st.caption("グラフ生成エラー")
+                        # ── 解釈ガイド ──
+                        k_desc_s = "k<1: 初期離脱型" if k_s < 1 else "k>1: 逓増離脱型"
+                        lam_yr_s = lam_s / 365
+                        ltv_1y_s = ltv_horizon(k_s, lam_s, arpu_s, 365)
+                        ltv_2y_s = ltv_horizon(k_s, lam_s, arpu_s, 730)
+                        pct_1y_s = ltv_1y_s / ltv_inf_s * 100
+                        pct_2y_s = ltv_2y_s / ltv_inf_s * 100
+                        st.markdown(f"""
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:14px 18px; font-size:0.82rem; color:#ccc; line-height:1.8; margin-top:8px;'>
+  <div style='color:#56b4d3; margin-bottom:6px;'>💡 解釈ガイド</div>
+  <div>・k={k_s:.3f}（{k_desc_s}）　λ={lam_s:.0f}日（約{lam_yr_s:.1f}年）</div>
+  <div>・LTV∞（売上）¥{ltv_inf_s:,.0f}　CAC上限（粗利）¥{sr['CAC上限（粗利）']:,.0f}</div>
+  <div>・1年時点でLTV∞の{pct_1y_s:.1f}%（¥{ltv_1y_s:,.0f}）、2年時点で{pct_2y_s:.1f}%（¥{ltv_2y_s:,.0f}）回収</div>
+</div>""", unsafe_allow_html=True)
+
+                    except Exception as e_sv:
+                        st.caption(f"グラフ生成エラー: {e_sv}")
 
 else:
     st.markdown("<div class='section-title'>🔬 セグメント別LTV分析（PRO）</div>", unsafe_allow_html=True)
