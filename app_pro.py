@@ -381,6 +381,19 @@ with st.sidebar:
         placeholder="例：plan, channel, age_group",
     )
     st.markdown("---")
+    st.markdown("### 🔢 ブラウザ表示件数")
+    seg_display_limit = st.slider(
+        "詳細表示（暫定LTV・生存曲線）の上位N件",
+        min_value=1, max_value=20, value=5,
+    )
+    st.caption(
+        "セグメント数が多いほどブラウザの描画に時間がかかります。"
+        "件数を絞ることで表示速度が大幅に改善されます。\n"
+        "**パワポ・PDFは件数に関わらず全セグメント出力されます。**\n"
+        "まず上位5件で傾向を確認し、必要に応じて増やすことをお勧めします。"
+    )
+
+    st.markdown("---")
     st.markdown("### 💰 CAC（顧客獲得コスト）")
     st.caption(
         "平均CACを入力すると、セグメント別の獲得効率スコア（LTV:CAC比率）も算出されます。"
@@ -1914,9 +1927,13 @@ if segment_cols_input.strip():
 """
                 st.markdown(insight_pro, unsafe_allow_html=True)
 
-            # ── 全セグメントの詳細分析（全体と同じレイアウト）──
-            st.markdown(f"#### 📅 セグメント別 詳細分析")
-            for sr in seg_results:
+            # ── 全セグメントの詳細分析（上位N件のみブラウザ表示）──
+            seg_results_display = seg_results[:seg_display_limit]
+            remaining = len(seg_results) - len(seg_results_display)
+            st.markdown(f"#### 📅 セグメント別 詳細分析（上位{seg_display_limit}件／全{len(seg_results)}件）")
+            if remaining > 0:
+                st.caption(f"ℹ️ 残り{remaining}件はパワポ・PDFに出力されます。サイドバーの「ブラウザ表示件数」を増やすと追加表示できます。")
+            for sr in seg_results_display:
                 sv    = sr['セグメント']
                 k_s   = sr['k']
                 lam_s = sr['λ（日）']
