@@ -996,7 +996,7 @@ with exp2:
         GOLD  = RGBColor(0x56, 0xb4, 0xd3)
         TEAL  = RGBColor(0xa8, 0xda, 0xdc)
         WHITE = RGBColor(0xe8, 0xe4, 0xdc)
-        GRAY  = RGBColor(0x44, 0x44, 0x44)
+        GRAY  = RGBColor(0xaa, 0xaa, 0xaa)
 
         def add_bg(slide, prs):
             bg = slide.shapes.add_shape(1, 0, 0, prs.slide_width, prs.slide_height)
@@ -1226,7 +1226,7 @@ with exp2:
                     f"LTV∞（売上）¥{best_pp['ltv_r']:,.0f}（全平均比 +{premium_pp:.1f}%）　"
                     f"LTV∞（粗利）¥{best_pp['ltv_g']:,.0f}　"
                     f"CAC上限（粗利）¥{best_pp['cac']:,.0f}\n"
-                    f"→ このセグメントに広告予算を集中させることで、競合より高いCPAで入札しながら収益性を維持できます。"
+                    f"→ このセグメントに顧客獲得投資を集中させることで、CAC上限¥{best_pp['cac']:,.0f}の範囲内で収益性を維持しながら積極的な顧客獲得が可能です。"
                 )
                 if cac_known:
                     ratio_pp = best_pp['ltv_g'] / cac_input
@@ -1272,9 +1272,8 @@ with exp2:
                         is_best_slide = bool(seg_ltvs_all) and str(sv_all) == max(seg_ltvs_all, key=seg_ltvs_all.get)
 
                         # タイトル
-                        badge = '🥇 優先獲得推奨　' if is_best_slide else ''
                         title_color = GOLD if is_best_slide else WHITE
-                        txbox(s_all, f'{badge}{sc_all}：{str(sv_all)}　詳細分析', 0.5, 0.1, 12.3, 0.45, size=15, bold=True, color=title_color)
+                        txbox(s_all, f'{sc_all}：{str(sv_all)}　詳細分析', 0.5, 0.1, 12.3, 0.45, size=15, bold=True, color=title_color)
                         txbox(s_all, f'顧客数 {len(df_sv_all):,}件　LTV∞（売上）¥{ltv_inf_sv:,.0f}　k={k_sv:.3f}　λ={lam_sv:.1f}日　R²={r2_sv:.3f}', 0.5, 0.58, 12.3, 0.28, size=8, color=GRAY)
 
                         # 優先セグメントは左上に目立つバッジボックスを追加
