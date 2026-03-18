@@ -235,15 +235,22 @@ with st.sidebar:
         purchases = max(1, round((lp - sd).days / 60))
         revenues_spot.append(unit_price[i] * purchases)
 
+    spot_plans    = np.random.choice(['ベーシック', 'スタンダード', 'プレミアム'], n_sample, p=[0.5, 0.35, 0.15])
+    spot_channels = np.random.choice(['SNS', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.3, 0.3, 0.2, 0.2])
+    spot_ages     = np.random.choice(['10代以下', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.10, 0.25, 0.35, 0.20, 0.10])
+    spot_plan_mult = np.where(spot_plans == 'プレミアム', 2.5, np.where(spot_plans == 'スタンダード', 1.5, 1.0))
+    spot_age_mult  = np.where(spot_ages == '50代以上', 1.6, np.where(spot_ages == '40代', 1.3,
+                     np.where(spot_ages == '30代', 1.1, np.where(spot_ages == '20代', 0.9, 0.7))))
+    revenues_spot_adj = np.array(revenues_spot) * spot_plan_mult * spot_age_mult
     sample_spot = pd.DataFrame({
         'customer_id':        [f'D{i:05d}' for i in range(1, n_sample+1)],
         'start_date':         [d.strftime('%Y-%m-%d') for d in start_dates],
         'end_date':           '',
         'last_purchase_date': last_purchase_dates,
-        'revenue_total':      revenues_spot,
-        'plan':               np.random.choice(['ベーシック', 'スタンダード', 'プレミアム'], n_sample, p=[0.5, 0.35, 0.15]),
-        'channel':            np.random.choice(['SNS', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.3, 0.3, 0.2, 0.2]),
-        'age_group':          np.random.choice(['10代以下', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.10, 0.25, 0.35, 0.20, 0.10]),
+        'revenue_total':      revenues_spot_adj.astype(int),
+        'plan':               spot_plans,
+        'channel':            spot_channels,
+        'age_group':          spot_ages,
         'region':             np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'], n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09]),
         'prefecture':         np.random.choice(['東京', '神奈川', '大阪', '愛知', '埼玉', '千葉', '福岡', '北海道', '兵庫', '静岡', '茨城', '広島', '京都', '宮城', '新潟', '長野', '栃木', '岐阜', '群馬', '岡山', '三重', '熊本', '鹿児島', '山口', '愛媛', '長崎', '奈良', '青森', '岩手', '大分', '石川', '山形', '富山', '秋田', '香川', '和歌山', '佐賀', '福井', '徳島', '高知', '島根', '宮崎', '鳥取', '沖縄', '滋賀', '山梨', '福島'], n_sample),
     })
@@ -1849,7 +1856,33 @@ if segment_cols_input.strip():
             else:
                 display_df = display_df.drop(columns=['獲得効率'])
             display_df = display_df.drop(columns=['優先スコア'])
+
+            # セグメント加重平均LTV∞を計算してテーブル上に表示
+            total_n = seg_df['顧客数'].sum()
+            weighted_ltv_rev = (seg_df['LTV∞（売上）'] * seg_df['顧客数']).sum() / total_n
+            weighted_ltv_gp  = (seg_df['LTV∞（粗利）'] * seg_df['顧客数']).sum() / total_n
+            diff_pct = (weighted_ltv_rev - ltv_rev) / ltv_rev * 100
+            diff_str = f"+{diff_pct:.1f}%" if diff_pct >= 0 else f"{diff_pct:.1f}%"
+            diff_color = "#a8dadc" if diff_pct >= 0 else "#e8a0a0"
+
+            st.markdown(f"""
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:12px 18px; margin-bottom:8px; font-size:0.85rem; color:#ccc;'>
+  <span style='color:#56b4d3; font-weight:500;'>セグメント加重平均 LTV∞</span>　
+  <span style='font-size:1.1rem; color:#a8dadc; font-weight:700;'>¥{weighted_ltv_rev:,.0f}</span>（売上）　
+  <span style='color:#888;'>¥{weighted_ltv_gp:,.0f}（粗利）</span>　
+  <span style='color:{diff_color}; font-size:0.8rem;'>全体値（¥{ltv_rev:,.0f}）との差：{diff_str}</span>
+</div>""", unsafe_allow_html=True)
+
             st.dataframe(display_df, hide_index=True, use_container_width=True)
+
+            # テーブル下の説明
+            st.markdown(f"""
+<div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:12px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
+  💡 <b style='color:#56b4d3;'>セグメント加重平均と全体LTV∞が異なる理由</b><br>
+  全体LTV∞（¥{ltv_rev:,.0f}）はすべての顧客を1つのWeibullモデルでフィットした値です。セグメント加重平均（¥{weighted_ltv_rev:,.0f}）は各セグメントを個別にフィットした後、顧客数で重み付け平均した値です。<br>
+  セグメントを切ることで顧客の<b>異質性（heterogeneity）が分離</b>されるため、切り口によって値が変わります。これはモデルの誤りではなく統計的に正しい現象です。<br>
+  <b>意思決定の基準：</b>広告投資・予算配分にはセグメント別LTV∞を、ビジネス全体の健全性評価には全体LTV∞を参照することを推奨します。
+</div>""", unsafe_allow_html=True)
 
             # 優先獲得推奨
             best = seg_results[0] if seg_results else None
