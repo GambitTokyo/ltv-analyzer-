@@ -378,7 +378,7 @@ with st.sidebar:
     )
     segment_cols_input = st.text_input(
         "セグメント列名（カンマ区切りで複数指定可）",
-        placeholder="例：plan, channel, age_group",
+        placeholder="例：plan, channel, age_group（最大5列）",
     )
     st.markdown("---")
     st.markdown("### 🔢 ブラウザ表示件数")
@@ -387,10 +387,10 @@ with st.sidebar:
         min_value=1, max_value=20, value=5,
     )
     st.caption(
-        "セグメント数が多いほどブラウザの描画に時間がかかります。"
-        "件数を絞ることで表示速度が大幅に改善されます。\n"
-        "**パワポ・PDFは件数に関わらず全セグメント出力されます。**\n"
-        "まず上位5件で傾向を確認し、必要に応じて増やすことをお勧めします。"
+        "セグメント（例：都道府県）の項目数（例：47）が多いほどブラウザの描画に時間がかかります。"
+        "表示する上位N項目を絞ることで速度が大幅に改善されます。\n"
+        "**パワポ・PDFは設定に関わらず全項目出力されます。**\n"
+        "まず上位5項目で傾向を確認し、必要に応じて増やすことをお勧めします。"
     )
 
     st.markdown("---")
@@ -1748,6 +1748,15 @@ if segment_cols_input.strip():
 
     if invalid_seg_cols:
         st.warning(f"⚠️ 以下の列が見つかりませんでした: {invalid_seg_cols}")
+
+    MAX_SEG_COLS = 5
+    if len(valid_seg_cols) > MAX_SEG_COLS:
+        st.warning(
+            f"⚠️ セグメント軸は最大{MAX_SEG_COLS}列まで指定できます（処理速度の確保のため）。"
+            f"現在{len(valid_seg_cols)}列指定されています。"
+            f"先頭{MAX_SEG_COLS}列のみ分析します。残りの列は別途入力してください。"
+        )
+        valid_seg_cols = valid_seg_cols[:MAX_SEG_COLS]
 
     if valid_seg_cols:
         st.markdown("<div class='section-title'>🔬 セグメント別LTV分析（PRO）</div>", unsafe_allow_html=True)
