@@ -1232,62 +1232,10 @@ with exp2:
                     ratio_pp = best_pp['ltv_g'] / cac_input
                     judge_pp = "✓ 健全" if ratio_pp >= 3.0 else "⚠️ 要改善"
                     rec_text += f"\nLTV:CAC比率（粗利）= {ratio_pp:.1f}:1　{judge_pp}"
-                # 優先セグメントの暫定LTV専用スライド
-                try:
-                    km_best = compute_km(df[df[sc] == best_pp['seg']])
-                    k_b, lam_b, r2_b, _ = fit_weibull(km_best)
-                    if k_b is not None:
-                        arpu_b = df[df[sc] == best_pp['seg']]['arpu_daily'].mean()
-                        s_hor = prs.slides.add_slide(blank)
-                        add_bg(s_hor, prs)
-                        txbox(s_hor, f'優先獲得推奨セグメント：{best_pp["seg"]}　暫定LTV（観測期間別）', 0.5, 0.2, 12.3, 0.5, size=16, bold=True, color=WHITE)
-                        txbox(s_hor, f'セグメント軸：{sc}　顧客数：{best_pp["n"]:,}件　k={k_b:.3f}　λ={lam_b:.1f}日　R²={r2_b:.3f}', 0.5, 0.75, 12.3, 0.3, size=9, color=GRAY)
-
-                        cols_hor = ['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']
-                        col_xh = [0.5, 3.3, 7.0, 9.8]
-                        for cx, ch in zip(col_xh, cols_hor):
-                            txbox(s_hor, ch, cx, 1.2, 3.0, 0.35, size=9, bold=True, color=GOLD)
-                        hl2 = s_hor.shapes.add_shape(1, Inches(0.5), Inches(1.57), Inches(12.3), Inches(0.02))
-                        hl2.fill.solid(); hl2.fill.fore_color.rgb = GOLD; hl2.line.fill.background()
-
-                        row_yh = 1.65
-                        for i, h in enumerate(horizons):
-                            lh_b = ltv_horizon(k_b, lam_b, arpu_b, h)
-                            ltv_inf_b = lam_b * __import__('scipy').special.gamma(1 + 1/k_b) * arpu_b
-                            label = f'{h}日' if h < 365 else f'{h//365}年'
-                            row_vals_h = [label, f'¥{lh_b:,.0f}', f'{lh_b/ltv_inf_b*100:.1f}%', f'¥{lh_b/cac_n:,.0f}']
-                            bg_h = s_hor.shapes.add_shape(1, Inches(0.5), Inches(row_yh - 0.02), Inches(12.3), Inches(0.38))
-                            bg_h.fill.solid()
-                            bg_h.fill.fore_color.rgb = RGBColor(0x1a,0x3a,0x4a) if i%2==0 else RGBColor(0x0d,0x1f,0x2d)
-                            bg_h.line.fill.background()
-                            for cx, rv in zip(col_xh, row_vals_h):
-                                txbox(s_hor, rv, cx, row_yh, 3.0, 0.35, size=10, color=WHITE)
-                            row_yh += 0.4
-
-                        # 生存曲線グラフ
-                        import matplotlib.pyplot as plt_pp
-                        fig_pp, ax_pp = plt_pp.subplots(figsize=(5, 3))
-                        fig_pp.patch.set_facecolor('#111820')
-                        ax_pp.set_facecolor('#111820')
-                        km_b_df = km_best
-                        ax_pp.step(km_b_df['t'], km_b_df['S'], color='#56b4d3', lw=1.5, label='KM observed')
-                        t_range = km_b_df['t'].values
-                        ax_pp.plot(t_range, [float(weibull_s(t, k_b, lam_b)) for t in t_range], '--', color='#a8dadc', lw=1.2, label=f'Weibull fit (R²={r2_b:.3f})')
-                        ax_pp.set_xlabel('Days', color='#888', fontsize=8)
-                        ax_pp.set_ylabel('Survival Rate', color='#888', fontsize=8)
-                        ax_pp.tick_params(colors='#666', labelsize=7)
-                        ax_pp.legend(fontsize=7, framealpha=0.2)
-                        ax_pp.grid(True, alpha=0.2)
-                        ax_pp.set_title(f'Survival Curve: {best_pp["seg"]}', color='#ccc', fontsize=9)
-                        fig_pp.tight_layout()
-                        buf_pp = io.BytesIO()
-                        fig_pp.savefig(buf_pp, format='png', dpi=120, bbox_inches='tight', facecolor='#111820')
-                        buf_pp.seek(0)
-                        plt_pp.close()
-                        s_hor.shapes.add_picture(buf_pp, Inches(0.5), Inches(4.55), Inches(12.3), Inches(2.7))
-                except Exception:
-                    pass
-
+                rec_box = s_seg.shapes.add_shape(1, Inches(0.5), Inches(5.0), Inches(12.3), Inches(1.8))
+                rec_box.fill.solid(); rec_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+                rec_box.line.color.rgb = GOLD
+                txbox(s_seg, rec_text, 0.6, 5.05, 12.0, 1.7, size=9, color=WHITE)
         # 全セグメント詳細スライド（4分割レイアウト）
         if segment_cols_input.strip():
             seg_cols_all = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
@@ -1307,9 +1255,33 @@ with exp2:
                         s_all = prs.slides.add_slide(blank)
                         add_bg(s_all, prs)
 
+                        # 優先セグメント判定（セグメント比較スライドで使ったbest_ppと照合）
+                        is_best_slide = False
+                        for _sc_chk, _bp_chk in [(k, v) for k, v in [('_best', None)]]:
+                            pass
+                        # pp_rowsを再計算せず、LTV∞が最大かどうかで判定
+                        seg_ltvs_all = {}
+                        for _sv2 in df[sc_all].dropna().unique():
+                            _df2 = df[df[sc_all] == _sv2]
+                            if len(_df2) >= 10 and _df2['event'].sum() >= 5:
+                                try:
+                                    _km2 = compute_km(_df2)
+                                    _k2, _l2, _, _ = fit_weibull(_km2)
+                                    if _k2: seg_ltvs_all[str(_sv2)] = lam_sv * __import__('scipy').special.gamma(1+1/_k2) * _df2['arpu_daily'].mean()
+                                except: pass
+                        is_best_slide = bool(seg_ltvs_all) and str(sv_all) == max(seg_ltvs_all, key=seg_ltvs_all.get)
+
                         # タイトル
-                        txbox(s_all, f'{sc_all}：{str(sv_all)}　詳細分析', 0.5, 0.1, 12.3, 0.45, size=15, bold=True, color=WHITE)
+                        badge = '🥇 優先獲得推奨　' if is_best_slide else ''
+                        title_color = GOLD if is_best_slide else WHITE
+                        txbox(s_all, f'{badge}{sc_all}：{str(sv_all)}　詳細分析', 0.5, 0.1, 12.3, 0.45, size=15, bold=True, color=title_color)
                         txbox(s_all, f'顧客数 {len(df_sv_all):,}件　LTV∞（売上）¥{ltv_inf_sv:,.0f}　k={k_sv:.3f}　λ={lam_sv:.1f}日　R²={r2_sv:.3f}', 0.5, 0.58, 12.3, 0.28, size=8, color=GRAY)
+
+                        # 優先セグメントは左上に目立つバッジボックスを追加
+                        if is_best_slide:
+                            badge_box = s_all.shapes.add_shape(1, Inches(11.5), Inches(0.05), Inches(1.3), Inches(0.42))
+                            badge_box.fill.solid(); badge_box.fill.fore_color.rgb = GOLD; badge_box.line.fill.background()
+                            txbox(s_all, '🥇 最優先', 11.5, 0.08, 1.3, 0.35, size=11, bold=True, color=RGBColor(0x0d,0x1f,0x2d))
 
                         # ── 上段左：生存曲線 ──
                         import matplotlib.pyplot as plt_sv1
@@ -1576,59 +1548,6 @@ with exp3:
                         rec_style
                     ))
 
-                    # 優先セグメントの暫定LTVテーブル
-                    try:
-                        df_best = df[df[sc] == best_pdf['seg']]
-                        km_best_pdf = compute_km(df_best)
-                        k_bp, lam_bp, r2_bp, _ = fit_weibull(km_best_pdf)
-                        if k_bp is not None:
-                            arpu_bp = df_best['arpu_daily'].mean()
-                            ltv_inf_bp = lam_bp * __import__('scipy').special.gamma(1 + 1/k_bp) * arpu_bp
-
-                            story.append(Spacer(1, 0.2*cm))
-                            story.append(Paragraph(
-                                f'優先獲得推奨セグメント「{best_pdf["seg"]}」の暫定LTV（k={k_bp:.3f}　λ={lam_bp:.1f}日　R²={r2_bp:.3f}）',
-                                h2_style
-                            ))
-                            hor_data = [['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']]
-                            for h in horizons:
-                                lh_bp = ltv_horizon(k_bp, lam_bp, arpu_bp, h)
-                                label = f'{h}日' if h < 365 else f'{h//365}年'
-                                hor_data.append([label, f'¥{lh_bp:,.0f}', f'{lh_bp/ltv_inf_bp*100:.1f}%', f'¥{lh_bp/cac_n:,.0f}'])
-                            t_hor = Table(hor_data, colWidths=[3*cm, 4*cm, 3*cm, 4*cm])
-                            t_hor.setStyle(TableStyle([
-                                ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1a1a1a')),
-                                ('TEXTCOLOR',  (0,0), (-1,0), colors.HexColor('#56b4d3')),
-                                ('TEXTCOLOR',  (0,1), (-1,-1), colors.HexColor('#111111')),
-                                ('FONTNAME',   (0,0), (-1,-1), 'HeiseiMin-W3'),
-                                ('FONTSIZE',   (0,0), (-1,-1), 8),
-                                ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor('#f5f5f5'), colors.HexColor('#ffffff')]),
-                                ('GRID', (0,0), (-1,-1), 0.3, colors.HexColor('#cccccc')),
-                                ('LEFTPADDING', (0,0), (-1,-1), 6),
-                            ]))
-                            story.append(t_hor)
-
-                            # 生存曲線グラフ
-                            import matplotlib.pyplot as plt_pdf2
-                            fig_bp, ax_bp = plt_pdf2.subplots(figsize=(7, 3.5))
-                            fig_bp.patch.set_facecolor('white')
-                            ax_bp.step(km_best_pdf['t'], km_best_pdf['S'], color='#1d6fa4', lw=1.5, label='KM observed')
-                            t_range_bp = km_best_pdf['t'].values
-                            ax_bp.plot(t_range_bp, [float(weibull_s(t, k_bp, lam_bp)) for t in t_range_bp],
-                                      '--', color='#56b4d3', lw=1.2, label=f'Weibull fit (R²={r2_bp:.3f})')
-                            ax_bp.set_xlabel('Days', fontsize=9)
-                            ax_bp.set_ylabel('Survival Rate', fontsize=9)
-                            ax_bp.legend(fontsize=8)
-                            ax_bp.grid(True, alpha=0.3)
-                            ax_bp.set_title(f'Survival Curve: {best_pdf["seg"]}', fontsize=10)
-                            fig_bp.tight_layout()
-                            buf_bp = io.BytesIO()
-                            fig_bp.savefig(buf_bp, format='png', dpi=120, bbox_inches='tight')
-                            buf_bp.seek(0)
-                            plt_pdf2.close()
-                            story.append(Image(buf_bp, width=13*cm, height=6.5*cm))
-                    except Exception:
-                        pass
 
                 # 全セグメントの詳細分析（2グラフ横並び）
                 story.append(Paragraph(f'全セグメント詳細（{sc}）', h2_style))
