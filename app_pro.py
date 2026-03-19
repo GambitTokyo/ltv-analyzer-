@@ -563,7 +563,6 @@ with st.sidebar:
             "end_dateが空欄の顧客は継続中として扱われます。"
         )
         dormancy_days = None  # 休眠判定なし
-        st.markdown("**契約期間**")
         billing_cycle_display = st.radio(
             "契約期間",
             [
@@ -596,7 +595,6 @@ with st.sidebar:
         )
         billing_cycle = "日次（都度課金）"
         custom_cycle_days = None
-        st.markdown("**休眠判定期間**")
         dormancy_option = st.radio(
             "休眠判定期間",
             [
