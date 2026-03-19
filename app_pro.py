@@ -34,6 +34,11 @@ html, body, [class*="css"] {
 }
 .stApp { background-color: #0a0e14; color: #c8d0d8; }
 
+/* ── Sidebar divider lines ── */
+[data-testid="stSidebar"] hr,
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] hr,
+[data-testid="stSidebarContent"] hr { display: none !important; }
+
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background-color: #0d1117;
@@ -546,7 +551,6 @@ with st.sidebar:
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
-    st.markdown("---")
     st.markdown("### ビジネスタイプ")
     business_type = st.radio(
         "ビジネスタイプを選択してください",
@@ -616,12 +620,10 @@ with st.sidebar:
 
     horizon_days = 730  # 内部計算用デフォルト
 
-    st.markdown("---")
     st.markdown("### 粗利率 GPM")
     gpm = st.slider("Gross Profit Margin (%)", 0, 100, 54, 1) / 100
     st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します")
 
-    st.markdown("---")
     st.markdown("### CAC 上限")
     cac_mode = st.radio("算出方法", ['LTV : CAC = N : 1', '回収期間（月）'])
     if cac_mode == 'LTV : CAC = N : 1':
@@ -632,7 +634,6 @@ with st.sidebar:
         cac_n = st.slider("回収期間（月）", 1, 36, 12)
         cac_label = f"{cac_n}ヶ月回収"
 
-    st.markdown("---")
     st.markdown("### セグメント分析")
     st.caption(
         "**セグメント列とは？**\n\n"
@@ -653,7 +654,6 @@ with st.sidebar:
         "セグメント列名（カンマ区切りで複数指定可）",
         placeholder="例：plan, channel, age_group（最大5列）",
     )
-    st.markdown("---")
     st.markdown("### 表示件数")
     seg_display_limit = st.slider(
         "詳細表示（暫定LTV・生存曲線）の上位N件",
@@ -666,7 +666,6 @@ with st.sidebar:
         "まず上位5項目で傾向を確認し、必要に応じて増やすことをお勧めします。"
     )
 
-    st.markdown("---")
     st.markdown("### CAC — 顧客獲得コスト")
     st.caption(
         "平均CACを入力すると、セグメント別の獲得効率スコア（LTV:CAC比率）も算出されます。"
@@ -678,7 +677,6 @@ with st.sidebar:
     )
     cac_known = cac_input > 0
 
-    st.markdown("---")
     st.markdown("")
     st.markdown("### レポート情報")
     client_name  = st.text_input("クライアント名", "")
