@@ -236,6 +236,14 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
 }
 
 /* ── File uploader ── */
+section[data-testid="stFileUploader"],
+[data-testid="stFileUploader"],
+[data-testid="stFileUploader"] > div,
+[data-testid="stFileUploader"] > div > div,
+[data-testid="stFileUploader"] > section {
+    background-color: #0d1520 !important;
+    border-radius: 8px !important;
+}
 [data-testid="stFileUploadDropzone"] {
     background-color: #0d1520 !important;
     border: 1px dashed #1c3a4a !important;
