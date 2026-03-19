@@ -15,8 +15,8 @@ warnings.filterwarnings('ignore')
 
 # ── Page config ──────────────────────────────────────────────
 st.set_page_config(
-    page_title="LTV Analyzer PRO",
-    page_icon="📈",
+    page_title="LTV Analyzer Advanced",
+    page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -24,73 +24,139 @@ st.set_page_config(
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
-html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
-.stApp { background-color: #0d0d0d; color: #e8e4dc; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* ── Base ── */
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+}
+.stApp { background-color: #0a0e14; color: #c8d0d8; }
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background-color: #0d1117;
+    border-right: 1px solid #1c2430;
+}
+[data-testid="stSidebar"] .stMarkdown h3 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #4a6a7a;
+    margin: 24px 0 8px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1c2430;
+}
+
+/* ── Metric cards ── */
 .metric-card {
-    background: #0d1f2d;
-    border: 1px solid #1a3a4a;
-    border-radius: 12px;
-    padding: 20px 16px;
+    background: #0d1520;
+    border: 1px solid #1a2a3a;
+    border-radius: 8px;
+    padding: 22px 18px;
     text-align: center;
     height: 130px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    transition: border-color 0.2s;
 }
+.metric-card:hover { border-color: #2a4a5a; }
 .metric-value {
-    font-family: 'Syne', sans-serif;
-    font-size: 2rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.75rem;
+    font-weight: 500;
     color: #56b4d3;
     line-height: 1.1;
     word-break: break-all;
+    letter-spacing: -0.02em;
 }
 .metric-label {
-    font-size: 0.7rem;
-    color: #555;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: #3a5a6a;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    margin-top: 6px;
-}
-.section-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.1rem;
-    color: #56b4d3;
-    border-bottom: 1px solid #2a4a5a;
-    padding-bottom: 6px;
-    margin: 28px 0 16px 0;
-}
-.prompt-box {
-    background: #161616;
-    border: 1px solid #2a2a2a;
-    border-left: 3px solid #56b4d3;
-    border-radius: 8px;
-    padding: 16px;
-    font-family: 'DM Sans', monospace;
-    font-size: 0.85rem;
-    color: #ccc;
-    white-space: pre-wrap;
-    word-break: break-word;
-}
-.help-box {
-    background: #141414;
-    border: 1px solid #1e1e1e;
-    border-radius: 8px;
-    padding: 14px 16px;
-    font-size: 0.82rem;
-    color: #777;
+    letter-spacing: 0.1em;
     margin-top: 8px;
 }
+.metric-desc {
+    font-size: 0.82rem;
+    color: #3a5060;
+    margin-top: 3px;
+    line-height: 1.3;
+}
+
+/* ── Section titles ── */
+.section-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #3a6a7a;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    border-bottom: 1px solid #1a2a3a;
+    padding-bottom: 8px;
+    margin: 36px 0 18px 0;
+}
+
+/* ── Prompt box ── */
+.prompt-box {
+    background: #0d1117;
+    border: 1px solid #1c2430;
+    border-left: 2px solid #56b4d3;
+    border-radius: 6px;
+    padding: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    color: #8a9ab0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.7;
+}
+
+/* ── Help / info box ── */
+.help-box {
+    background: #0d1117;
+    border: 1px solid #1c2430;
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 0.82rem;
+    color: #5a7a8a;
+    margin-top: 8px;
+    line-height: 1.6;
+}
+
+/* ── Tag ── */
 .tag {
     display: inline-block;
-    background: #1e1e1e;
-    border: 1px solid #2a2a2a;
-    border-radius: 20px;
-    padding: 2px 10px;
-    font-size: 0.7rem;
-    color: #888;
+    background: #0d1520;
+    border: 1px solid #1a2a3a;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: #4a7a8a;
+    letter-spacing: 0.04em;
     margin: 2px;
+}
+
+/* ── Dataframe ── */
+[data-testid="stDataFrame"] { border-radius: 6px; overflow: hidden; }
+
+/* ── Expander ── */
+[data-testid="stExpander"] {
+    border: 1px solid #1a2a3a;
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+/* ── Tabs ── */
+[data-testid="stTabs"] [data-baseweb="tab"] {
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -154,7 +220,7 @@ def weibull_s(t, k, lam):
 # ══════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.markdown("### 📥 データ入力")
+    st.markdown("### データ入力")
 
     # サンプルデータ生成
     np.random.seed(42)
@@ -258,7 +324,7 @@ with st.sidebar:
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
-            "📥 サブスク用サンプル（1万件）",
+            "サブスク用サンプル（1万件）",
             sample_sub.to_csv(index=False).encode('utf-8-sig'),
             "sample_subscription.csv", "text/csv",
             use_container_width=True
@@ -266,7 +332,7 @@ with st.sidebar:
         st.caption("`end_date`: 解約日（継続中は空欄）")
     with col_dl2:
         st.download_button(
-            "📥 都度課金用サンプル（1万件）",
+            "都度課金用サンプル（1万件）",
             sample_spot.to_csv(index=False).encode('utf-8-sig'),
             "sample_spot_purchase.csv", "text/csv",
             use_container_width=True
@@ -276,7 +342,7 @@ with st.sidebar:
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
     st.markdown("---")
-    st.markdown("### 🏷️ ビジネスタイプ")
+    st.markdown("### ビジネスタイプ")
     business_type = st.radio(
         "ビジネスタイプを選択してください",
         [
@@ -344,12 +410,12 @@ with st.sidebar:
     horizon_days = 730  # 内部計算用デフォルト
 
     st.markdown("---")
-    st.markdown("### 📊 粗利率（GPM）")
+    st.markdown("### 粗利率 GPM")
     gpm = st.slider("Gross Profit Margin (%)", 0, 100, 54, 1) / 100
     st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します")
 
     st.markdown("---")
-    st.markdown("### 💰 CAC上限の算出")
+    st.markdown("### CAC 上限")
     cac_mode = st.radio("算出方法", ['LTV : CAC = N : 1', '回収期間（月）'])
     if cac_mode == 'LTV : CAC = N : 1':
         cac_n = st.slider("N（LTV:CAC = N:1）", 1.0, 10.0, 3.0, 0.5)
@@ -360,7 +426,7 @@ with st.sidebar:
         cac_label = f"{cac_n}ヶ月回収"
 
     st.markdown("---")
-    st.markdown("### 🔬 セグメント分析設定")
+    st.markdown("### セグメント分析")
     st.caption(
         "**セグメント列とは？**\n\n"
         "顧客を分類するための列です。CSVに追加しておくことで、"
@@ -381,7 +447,7 @@ with st.sidebar:
         placeholder="例：plan, channel, age_group（最大5列）",
     )
     st.markdown("---")
-    st.markdown("### 🔢 ブラウザ表示件数")
+    st.markdown("### 表示件数")
     seg_display_limit = st.slider(
         "詳細表示（暫定LTV・生存曲線）の上位N件",
         min_value=1, max_value=20, value=5,
@@ -394,7 +460,7 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.markdown("### 💰 CAC（顧客獲得コスト）")
+    st.markdown("### CAC — 顧客獲得コスト")
     st.caption(
         "平均CACを入力すると、セグメント別の獲得効率スコア（LTV:CAC比率）も算出されます。"
         "不明な場合は空欄のままでOKです。LTV∞ベースの優先スコアのみ表示されます。"
@@ -406,7 +472,8 @@ with st.sidebar:
     cac_known = cac_input > 0
 
     st.markdown("---")
-    st.markdown("### 🏢 レポート情報")
+    st.markdown("")
+    st.markdown("### レポート情報")
     client_name  = st.text_input("クライアント名", "")
     analyst_name = st.text_input("分析者名", "")
 
@@ -415,9 +482,10 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════
 
 st.markdown("""
-<div style='padding: 8px 0 24px 0;'>
-  <span style='font-family:Syne,sans-serif; font-size:2rem; color:#56b4d3;'>LTV Analyzer PRO</span>
-  <span style='font-size:0.8rem; color:#444; margin-left:12px;'>Segment × LTV Maximization</span>
+<div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
+  <div style='font-family: Inter, sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
+  <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -426,20 +494,20 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════
 
 if uploaded is None:
-    st.info("← サイドバーからCSVをアップロードしてください。サンプルCSVでまずお試しいただけます。")
+    st.info("サイドバーから CSV をアップロードしてください。サンプルデータでお試しいただけます。")
 
-    st.markdown("<div class='section-title'>入力CSVの形式</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>CSV フォーマット</div>", unsafe_allow_html=True)
     st.markdown("""
 | 列名 | 内容 | 形式 | 例 |
 |------|------|------|----|
 | `customer_id` | 顧客ID | 任意の文字列 | C0001 |
-| `start_date` | 契約開始日 | YYYY-MM-DD | 2023-01-01 |
+| `start_date` | 契約開始日 / 初回購入日 | YYYY-MM-DD | 2023-01-01 |
 | `end_date` | 解約日（サブスク向け・継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
 | `last_purchase_date` | 最終購買日（都度課金向け・任意） | YYYY-MM-DD | 2024-06-01 |
 | `revenue` | **累計売上**（円） | 数値 | 48000 |
-| `セグメント列`（任意の列名） | **PRO機能**：プラン・チャネル・年齢層など | 文字列 | 月額300 |
+| `セグメント列`（任意の列名） | **Advanced機能**：プラン・チャネル・年齢層など | 文字列 | 月額300 |
 
-> **PRO版では必ずセグメント列を追加してください。**複数列追加可能です。\n
+> **Advanced版では必ずセグメント列を追加してください。**複数列追加可能です。\n
 > 列名は完全一致でなくてもOKです。`start`・`end`・`last`・`revenue`を含む列名は自動認識します。\n
 > ARPU_daily は「累計売上 ÷ 顧客継続日数」で自動計算されます。\n
 > セグメント列は1列あたり最大50種類のユニーク値まで対応しています（都道府県47個も対応）。
@@ -476,7 +544,7 @@ try:
 
     missing = [k for k in ['start_date','end_date','revenue'] if k not in col_map]
     if missing:
-        st.error(f"❌ 列が見つかりません: {missing}\n\n列名に `start`・`end`・`revenue` を含む列が必要です。サイドバーからサンプルCSVをダウンロードして形式を確認してください。")
+        st.error(f" 列が見つかりません: {missing}\n\n列名に `start`・`end`・`revenue` を含む列が必要です。サイドバーからサンプルCSVをダウンロードして形式を確認してください。")
         st.stop()
 
     # last_purchase_date 列の自動認識
@@ -494,7 +562,7 @@ try:
 
     bad_dates = df['start_date'].isna().sum()
     if bad_dates > 0:
-        st.warning(f"⚠️ {bad_dates}行で `start_date` が読み取れませんでした。該当行は除外します。")
+        st.warning(f" {bad_dates}行で `start_date` が読み取れませんでした。該当行は除外します。")
     df = df.dropna(subset=['start_date'])
 
     today = pd.Timestamp.today()
@@ -604,20 +672,20 @@ try:
 
     # ── 通知メッセージ ──
     if n_dormant > 0:
-        st.info(f"💤 {n_dormant:,}件を休眠顧客（最終購買から{dormancy_days}日超）として実質離脱に変換しました。")
+        st.info(f"{n_dormant:,}件を休眠顧客（最終購買から{dormancy_days}日超）として実質離脱に変換しました。")
     if n_corrected > 0:
-        st.info(f"ℹ️ {n_corrected}件：契約開始日と終端日が同日のため1日に補正しました。")
+        st.info(f"ℹ {n_corrected}件：{date_label}と終端日が同日のため1日に補正しました。")
     if n_excluded > 0:
-        st.warning(f"⚠️ {n_excluded}件：契約開始日が未来のため除外しました。")
+        st.warning(f" {n_excluded}件：start_dateが未来の日付のため除外しました（入力ミスの可能性）。")
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0:
-        st.success(f"✅ 全{n_input:,}件のデータを正常に読み込みました。")
+        st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
 
     if len(df) < 10:
-        st.error("❌ 有効なデータが10件未満です。分析には最低10件の顧客データが必要です。")
+        st.error(" 有効なデータが10件未満です。分析には最低10件の顧客データが必要です。")
         st.stop()
 
 except Exception as e:
-    st.error(f"❌ データ読み込みエラー: {e}\n\nCSVの形式を確認してください。サンプルCSVをダウンロードして参照してください。")
+    st.error(f" データ読み込みエラー: {e}\n\nCSVの形式を確認してください。サンプルCSVをダウンロードして参照してください。")
     st.stop()
 
 # ══════════════════════════════════════════════════════════════
@@ -628,7 +696,7 @@ km_df = compute_km(df)
 k, lam, r2, fit_df = fit_weibull(km_df)
 
 if k is None:
-    st.error("❌ Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
+    st.error(" Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
     st.stop()
 
 ltv_rev, surv_int = ltv_inf(k, lam, arpu_daily)   # 売上ベース
@@ -655,7 +723,7 @@ for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
         st.markdown(
             f"<div class='metric-card'>"
             f"<div class='metric-value'>{val}</div>"
-            f"<div class='metric-label' style='font-size:0.72rem; color:#56b4d3; margin-top:6px; letter-spacing:0.05em;'>{title}</div>"
+            f"<div class='metric-label' style='font-size:0.82rem; color:#56b4d3; margin-top:6px; letter-spacing:0.05em;'>{title}</div>"
             f"<div class='metric-label' style='font-size:0.65rem; color:#444; margin-top:3px; letter-spacing:0.03em; line-height:1.4;'>{desc}</div>"
             f"</div>",
             unsafe_allow_html=True
@@ -663,7 +731,7 @@ for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
 
 # R² warning
 if r2 < 0.85:
-    st.warning(f"⚠️ R²={r2:.3f} — フィット精度がやや低めです。データ点数を増やすか、観測期間を見直してください。")
+    st.warning(f" R²={r2:.3f} — フィット精度がやや低めです。データ点数を増やすか、観測期間を見直してください。")
 
 # ══════════════════════════════════════════════════════════════
 # Charts
@@ -689,7 +757,7 @@ with c1:
     plt.close()
 
 with c1:
-    st.caption("📌 生存曲線（Survival Curve）：実測のKM曲線（実線）にWeibullモデルをフィット（破線）。右に伸びるほど顧客が長く継続している。")
+    st.caption("Survival Curve：実測のKM曲線（実線）にWeibullモデルをフィット（破線）。右に伸びるほど顧客が長く継続している。")
 
 with c2:
     fig, ax = plt.subplots(figsize=(6, 3.8))
@@ -709,7 +777,7 @@ with c2:
     plt.close()
 
 with c2:
-    st.caption("📌 Weibull直線化プロット：生存率を対数変換して直線化したもの。R²が1.0に近いほどWeibullモデルのフィット精度が高い。")
+    st.caption("Weibull Linearization Plot：生存率を対数変換して直線化したもの。R²が1.0に近いほどWeibullモデルのフィット精度が高い。")
 
 # Save chart images for export
 fig1, ax1 = plt.subplots(figsize=(7, 4))
@@ -743,7 +811,7 @@ plt.close()
 # Horizon table
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>暫定LTV（観測期間別）</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
 
 horizons = [30, 90, 180, 365, 730, 1095, 1825]  # 30日・90日・180日・1年・2年・3年・5年
 rows = []
@@ -791,7 +859,7 @@ else:
 
 # k の解釈
 if k < 0.8:
-    k_desc = f"k={k:.3f}は1より大きく小さいため、契約直後の離脱が特に多いパターンです。初期のオンボーディング改善が最優先です。"
+    k_desc = f"k={k:.3f}は1より大きく小さいため、{acq_label}直後の離脱が特に多いパターンです。初期のオンボーディング改善が最優先です。"
 elif k < 1.0:
     k_desc = f"k={k:.3f}は1に近いため、離脱率がほぼ一定（指数分布に近い）パターンです。"
 else:
@@ -799,7 +867,7 @@ else:
 
 insight_html = f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:10px; padding:18px 20px; margin-top:12px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
-  <div style='color:#56b4d3; font-size:0.82rem; font-weight:500; margin-bottom:10px; letter-spacing:0.05em;'>💡 このテーブルの読み方</div>
+  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:12px;'>このテーブルの読み方</div>
   <div>・{lam_desc}</div>
   <div>・{k_desc}</div>
   <div>・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。</div>
@@ -808,7 +876,7 @@ insight_html = f"""
     <span style='color:#56b4d3;'>2年時点</span>で<b style='color:#a8dadc;'>{pct_2y:.1f}%</b>（¥{ltv_2y:,.0f}）、
     <span style='color:#56b4d3;'>3年時点</span>で<b style='color:#a8dadc;'>{pct_3y:.1f}%</b>（¥{ltv_3y:,.0f}）を回収できます。
   </div>
-  <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）を回収できるのは契約から約 <b style='color:#a8dadc;'>{cac_recover_str}</b> 後です。</div>
+  <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）を回収できるのは{acq_label}から約 <b style='color:#a8dadc;'>{cac_recover_str}</b> 後です。</div>
 </div>
 """
 st.markdown(insight_html, unsafe_allow_html=True)
@@ -817,16 +885,20 @@ st.markdown(insight_html, unsafe_allow_html=True)
 # AI Prompt Generator
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>🤖 AIに質問するプロンプト</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>AI Prompt Generator</div>", unsafe_allow_html=True)
 st.markdown("<div class='help-box'>この結果の読み方や戦略への活用方法がわからない場合は、以下のプロンプトをClaude・ChatGPT・Geminiにコピペしてください。</div>", unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["📊 分析結果の解釈", "📈 マーケティング意思決定", "⚠️ 分析の限界と改善"])
+tab1, tab2, tab3 = st.tabs(["分析結果の解釈", "マーケティング意思決定", "分析の限界と改善"])
 
 dormancy_label = "なし（解約日ベース）" if dormancy_days is None else f"{dormancy_days}日"
 churned_count  = int(df['event'].sum())
 active_count   = int((df['event']==0).sum())
 churn_rate     = churned_count / len(df) * 100
-k_pattern      = "初期集中型（契約直後の離脱が多い）" if k < 1 else "逓増型（時間とともに離脱が増える）"
+# ビジネスタイプで「契約」「初回購入」を切り替え
+acq_label  = "初回購入" if business_type == "都度課金型" else "契約"
+date_label = "初回購入日" if business_type == "都度課金型" else "契約開始日"
+
+k_pattern      = f"初期集中型（{acq_label}直後の離脱が多い）" if k < 1 else "逓増型（時間とともに離脱が増える）"
 
 prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル）を使い、以下の結果を得ました。
 
@@ -841,7 +913,7 @@ prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル
 ・分析手法: Kaplan-Meier法 + Weibullモデルによる生存分析"""
 
 copy_html = """<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
-📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
+上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
 </div>"""
 
 with tab1:
@@ -860,7 +932,7 @@ with tab2:
 
 【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
 1. CAC上限¥{cac_upper:,.0f}（粗利ベースLTV÷{cac_n}）をもとに、CPAとROASの目標値をどう設定すべきですか？計算式も示してください。
-2. λ={lam:.1f}日（典型的な継続期間）を踏まえると、契約後何日目にリテンション施策を打つのが最も効果的ですか？推奨タイミングと施策内容を教えてください。
+2. λ={lam:.1f}日（典型的な継続期間）を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？推奨タイミングと施策内容を教えてください。
 3. ARPU_daily¥{arpu_daily:,.2f}・LTV∞¥{ltv_rev:,.0f}の水準で費用対効果的に合いやすい広告チャネルはどれですか？CPAとの関係で説明してください。
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
@@ -882,7 +954,7 @@ with tab3:
 # Export buttons
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>📤 エクスポート</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>Export</div>", unsafe_allow_html=True)
 
 exp1, exp2, exp3 = st.columns(3)
 
@@ -978,7 +1050,7 @@ with exp1:
         xl_buf = io.BytesIO()
         wb.save(xl_buf)
         xl_buf.seek(0)
-        st.download_button("📊 Excelダウンロード", xl_buf,
+        st.download_button("Excel ダウンロード", xl_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.xlsx",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     except Exception as e:
@@ -1230,7 +1302,7 @@ with exp2:
                 )
                 if cac_known:
                     ratio_pp = best_pp['ltv_g'] / cac_input
-                    judge_pp = "✓ 健全" if ratio_pp >= 3.0 else "⚠️ 要改善"
+                    judge_pp = " 健全" if ratio_pp >= 3.0 else " 要改善"
                     rec_text += f"\nLTV:CAC比率（粗利）= {ratio_pp:.1f}:1　{judge_pp}"
                 rec_box = s_seg.shapes.add_shape(1, Inches(0.5), Inches(5.0), Inches(12.3), Inches(1.8))
                 rec_box.fill.solid(); rec_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
@@ -1280,7 +1352,7 @@ with exp2:
                         if is_best_slide:
                             badge_box = s_all.shapes.add_shape(1, Inches(11.5), Inches(0.05), Inches(1.3), Inches(0.42))
                             badge_box.fill.solid(); badge_box.fill.fore_color.rgb = GOLD; badge_box.line.fill.background()
-                            txbox(s_all, '🥇 最優先', 11.5, 0.08, 1.3, 0.35, size=11, bold=True, color=RGBColor(0x0d,0x1f,0x2d))
+                            txbox(s_all, 'TOP', 11.5, 0.08, 1.3, 0.35, size=10, bold=True, color=RGBColor(0x0d,0x1f,0x2d))
 
                         # ── 上段左：生存曲線 ──
                         import matplotlib.pyplot as plt_sv1
@@ -1333,46 +1405,25 @@ with exp2:
                         plt_sv1.close()
                         s_all.shapes.add_picture(buf_sv2, Inches(6.6), Inches(0.9), Inches(6.0), Inches(3.5))
 
-                        # ── 下段左：暫定LTVテーブル ──
+                        # ── 下段：暫定LTVテーブル（全幅）──
                         cols_ha = ['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']
-                        col_xa = [0.3, 1.9, 4.1, 5.4]
+                        col_xa = [0.3, 3.5, 7.5, 10.0]
                         for cx, ch in zip(col_xa, cols_ha):
-                            txbox(s_all, ch, cx, 4.55, 1.5, 0.3, size=7, bold=True, color=GOLD)
-                        hl_a = s_all.shapes.add_shape(1, Inches(0.3), Inches(4.85), Inches(6.0), Inches(0.02))
+                            txbox(s_all, ch, cx, 4.55, 2.5, 0.3, size=8, bold=True, color=GOLD)
+                        hl_a = s_all.shapes.add_shape(1, Inches(0.3), Inches(4.85), Inches(12.3), Inches(0.02))
                         hl_a.fill.solid(); hl_a.fill.fore_color.rgb = GOLD; hl_a.line.fill.background()
                         row_ya = 4.92
                         for i_h, h in enumerate(horizons):
                             lh_a = ltv_horizon(k_sv, lam_sv, arpu_sv, h)
                             label_a = f'{h}日' if h < 365 else f'{h//365}年'
                             row_vals_a = [label_a, f'¥{lh_a:,.0f}', f'{lh_a/ltv_inf_sv*100:.1f}%', f'¥{lh_a*gpm/cac_n:,.0f}']
-                            bg_a = s_all.shapes.add_shape(1, Inches(0.3), Inches(row_ya - 0.02), Inches(6.0), Inches(0.32))
+                            bg_a = s_all.shapes.add_shape(1, Inches(0.3), Inches(row_ya - 0.02), Inches(12.3), Inches(0.33))
                             bg_a.fill.solid()
                             bg_a.fill.fore_color.rgb = RGBColor(0x1a,0x3a,0x4a) if i_h%2==0 else RGBColor(0x0d,0x1f,0x2d)
                             bg_a.line.fill.background()
                             for cx, rv in zip(col_xa, row_vals_a):
-                                txbox(s_all, rv, cx, row_ya, 1.5, 0.3, size=8, color=WHITE)
-                            row_ya += 0.33
-
-                        # ── 下段右：コメント欄 ──
-                        comment_box = s_all.shapes.add_shape(1, Inches(6.6), Inches(4.55), Inches(6.0), Inches(2.85))
-                        comment_box.fill.solid(); comment_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
-                        comment_box.line.color.rgb = GOLD
-                        k_desc_c = "初期離脱型（契約直後の離脱が多い）" if k_sv < 1 else "逓増離脱型（時間とともに離脱増）"
-                        ltv_1y_c = ltv_horizon(k_sv, lam_sv, arpu_sv, 365)
-                        ltv_2y_c = ltv_horizon(k_sv, lam_sv, arpu_sv, 730)
-                        pct_1y_c = ltv_1y_c / ltv_inf_sv * 100
-                        pct_2y_c = ltv_2y_c / ltv_inf_sv * 100
-                        k_desc_c = "初期離脱型" if k_sv < 1 else "逓増離脱型"
-                        comment_text = (
-                            "【分析コメント】\n"
-                            f"k={k_sv:.3f}（{k_desc_c}）\n"
-                            f"λ={lam_sv:.1f}日（約{lam_sv/365:.1f}年）\n\n"
-                            f"LTV∞（売上）：¥{ltv_inf_sv:,.0f}\n"
-                            f"CAC上限（粗利）：¥{ltv_inf_sv*gpm/cac_n:,.0f}\n\n"
-                            f"1年時点：LTV∞の{pct_1y_c:.1f}%（¥{ltv_1y_c:,.0f}）\n"
-                            f"2年時点：LTV∞の{pct_2y_c:.1f}%（¥{ltv_2y_c:,.0f}）"
-                        )
-                        txbox(s_all, comment_text, 6.65, 4.62, 5.85, 2.7, size=8, color=WHITE)
+                                txbox(s_all, rv, cx, row_ya, 2.5, 0.3, size=9, color=WHITE)
+                            row_ya += 0.34
 
                     except Exception:
                         continue
@@ -1380,7 +1431,7 @@ with exp2:
         pptx_buf = io.BytesIO()
         prs.save(pptx_buf)
         pptx_buf.seek(0)
-        st.download_button("📑 PowerPointダウンロード", pptx_buf,
+        st.download_button("PowerPoint ダウンロード", pptx_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.pptx",
                            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
     except ImportError:
@@ -1425,7 +1476,7 @@ with exp3:
             [f'CAC上限（粗利ベース・{cac_label}）', f'¥{cac_upper:,.0f}'],
             ['Weibull k（形状パラメータ）', f'{k:.4f}  →  {"k<1: 初期離脱型" if k < 1 else "k>1: 逓増離脱型"}'],
             ['Weibull λ（尺度パラメータ）', f'{lam:.1f}日（約{lam/365:.1f}年）'],
-            ['R²（フィット精度）', f'{r2:.4f}  →  {"✓ 良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
+            ['R²（フィット精度）', f'{r2:.4f}  →  {" 良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
             ['顧客数', f'{len(df):,}件'],
             ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
             ['平均日次ARPU（売上）', f'¥{arpu_daily:,.2f}'],
@@ -1541,7 +1592,7 @@ with exp3:
                                                borderPadding=8, spaceAfter=4, spaceBefore=6,
                                                leftIndent=8, rightIndent=8)
                     story.append(Paragraph(
-                        f"🎯 優先獲得推奨：{best_pdf['seg']}　"
+                        f"優先獲得推奨：{best_pdf['seg']}　"
                         f"LTV∞（売上）¥{best_pdf['ltv_r']:,.0f}（全平均比+{prem:.1f}%）　"
                         f"CAC上限（粗利）¥{best_pdf['cac']:,.0f}",
                         rec_style
@@ -1644,7 +1695,7 @@ with exp3:
 
         doc.build(story)
         pdf_buf.seek(0)
-        st.download_button("📄 PDFダウンロード", pdf_buf,
+        st.download_button("PDF ダウンロード", pdf_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.pdf",
                            mime="application/pdf")
     except ImportError:
@@ -1653,7 +1704,7 @@ with exp3:
         st.caption(f"PDF出力エラー: {e}")
 
 # ══════════════════════════════════════════════════════════════
-# Segment Analysis (PRO)
+# Segment Analysis (Advanced)
 # ══════════════════════════════════════════════════════════════
 
 # セグメント結果を保存（エクスポート用）
@@ -1665,29 +1716,29 @@ if segment_cols_input.strip():
     invalid_seg_cols = [c for c in seg_cols if c not in df.columns]
 
     if invalid_seg_cols:
-        st.warning(f"⚠️ 以下の列が見つかりませんでした: {invalid_seg_cols}")
+        st.warning(f" 以下の列が見つかりませんでした: {invalid_seg_cols}")
 
     MAX_SEG_COLS = 5
     if len(valid_seg_cols) > MAX_SEG_COLS:
         st.warning(
-            f"⚠️ セグメント軸は最大{MAX_SEG_COLS}列まで指定できます（処理速度の確保のため）。"
+            f" セグメント軸は最大{MAX_SEG_COLS}列まで指定できます（処理速度の確保のため）。"
             f"現在{len(valid_seg_cols)}列指定されています。"
             f"先頭{MAX_SEG_COLS}列のみ分析します。残りの列は別途入力してください。"
         )
         valid_seg_cols = valid_seg_cols[:MAX_SEG_COLS]
 
     if valid_seg_cols:
-        st.markdown("<div class='section-title'>🔬 セグメント別LTV分析（PRO）</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>セグメント別 LTV 分析</div>", unsafe_allow_html=True)
 
         for seg_col in valid_seg_cols:
-            st.markdown(f"#### 📊 セグメント：`{seg_col}`")
+            st.markdown(f"#### セグメント：`{seg_col}`")
 
             seg_values = df[seg_col].dropna().unique()
             if len(seg_values) > 50:
-                st.warning(f"⚠️ `{seg_col}` のユニーク値が{len(seg_values)}個あります。50個以下にしてください。")
+                st.warning(f" `{seg_col}` のユニーク値が{len(seg_values)}個あります。50個以下にしてください。")
                 continue
             elif len(seg_values) > 20:
-                st.info(f"ℹ️ `{seg_col}` のユニーク値が{len(seg_values)}個あります。計算に少し時間がかかります。")
+                st.info(f"`{seg_col}` のユニーク値が{len(seg_values)}個あります。計算に少し時間がかかります。")
 
             seg_results = []
             seg_figs = []
@@ -1807,7 +1858,7 @@ if segment_cols_input.strip():
 
             st.markdown(f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:12px 18px; margin-bottom:8px; font-size:0.85rem; color:#ccc;'>
-  <span style='color:#56b4d3; font-weight:500;'>セグメント加重平均 LTV∞</span>　
+  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a;'>セグメント加重平均 LTV∞</span>　
   <span style='font-size:1.1rem; color:#a8dadc; font-weight:700;'>¥{weighted_ltv_rev:,.0f}</span>（売上）　
   <span style='color:#888;'>¥{weighted_ltv_gp:,.0f}（粗利）</span>　
   <span style='color:{diff_color}; font-size:0.8rem;'>全体値（¥{ltv_rev:,.0f}）との差：{diff_str}</span>
@@ -1818,7 +1869,7 @@ if segment_cols_input.strip():
             # テーブル下の説明
             st.markdown(f"""
 <div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:12px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
-  💡 <b style='color:#56b4d3;'>セグメント加重平均と全体LTV∞が異なる理由</b><br>
+  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — セグメント加重平均と全体LTV∞が異なる理由<br>
   全体LTV∞（¥{ltv_rev:,.0f}）はすべての顧客を1つのWeibullモデルでフィットした値です。セグメント加重平均（¥{weighted_ltv_rev:,.0f}）は各セグメントを個別にフィットした後、顧客数で重み付け平均した値です。<br>
   セグメントを切ることで顧客の<b>異質性（heterogeneity）が分離</b>されるため、切り口によって値が変わります。これはモデルの誤りではなく統計的に正しい現象です。<br>
   <b>意思決定の基準：</b>広告投資・予算配分にはセグメント別LTV∞を、ビジネス全体の健全性評価には全体LTV∞を参照することを推奨します。
@@ -1835,7 +1886,7 @@ if segment_cols_input.strip():
 
                 if cac_known:
                     ltv_cac_ratio = best_seg['LTV∞（粗利）'] / cac_input
-                    ratio_judge = "✓ 健全" if ltv_cac_ratio >= 3.0 else "⚠️ 要改善（推奨3:1以上）"
+                    ratio_judge = " 健全" if ltv_cac_ratio >= 3.0 else " 要改善（推奨3:1以上）"
                     efficiency_str = f"LTV:CAC比率（粗利ベース）= {ltv_cac_ratio:.1f}:1　{ratio_judge}"
                     cac_uplift = ((cac_best - cac_avg) / cac_avg * 100)
                     cac_str = f"許容CAC上限 ¥{cac_best:,.0f}（平均より{cac_uplift:+.1f}%高く設定可能）"
@@ -1845,11 +1896,11 @@ if segment_cols_input.strip():
 
                 insight_pro = f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-left:3px solid #56b4d3; border-radius:10px; padding:18px 20px; margin-top:8px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
-  <div style='color:#56b4d3; font-size:0.9rem; font-weight:500; margin-bottom:10px;'>🎯 優先獲得推奨セグメント：<b style='color:#a8dadc;'>{best_seg['セグメント']}</b></div>
+  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:10px;'>優先獲得推奨　<span style='font-size:0.95rem; font-weight:600; text-transform:none; letter-spacing:normal; color:#c8d0d8;'><b style='color:#a8dadc;'>{best_seg['セグメント']}</b></span></div>
   <div>・LTV∞（売上）: <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 <b style='color:#a8dadc;'>+{premium:.1f}%</b>）</div>
   <div>・{cac_str}</div>
   {"<div>・" + efficiency_str + "</div>" if efficiency_str else ""}
-  <div style='margin-top:10px; color:#56b4d3;'>💡 このセグメントに顧客獲得投資を集中させることで、CAC上限¥{cac_best:,.0f}の範囲内で収益性を維持しながら積極的な顧客獲得が可能です。</div>
+  <div style='margin-top:10px; font-size:0.8rem; color:#4a8aa8;'>このセグメントに顧客獲得投資を集中させることで、CAC上限¥{cac_best:,.0f}の範囲内で収益性を維持しながら積極的な顧客獲得が可能です。</div>
 </div>
 """
                 st.markdown(insight_pro, unsafe_allow_html=True)
@@ -1857,9 +1908,9 @@ if segment_cols_input.strip():
             # ── 全セグメントの詳細分析（上位N件のみブラウザ表示）──
             seg_results_display = seg_results[:seg_display_limit]
             remaining = len(seg_results) - len(seg_results_display)
-            st.markdown(f"#### 📅 セグメント別 詳細分析（上位{seg_display_limit}件／全{len(seg_results)}件）")
+            st.markdown(f"#### セグメント別 詳細分析 — 上位 {seg_display_limit} 件 / 全 {len(seg_results)} 件")
             if remaining > 0:
-                st.caption(f"ℹ️ 残り{remaining}件はパワポ・PDFに出力されます。サイドバーの「ブラウザ表示件数」を増やすと追加表示できます。")
+                st.caption(f"残り{remaining}件はパワポ・PDFに出力されます。サイドバーの「ブラウザ表示件数」を増やすと追加表示できます。")
             for sr in seg_results_display:
                 sv    = sr['セグメント']
                 k_s   = sr['k']
@@ -1873,7 +1924,7 @@ if segment_cols_input.strip():
                 is_best = (sv == seg_df.iloc[0]['セグメント'])
 
                 with st.expander(
-                    f"{'🥇' if is_best else '📊'} {sv}（顧客数 {n_s:,}件 / LTV∞ ¥{sr['LTV∞（売上）']:,.0f} / k={k_s:.3f} / λ={lam_s:.1f}日 / R²={r2_s:.3f}）",
+                    f"{sv}{' ·  Priority' if is_best else ''}  ·  {n_s:,} customers  ·  LTV∞ ¥{sr['LTV∞（売上）']:,.0f}  ·  k={k_s:.3f}  ·  λ={lam_s:.1f}d  ·  R²={r2_s:.3f}",
                     expanded=is_best
                 ):
                     try:
@@ -1907,7 +1958,7 @@ if segment_cols_input.strip():
                                 yaxis=dict(title='Survival Rate S(t)', gridcolor='#1a3040', tickfont=dict(color='#888'), range=[0, 1.05]),
                             )
                             st.plotly_chart(fig_sv1, use_container_width=True)
-                            st.caption(f"📌 生存曲線：実測KM曲線（実線）にWeibullフィット（破線）。k={k_s:.3f}・λ={lam_s:.1f}日")
+                            st.caption(f"生存曲線：実測KM曲線（実線）にWeibullフィット（破線）。k={k_s:.3f}・λ={lam_s:.1f}日")
 
                         with col_g2:
                             # Weibull直線化プロット
@@ -1948,7 +1999,7 @@ if segment_cols_input.strip():
                                 yaxis=dict(title='ln(−ln(S(t)))', gridcolor='#1a3040', tickfont=dict(color='#888')),
                             )
                             st.plotly_chart(fig_sv2, use_container_width=True)
-                            st.caption(f"📌 Weibull直線化プロット：R²={r2_s:.3f}（1.0に近いほど精度高い）")
+                            st.caption(f"Weibull直線化プロット：R²={r2_s:.3f}（1.0に近いほど精度高い）")
 
                         # ── 暫定LTVテーブル ──
                         st.markdown("**暫定LTV（観測期間別）**")
@@ -1973,7 +2024,7 @@ if segment_cols_input.strip():
                         pct_2y_s = ltv_2y_s / ltv_inf_s * 100
                         st.markdown(f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:14px 18px; font-size:0.82rem; color:#ccc; line-height:1.8; margin-top:8px;'>
-  <div style='color:#56b4d3; margin-bottom:6px;'>💡 解釈ガイド</div>
+  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:10px;'>解釈ガイド</div>
   <div>・k={k_s:.3f}（{k_desc_s}）　λ={lam_s:.0f}日（約{lam_yr_s:.1f}年）</div>
   <div>・LTV∞（売上）¥{ltv_inf_s:,.0f}　CAC上限（粗利）¥{sr['CAC上限（粗利）']:,.0f}</div>
   <div>・1年時点でLTV∞の{pct_1y_s:.1f}%（¥{ltv_1y_s:,.0f}）、2年時点で{pct_2y_s:.1f}%（¥{ltv_2y_s:,.0f}）回収</div>
@@ -1983,8 +2034,8 @@ if segment_cols_input.strip():
                         st.caption(f"グラフ生成エラー: {e_sv}")
 
 else:
-    st.markdown("<div class='section-title'>🔬 セグメント別LTV分析（PRO）</div>", unsafe_allow_html=True)
-    st.info("← サイドバーの「セグメント列名」にCSVの列名を入力してください。例：`plan, channel`")
+    st.markdown("<div class='section-title'>セグメント別 LTV 分析</div>", unsafe_allow_html=True)
+    st.info("サイドバーの「セグメント分析」にCSVの列名を入力してください。例：`plan, channel`")
     st.markdown("""
 **使い方：**
 1. CSVにセグメント列を追加（例：`plan`列に「月額」「年額」など）
@@ -1996,7 +2047,7 @@ else:
 # Data preview
 # ══════════════════════════════════════════════════════════════
 
-with st.expander("📋 読み込んだデータを確認"):
+with st.expander("読み込んだデータを確認"):
     st.write(f"有効データ: {len(df):,}件 ／ 解約: {df['event'].sum():,}件 ／ 継続中: {(df['event']==0).sum():,}件 ／ 平均日次ARPU: ¥{arpu_daily:,.2f}")
     st.dataframe(
         df[['customer_id','start_date','end_date','duration','event','arpu_daily']].head(30),
@@ -2004,4 +2055,4 @@ with st.expander("📋 読み込んだデータを確認"):
     )
 
 st.markdown("---")
-st.markdown("<p style='color:#333; font-size:0.72rem; text-align:center;'>LTV Analyzer — KM × Weibull Model — Built for marketing analytics professionals</p>", unsafe_allow_html=True)
+st.markdown("<p style='color:#333; font-size:0.82rem; text-align:center;'>LTV Analyzer — KM × Weibull Model — Built for marketing analytics professionals</p>", unsafe_allow_html=True)

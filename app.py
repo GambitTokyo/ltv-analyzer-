@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 # ── Page config ──────────────────────────────────────────────
 st.set_page_config(
     page_title="LTV Analyzer",
-    page_icon="📈",
+    page_icon="",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -22,8 +22,8 @@ st.set_page_config(
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
-html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+html, body, [class*="css"] { font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.6; }
 .stApp { background-color: #0d0d0d; color: #e8e4dc; }
 .metric-card {
     background: #0d1f2d;
@@ -38,21 +38,21 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     align-items: center;
 }
 .metric-value {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Inter', sans-serif; font-weight: 600;
     font-size: 2rem;
     color: #56b4d3;
     line-height: 1.1;
     word-break: break-all;
 }
 .metric-label {
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     color: #555;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     margin-top: 6px;
 }
 .section-title {
-    font-family: 'Syne', sans-serif;
+    font-family: 'Inter', sans-serif; font-weight: 600;
     font-size: 1.1rem;
     color: #56b4d3;
     border-bottom: 1px solid #2a4a5a;
@@ -65,7 +65,7 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     border-left: 3px solid #56b4d3;
     border-radius: 8px;
     padding: 16px;
-    font-family: 'DM Sans', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 0.85rem;
     color: #ccc;
     white-space: pre-wrap;
@@ -86,7 +86,7 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
     border: 1px solid #2a2a2a;
     border-radius: 20px;
     padding: 2px 10px;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     color: #888;
     margin: 2px;
 }
@@ -161,7 +161,7 @@ def weibull_s(t, k, lam):
 # ══════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.markdown("### 📥 データ入力")
+    st.markdown("### データ入力")
 
     # サンプルデータ生成
     np.random.seed(42)
@@ -231,7 +231,7 @@ with st.sidebar:
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
-            "📥 サブスク用サンプル（1万件）",
+            " サブスク用サンプル（1万件）",
             sample_sub.to_csv(index=False).encode('utf-8-sig'),
             "sample_subscription.csv", "text/csv",
             use_container_width=True
@@ -239,7 +239,7 @@ with st.sidebar:
         st.caption("`end_date`: 解約日（継続中は空欄）")
     with col_dl2:
         st.download_button(
-            "📥 都度課金用サンプル（1万件）",
+            " 都度課金用サンプル（1万件）",
             sample_spot.to_csv(index=False).encode('utf-8-sig'),
             "sample_spot_purchase.csv", "text/csv",
             use_container_width=True
@@ -249,7 +249,7 @@ with st.sidebar:
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
     st.markdown("---")
-    st.markdown("### 🏷️ ビジネスタイプ")
+    st.markdown("### ビジネスタイプ")
     business_type = st.radio(
         "ビジネスタイプを選択してください",
         [
@@ -317,12 +317,12 @@ with st.sidebar:
     horizon_days = 730  # 内部計算用デフォルト
 
     st.markdown("---")
-    st.markdown("### 📊 粗利率（GPM）")
+    st.markdown("### 粗利率（GPM）")
     gpm = st.slider("Gross Profit Margin (%)", 0, 100, 54, 1) / 100
     st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します")
 
     st.markdown("---")
-    st.markdown("### 💰 CAC上限の算出")
+    st.markdown("### CAC上限の算出")
     cac_mode = st.radio("算出方法", ['LTV : CAC = N : 1', '回収期間（月）'])
     if cac_mode == 'LTV : CAC = N : 1':
         cac_n = st.slider("N（LTV:CAC = N:1）", 1.0, 10.0, 3.0, 0.5)
@@ -333,7 +333,7 @@ with st.sidebar:
         cac_label = f"{cac_n}ヶ月回収"
 
     st.markdown("---")
-    st.markdown("### 🏢 レポート情報")
+    st.markdown("### レポート情報")
     client_name  = st.text_input("クライアント名", "")
     analyst_name = st.text_input("分析者名", "")
 
@@ -343,7 +343,7 @@ with st.sidebar:
 
 st.markdown("""
 <div style='padding: 8px 0 24px 0;'>
-  <span style='font-family:Syne,sans-serif; font-size:2rem; color:#56b4d3;'>LTV Analyzer</span>
+  <span style='font-family:Inter,sans-serif; font-weight:600; font-size:2rem; color:#56b4d3;'>LTV Analyzer</span>
   <span style='font-size:0.8rem; color:#444; margin-left:12px;'>Kaplan–Meier × Weibull Model</span>
 </div>
 """, unsafe_allow_html=True)
@@ -360,7 +360,7 @@ if uploaded is None:
 | 列名 | 内容 | 形式 | 例 |
 |------|------|------|----|
 | `customer_id` | 顧客ID | 任意の文字列 | C0001 |
-| `start_date` | 契約開始日 | YYYY-MM-DD | 2023-01-01 |
+| `start_date` | 契約開始日 / 初回購入日 | YYYY-MM-DD | 2023-01-01 |
 | `end_date` | 解約日（サブスク向け・継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
 | `last_purchase_date` | 最終購買日（都度課金向け・任意） | YYYY-MM-DD | 2024-06-01 |
 | `revenue` | **累計売上**（円） | 数値 | 48000 |
@@ -400,7 +400,7 @@ try:
 
     missing = [k for k in ['start_date','end_date','revenue'] if k not in col_map]
     if missing:
-        st.error(f"❌ 列が見つかりません: {missing}\n\n列名に `start`・`end`・`revenue` を含む列が必要です。サイドバーからサンプルCSVをダウンロードして形式を確認してください。")
+        st.error(f" 列が見つかりません: {missing}\n\n列名に `start`・`end`・`revenue` を含む列が必要です。サイドバーからサンプルCSVをダウンロードして形式を確認してください。")
         st.stop()
 
     # last_purchase_date 列の自動認識
@@ -418,7 +418,7 @@ try:
 
     bad_dates = df['start_date'].isna().sum()
     if bad_dates > 0:
-        st.warning(f"⚠️ {bad_dates}行で `start_date` が読み取れませんでした。該当行は除外します。")
+        st.warning(f" {bad_dates}行で `start_date` が読み取れませんでした。該当行は除外します。")
     df = df.dropna(subset=['start_date'])
 
     today = pd.Timestamp.today()
@@ -528,20 +528,20 @@ try:
 
     # ── 通知メッセージ ──
     if n_dormant > 0:
-        st.info(f"💤 {n_dormant:,}件を休眠顧客（最終購買から{dormancy_days}日超）として実質離脱に変換しました。")
+        st.info(f" {n_dormant:,}件を休眠顧客（最終購買から{dormancy_days}日超）として実質離脱に変換しました。")
     if n_corrected > 0:
-        st.info(f"ℹ️ {n_corrected}件：契約開始日と終端日が同日のため1日に補正しました。")
+        st.info(f"ℹ {n_corrected}件：{date_label}と終端日が同日のため1日に補正しました。")
     if n_excluded > 0:
-        st.warning(f"⚠️ {n_excluded}件：契約開始日が未来のため除外しました。")
+        st.warning(f" {n_excluded}件：start_dateが未来の日付のため除外しました（入力ミスの可能性）。")
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0:
-        st.success(f"✅ 全{n_input:,}件のデータを正常に読み込みました。")
+        st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
 
     if len(df) < 10:
-        st.error("❌ 有効なデータが10件未満です。分析には最低10件の顧客データが必要です。")
+        st.error(" 有効なデータが10件未満です。分析には最低10件の顧客データが必要です。")
         st.stop()
 
 except Exception as e:
-    st.error(f"❌ データ読み込みエラー: {e}\n\nCSVの形式を確認してください。サンプルCSVをダウンロードして参照してください。")
+    st.error(f" データ読み込みエラー: {e}\n\nCSVの形式を確認してください。サンプルCSVをダウンロードして参照してください。")
     st.stop()
 
 # ══════════════════════════════════════════════════════════════
@@ -552,7 +552,7 @@ km_df = compute_km(df)
 k, lam, r2, fit_df = fit_weibull(km_df)
 
 if k is None:
-    st.error("❌ Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
+    st.error(" Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
     st.stop()
 
 ltv_rev, surv_int = ltv_inf(k, lam, arpu_daily)   # 売上ベース
@@ -587,7 +587,7 @@ for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
 
 # R² warning
 if r2 < 0.85:
-    st.warning(f"⚠️ R²={r2:.3f} — フィット精度がやや低めです。データ点数を増やすか、観測期間を見直してください。")
+    st.warning(f" R²={r2:.3f} — フィット精度がやや低めです。データ点数を増やすか、観測期間を見直してください。")
 
 # ══════════════════════════════════════════════════════════════
 # Charts
@@ -613,7 +613,7 @@ with c1:
     plt.close()
 
 with c1:
-    st.caption("📌 生存曲線（Survival Curve）：実測のKM曲線（実線）にWeibullモデルをフィット（破線）。右に伸びるほど顧客が長く継続している。")
+    st.caption(" 生存曲線（Survival Curve）：実測のKM曲線（実線）にWeibullモデルをフィット（破線）。右に伸びるほど顧客が長く継続している。")
 
 with c2:
     fig, ax = plt.subplots(figsize=(6, 3.8))
@@ -633,7 +633,7 @@ with c2:
     plt.close()
 
 with c2:
-    st.caption("📌 Weibull直線化プロット：生存率を対数変換して直線化したもの。R²が1.0に近いほどWeibullモデルのフィット精度が高い。")
+    st.caption(" Weibull直線化プロット：生存率を対数変換して直線化したもの。R²が1.0に近いほどWeibullモデルのフィット精度が高い。")
 
 # Save chart images for export
 fig1, ax1 = plt.subplots(figsize=(7, 4))
@@ -716,7 +716,7 @@ else:
 
 # k の解釈
 if k < 0.8:
-    k_desc = f"k={k:.3f}は1より大きく小さいため、契約直後の離脱が特に多いパターンです。初期のオンボーディング改善が最優先です。"
+    k_desc = f"k={k:.3f}は1より大きく小さいため、{acq_label}直後の離脱が特に多いパターンです。初期のオンボーディング改善が最優先です。"
 elif k < 1.0:
     k_desc = f"k={k:.3f}は1に近いため、離脱率がほぼ一定（指数分布に近い）パターンです。"
 else:
@@ -724,7 +724,7 @@ else:
 
 insight_html = f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:10px; padding:18px 20px; margin-top:12px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
-  <div style='color:#56b4d3; font-size:0.82rem; font-weight:500; margin-bottom:10px; letter-spacing:0.05em;'>💡 このテーブルの読み方</div>
+  <div style='color:#56b4d3; font-size:0.82rem; font-weight:500; margin-bottom:10px; letter-spacing:0.05em;'> このテーブルの読み方</div>
   <div>・{lam_desc}</div>
   <div>・{k_desc}</div>
   <div>・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。</div>
@@ -733,7 +733,7 @@ insight_html = f"""
     <span style='color:#56b4d3;'>2年時点</span>で<b style='color:#a8dadc;'>{pct_2y:.1f}%</b>（¥{ltv_2y:,.0f}）、
     <span style='color:#56b4d3;'>3年時点</span>で<b style='color:#a8dadc;'>{pct_3y:.1f}%</b>（¥{ltv_3y:,.0f}）を回収できます。
   </div>
-  <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）を回収できるのは契約から約 <b style='color:#a8dadc;'>{cac_recover_str}</b> 後です。</div>
+  <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）を回収できるのは{acq_label}から約 <b style='color:#a8dadc;'>{cac_recover_str}</b> 後です。</div>
 </div>
 """
 st.markdown(insight_html, unsafe_allow_html=True)
@@ -742,16 +742,18 @@ st.markdown(insight_html, unsafe_allow_html=True)
 # AI Prompt Generator
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>🤖 AIに質問するプロンプト</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'> AIに質問するプロンプト</div>", unsafe_allow_html=True)
 st.markdown("<div class='help-box'>この結果の読み方や戦略への活用方法がわからない場合は、以下のプロンプトをClaude・ChatGPT・Geminiにコピペしてください。</div>", unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["📊 分析結果の解釈", "📈 マーケティング意思決定", "⚠️ 分析の限界と改善"])
+tab1, tab2, tab3 = st.tabs([" 分析結果の解釈", " マーケティング意思決定", " 分析の限界と改善"])
 
 dormancy_label = "なし（解約日ベース）" if dormancy_days is None else f"{dormancy_days}日"
 churned_count  = int(df['event'].sum())
 active_count   = int((df['event']==0).sum())
 churn_rate     = churned_count / len(df) * 100
-k_pattern      = "初期集中型（契約直後の離脱が多い）" if k < 1 else "逓増型（時間とともに離脱が増える）"
+acq_label  = "初回購入" if business_type == "都度課金型" else "契約"
+date_label = "初回購入日" if business_type == "都度課金型" else "契約開始日"
+k_pattern      = f"初期集中型（{acq_label}直後の離脱が多い）" if k < 1 else "逓増型（時間とともに離脱が増える）"
 
 prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル）を使い、以下の結果を得ました。
 
@@ -766,7 +768,7 @@ prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル
 ・分析手法: Kaplan-Meier法 + Weibullモデルによる生存分析"""
 
 copy_html = """<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
-📋 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
+ 上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
 </div>"""
 
 with tab1:
@@ -785,7 +787,7 @@ with tab2:
 
 【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
 1. CAC上限¥{cac_upper:,.0f}（粗利ベースLTV÷{cac_n}）をもとに、CPAとROASの目標値をどう設定すべきですか？計算式も示してください。
-2. λ={lam:.1f}日（典型的な継続期間）を踏まえると、契約後何日目にリテンション施策を打つのが最も効果的ですか？推奨タイミングと施策内容を教えてください。
+2. λ={lam:.1f}日（典型的な継続期間）を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？推奨タイミングと施策内容を教えてください。
 3. ARPU_daily¥{arpu_daily:,.2f}・LTV∞¥{ltv_rev:,.0f}の水準で費用対効果的に合いやすい広告チャネルはどれですか？CPAとの関係で説明してください。
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
@@ -807,7 +809,7 @@ with tab3:
 # Export buttons
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>📤 エクスポート</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'> エクスポート</div>", unsafe_allow_html=True)
 
 exp1, exp2, exp3 = st.columns(3)
 
@@ -874,7 +876,7 @@ with exp1:
         xl_buf = io.BytesIO()
         wb.save(xl_buf)
         xl_buf.seek(0)
-        st.download_button("📊 Excelダウンロード", xl_buf,
+        st.download_button(" Excelダウンロード", xl_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.xlsx",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     except Exception as e:
@@ -955,22 +957,52 @@ with exp2:
         )
         txbox(s2, stats_text, 0.5, 3.3, 12.3, 0.5, size=10, color=GRAY)
 
-        # Horizon table header
-        txbox(s2, '観測期間別 暫定LTV', 0.5, 3.9, 12, 0.4, size=13, bold=True, color=WHITE)
-        cols_h = ['ホライズン', '暫定LTV', 'LTV∞比', 'CAC上限']
-        col_x  = [0.5, 3.3, 6.5, 9.3]
+        # ── Slide 2b: Horizon Table (dedicated slide) ──
+        s2b = prs.slides.add_slide(blank)
+        add_bg(s2b, prs)
+        txbox(s2b, '暫定LTV（観測期間別）', 0.5, 0.25, 12, 0.5, size=22, bold=True, color=WHITE)
+        txbox(s2b, f'LTV∞（売上）¥{ltv_rev:,.0f} / LTV∞（粗利）¥{ltv_val:,.0f} / CAC上限 ¥{cac_upper:,.0f}（{cac_label}）', 0.5, 0.85, 12, 0.35, size=9, color=GRAY)
+
+        cols_h = ['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']
+        col_x  = [0.5, 3.3, 7.0, 9.8]
+        col_w  = [2.6, 3.5, 2.5, 3.0]
         for cx, ch in zip(col_x, cols_h):
+            txbox(s2b, ch, cx, 1.35, 3.0, 0.35, size=9, bold=True, color=GOLD)
+        # 区切り線
+        hl = s2b.shapes.add_shape(1, Inches(0.5), Inches(1.72), Inches(12.3), Inches(0.02))
+        hl.fill.solid(); hl.fill.fore_color.rgb = GOLD; hl.line.fill.background()
+
+        row_y = 1.8
+        for i, h in enumerate(horizons):
+            lh = ltv_horizon(k, lam, arpu_daily, h)
+            label = f'{h}日' if h < 365 else f'{h//365}年'
+            row_vals = [label, f'¥{lh:,.0f}', f'{lh/ltv_rev*100:.1f}%', f'¥{lh/cac_n:,.0f}']
+            row_color = RGBColor(0x1a,0x3a,0x4a) if i % 2 == 0 else RGBColor(0x0d,0x1f,0x2d)
+            bg_row = s2b.shapes.add_shape(1, Inches(0.5), Inches(row_y - 0.02), Inches(12.3), Inches(0.38))
+            bg_row.fill.solid(); bg_row.fill.fore_color.rgb = row_color; bg_row.line.fill.background()
+            for cx, rv in zip(col_x, row_vals):
+                txbox(s2b, rv, cx, row_y, 3.0, 0.35, size=10, color=WHITE)
+            row_y += 0.4
+
+        # CAC回収期間の示唆
+        txbox(s2b, f'CAC回収期間の目安: 約{cac_recover_str}', 0.5, 4.85, 12, 0.35, size=10, color=GOLD)
+
+        # Horizon table on slide 2 (compact - keep existing position)
+        txbox(s2, '観測期間別 暫定LTV', 0.5, 3.9, 12, 0.4, size=13, bold=True, color=WHITE)
+        cols_h2 = ['ホライズン', '暫定LTV', 'LTV∞比', 'CAC上限']
+        col_x2  = [0.5, 3.3, 6.5, 9.3]
+        for cx, ch in zip(col_x2, cols_h2):
             txbox(s2, ch, cx, 4.4, 2.6, 0.35, size=9, bold=True, color=GOLD)
-        row_y = 4.8
+        row_y2 = 4.8
         for h in horizons[:5]:
             lh = ltv_horizon(k, lam, arpu_daily, h)
-            row_vals = [
+            row_vals2 = [
                 f'{h}日' if h<365 else f'{h//365}年',
                 f'¥{lh:,.0f}', f'{lh/ltv_val*100:.1f}%', f'¥{lh/cac_n:,.0f}'
             ]
-            for cx, rv in zip(col_x, row_vals):
-                txbox(s2, rv, cx, row_y, 2.6, 0.32, size=9, color=WHITE)
-            row_y += 0.34
+            for cx, rv in zip(col_x2, row_vals2):
+                txbox(s2, rv, cx, row_y2, 2.6, 0.32, size=9, color=WHITE)
+            row_y2 += 0.34
 
         # ── Slide 3: Charts ──
         s3 = prs.slides.add_slide(blank)
@@ -1068,7 +1100,7 @@ with exp2:
         pptx_buf = io.BytesIO()
         prs.save(pptx_buf)
         pptx_buf.seek(0)
-        st.download_button("📑 PowerPointダウンロード", pptx_buf,
+        st.download_button(" PowerPointダウンロード", pptx_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.pptx",
                            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
     except ImportError:
@@ -1113,7 +1145,7 @@ with exp3:
             [f'CAC上限（粗利ベース・{cac_label}）', f'¥{cac_upper:,.0f}'],
             ['Weibull k（形状パラメータ）', f'{k:.4f}  →  {"k<1: 初期離脱型" if k < 1 else "k>1: 逓増離脱型"}'],
             ['Weibull λ（尺度パラメータ）', f'{lam:.1f}日（約{lam/365:.1f}年）'],
-            ['R²（フィット精度）', f'{r2:.4f}  →  {"✓ 良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
+            ['R²（フィット精度）', f'{r2:.4f}  →  {" 良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
             ['顧客数', f'{len(df):,}件'],
             ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
             ['平均日次ARPU（売上）', f'¥{arpu_daily:,.2f}'],
@@ -1141,6 +1173,28 @@ with exp3:
         story.append(Paragraph('Weibull Linearization Plot', h2_style))
         buf2.seek(0)
         story.append(Image(buf2, width=13*cm, height=7.5*cm))
+
+        # 暫定LTVテーブル
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Paragraph('暫定LTV（観測期間別）', h2_style))
+        horizon_data = [['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']]
+        for h in horizons:
+            lh = ltv_horizon(k, lam, arpu_daily, h)
+            label = f'{h}日' if h < 365 else f'{h//365}年'
+            horizon_data.append([label, f'¥{lh:,.0f}', f'{lh/ltv_rev*100:.1f}%', f'¥{lh/cac_n:,.0f}'])
+        t_horizon = Table(horizon_data, colWidths=[3*cm, 4*cm, 3*cm, 4*cm])
+        t_horizon.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1a1a1a')),
+            ('TEXTCOLOR',  (0,0), (-1,0), colors.HexColor('#c8b89a')),
+            ('TEXTCOLOR',  (0,1), (-1,-1), colors.HexColor('#cccccc')),
+            ('FONTNAME',   (0,0), (-1,-1), 'HeiseiMin-W3'),
+            ('FONTSIZE',   (0,0), (-1,-1), 9),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor('#111111'), colors.HexColor('#161616')]),
+            ('GRID', (0,0), (-1,-1), 0.3, colors.HexColor('#333333')),
+            ('LEFTPADDING', (0,0), (-1,-1), 8),
+        ]))
+        story.append(t_horizon)
+        story.append(Paragraph(f'CAC回収期間の目安：約{cac_recover_str}', body_style))
 
         # AI Prompts
         pdata_pdf = (
@@ -1188,7 +1242,7 @@ with exp3:
 
         doc.build(story)
         pdf_buf.seek(0)
-        st.download_button("📄 PDFダウンロード", pdf_buf,
+        st.download_button(" PDFダウンロード", pdf_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.pdf",
                            mime="application/pdf")
     except ImportError:
@@ -1200,7 +1254,7 @@ with exp3:
 # Data preview
 # ══════════════════════════════════════════════════════════════
 
-with st.expander("📋 読み込んだデータを確認"):
+with st.expander(" 読み込んだデータを確認"):
     st.write(f"有効データ: {len(df):,}件 ／ 解約: {df['event'].sum():,}件 ／ 継続中: {(df['event']==0).sum():,}件 ／ 平均日次ARPU: ¥{arpu_daily:,.2f}")
     st.dataframe(
         df[['customer_id','start_date','end_date','duration','event','arpu_daily']].head(30),
