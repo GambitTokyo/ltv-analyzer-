@@ -90,6 +90,22 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; font-size: 14px; 
     color: #888;
     margin: 2px;
 }
+/* ── Radio & Slider accent color ── */
+[data-testid="stRadio"] label div p { color: #c8d0d8 !important; }
+div[data-baseweb="radio"] div { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
+div[data-baseweb="slider"] div[role="slider"] { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
+div[data-baseweb="slider"] div[data-testid="stSlider"] div { background-color: #56b4d3 !important; }
+
+/* ── Sidebar text colors ── */
+[data-testid="stSidebar"] label { color: #c8d0d8 !important; }
+[data-testid="stSidebar"] p { color: #c8d0d8 !important; }
+[data-testid="stSidebar"] .stCaption p { color: #8aaabb !important; }
+[data-testid="stSidebar"] .stRadio label p { color: #c8d0d8 !important; }
+
+/* ── Main area background: remove harsh white ── */
+.stApp { background-color: #0a0e14 !important; }
+[data-testid="stFileUploadDropzone"] { background-color: #0d1520 !important; border-color: #1c2a3a !important; }
+[data-testid="stFileUploadDropzone"] p { color: #8aaabb !important; }
 </style>
 """, unsafe_allow_html=True)
 

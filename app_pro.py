@@ -38,13 +38,14 @@ html, body, [class*="css"] {
 [data-testid="stSidebar"] {
     background-color: #0d1117;
     border-right: 1px solid #1c2430;
+    color: #c8d0d8;
 }
 [data-testid="stSidebar"] .stMarkdown h3 {
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #4a6a7a;
+    color: #8ab4c4;
     margin: 24px 0 8px 0;
     padding-bottom: 6px;
     border-bottom: 1px solid #1c2430;
@@ -77,14 +78,14 @@ html, body, [class*="css"] {
 .metric-label {
     font-size: 0.68rem;
     font-weight: 500;
-    color: #3a5a6a;
+    color: #7a9aaa;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     margin-top: 8px;
 }
 .metric-desc {
     font-size: 0.82rem;
-    color: #3a5060;
+    color: #8aaabb;
     margin-top: 3px;
     line-height: 1.3;
 }
@@ -93,7 +94,7 @@ html, body, [class*="css"] {
 .section-title {
     font-size: 0.68rem;
     font-weight: 600;
-    color: #3a6a7a;
+    color: #7ab4c4;
     text-transform: uppercase;
     letter-spacing: 0.14em;
     border-bottom: 1px solid #1a2a3a;
@@ -158,6 +159,22 @@ html, body, [class*="css"] {
     font-weight: 500;
     letter-spacing: 0.04em;
 }
+/* ── Radio & Slider accent color ── */
+[data-testid="stRadio"] label div p { color: #c8d0d8 !important; }
+div[data-baseweb="radio"] div { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
+div[data-baseweb="slider"] div[role="slider"] { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
+div[data-baseweb="slider"] div[data-testid="stSlider"] div { background-color: #56b4d3 !important; }
+
+/* ── Sidebar text colors ── */
+[data-testid="stSidebar"] label { color: #c8d0d8 !important; }
+[data-testid="stSidebar"] p { color: #c8d0d8 !important; }
+[data-testid="stSidebar"] .stCaption p { color: #8aaabb !important; }
+[data-testid="stSidebar"] .stRadio label p { color: #c8d0d8 !important; }
+
+/* ── Main area background: remove harsh white ── */
+.stApp { background-color: #0a0e14 !important; }
+[data-testid="stFileUploadDropzone"] { background-color: #0d1520 !important; border-color: #1c2a3a !important; }
+[data-testid="stFileUploadDropzone"] p { color: #8aaabb !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1896,7 +1913,7 @@ if segment_cols_input.strip():
 
                 insight_pro = f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-left:3px solid #56b4d3; border-radius:10px; padding:18px 20px; margin-top:8px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
-  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:10px;'>優先獲得推奨　<span style='font-size:0.95rem; font-weight:600; text-transform:none; letter-spacing:normal; color:#c8d0d8;'><b style='color:#a8dadc;'>{best_seg['セグメント']}</b></span></div>
+  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4; margin-bottom:10px;'>優先獲得推奨　<span style='font-size:0.95rem; font-weight:600; text-transform:none; letter-spacing:normal; color:#c8d0d8;'><b style='color:#a8dadc;'>{best_seg['セグメント']}</b></span></div>
   <div>・LTV∞（売上）: <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 <b style='color:#a8dadc;'>+{premium:.1f}%</b>）</div>
   <div>・{cac_str}</div>
   {"<div>・" + efficiency_str + "</div>" if efficiency_str else ""}
@@ -2024,7 +2041,7 @@ if segment_cols_input.strip():
                         pct_2y_s = ltv_2y_s / ltv_inf_s * 100
                         st.markdown(f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:14px 18px; font-size:0.82rem; color:#ccc; line-height:1.8; margin-top:8px;'>
-  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:10px;'>解釈ガイド</div>
+  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4; margin-bottom:10px;'>解釈ガイド</div>
   <div>・k={k_s:.3f}（{k_desc_s}）　λ={lam_s:.0f}日（約{lam_yr_s:.1f}年）</div>
   <div>・LTV∞（売上）¥{ltv_inf_s:,.0f}　CAC上限（粗利）¥{sr['CAC上限（粗利）']:,.0f}</div>
   <div>・1年時点でLTV∞の{pct_1y_s:.1f}%（¥{ltv_1y_s:,.0f}）、2年時点で{pct_2y_s:.1f}%（¥{ltv_2y_s:,.0f}）回収</div>
