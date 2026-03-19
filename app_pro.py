@@ -159,6 +159,32 @@ html, body, [class*="css"] {
     font-weight: 500;
     letter-spacing: 0.04em;
 }
+/* ── Text / Number input fields ── */
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input {
+    background-color: #0d1a28 !important;
+    color: #c8d0d8 !important;
+    border: 1px solid #1c3a4a !important;
+    border-radius: 6px !important;
+}
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus {
+    border-color: #56b4d3 !important;
+    box-shadow: 0 0 0 1px #56b4d3 !important;
+}
+[data-testid="stNumberInput"] button {
+    background-color: #0d1a28 !important;
+    border-color: #1c3a4a !important;
+    color: #6a9aaa !important;
+}
+
+/* ── Radio: 選択時の赤を青に ── */
+div[data-baseweb="radio"] [data-checked="true"] { border-color: #56b4d3 !important; }
+div[data-baseweb="radio"] [data-checked="true"] div { background-color: #56b4d3 !important; }
+div[data-baseweb="radio"] input:checked ~ * { border-color: #56b4d3 !important; }
+/* フォーカスリング */
+div[data-baseweb="radio"] [data-focused="true"] { box-shadow: 0 0 0 3px rgba(86,180,211,0.3) !important; }
+
 /* ── Radio & Slider accent color (override Streamlit red) ── */
 [data-testid="stRadio"] label div p { color: #c8d0d8 !important; }
 
@@ -194,6 +220,20 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
 [data-testid="stToolbar"] { background-color: #0a0e14 !important; }
 [data-testid="stDecoration"] { background-color: #0a0e14 !important; display: none; }
 .stAppHeader, header[data-testid="stHeader"] { background: #0a0e14 !important; }
+
+/* ── Download buttons (sample CSV cards) ── */
+[data-testid="stDownloadButton"] > button {
+    background-color: #0d1a28 !important;
+    color: #a8c8d8 !important;
+    border: 1px solid #1c3a4a !important;
+    border-radius: 8px !important;
+    width: 100% !important;
+}
+[data-testid="stDownloadButton"] > button:hover {
+    background-color: #112030 !important;
+    border-color: #56b4d3 !important;
+    color: #56b4d3 !important;
+}
 
 /* ── File uploader ── */
 [data-testid="stFileUploadDropzone"] {
