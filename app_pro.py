@@ -159,11 +159,23 @@ html, body, [class*="css"] {
     font-weight: 500;
     letter-spacing: 0.04em;
 }
-/* ── Radio & Slider accent color ── */
+/* ── Radio & Slider accent color (override Streamlit red) ── */
 [data-testid="stRadio"] label div p { color: #c8d0d8 !important; }
+
+/* Radio: 選択済みの塗り・ボーダー */
 div[data-baseweb="radio"] div { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
-div[data-baseweb="slider"] div[role="slider"] { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
-div[data-baseweb="slider"] div[data-testid="stSlider"] div { background-color: #56b4d3 !important; }
+div[data-baseweb="radio"] [data-checked="true"] div { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
+div[data-baseweb="radio"] input:checked + div { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
+[data-testid="stRadio"] [aria-checked="true"] > div { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
+
+/* Slider: トラック・ハンドル・塗り済みトラック */
+div[data-baseweb="slider"] [role="slider"] { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
+div[data-baseweb="slider"] [data-testid="stSlider"] div { background-color: #56b4d3 !important; }
+div[data-baseweb="slider"] div[class*="Track"] > div { background-color: #56b4d3 !important; }
+div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 !important; }
+/* Streamlit 1.x のスライダー塗り */
+.stSlider [data-baseweb="slider"] > div > div > div:nth-child(2) { background: #56b4d3 !important; }
+.stSlider [data-baseweb="slider"] > div > div > div:last-child { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
 
 /* ── Sidebar text colors ── */
 [data-testid="stSidebar"] label { color: #c8d0d8 !important; }
@@ -171,10 +183,51 @@ div[data-baseweb="slider"] div[data-testid="stSlider"] div { background-color: #
 [data-testid="stSidebar"] .stCaption p { color: #8aaabb !important; }
 [data-testid="stSidebar"] .stRadio label p { color: #c8d0d8 !important; }
 
-/* ── Main area background: remove harsh white ── */
+/* ── Main area background ── */
 .stApp { background-color: #0a0e14 !important; }
-[data-testid="stFileUploadDropzone"] { background-color: #0d1520 !important; border-color: #1c2a3a !important; }
-[data-testid="stFileUploadDropzone"] p { color: #8aaabb !important; }
+
+/* ── Header / toolbar / top decoration ── */
+[data-testid="stHeader"] {
+    background-color: #0a0e14 !important;
+    border-bottom: 1px solid #1a2430 !important;
+}
+[data-testid="stToolbar"] { background-color: #0a0e14 !important; }
+[data-testid="stDecoration"] { background-color: #0a0e14 !important; display: none; }
+.stAppHeader, header[data-testid="stHeader"] { background: #0a0e14 !important; }
+
+/* ── File uploader ── */
+[data-testid="stFileUploadDropzone"] {
+    background-color: #0d1520 !important;
+    border: 1px dashed #1c3a4a !important;
+    border-radius: 8px !important;
+}
+[data-testid="stFileUploadDropzone"] p,
+[data-testid="stFileUploadDropzone"] span,
+[data-testid="stFileUploadDropzone"] small { color: #6a9aaa !important; }
+[data-testid="stFileUploadDropzone"] svg { fill: #3a6a7a !important; }
+[data-testid="stFileUploaderFile"] {
+    background-color: #0d1a28 !important;
+    border-radius: 6px !important;
+}
+[data-testid="stFileUploaderFileName"] { color: #a8c8d8 !important; }
+
+/* ── Inline code badges (end_date, last_purchase_date etc.) ── */
+code, .stMarkdown code {
+    background-color: #0d1f2d !important;
+    color: #56b4d3 !important;
+    border: 1px solid #1a3a4a !important;
+    border-radius: 4px !important;
+    padding: 1px 5px !important;
+    font-size: 0.82em !important;
+}
+
+/* ── Browse files button ── */
+[data-testid="stFileUploadDropzone"] button {
+    background-color: #0d2030 !important;
+    color: #56b4d3 !important;
+    border: 1px solid #1c3a4a !important;
+    border-radius: 6px !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -199,29 +252,116 @@ ACCENT3 = '#1d6fa4'
 # Analysis functions
 # ══════════════════════════════════════════════════════════════
 
-def compute_km(df):
-    df = df.sort_values('duration').reset_index(drop=True)
+@st.cache_data(show_spinner=False)
+def compute_km(duration_arr, event_arr):
+    """Kaplan-Meier推定（配列を受け取りキャッシュ対応）"""
     S, records = 1.0, []
-    for t in np.sort(df['duration'].unique()):
-        n_risk   = (df['duration'] >= t).sum()
-        n_events = ((df['duration'] == t) & (df['event'] == 1)).sum()
+    for t in np.sort(np.unique(duration_arr)):
+        n_risk   = (duration_arr >= t).sum()
+        n_events = ((duration_arr == t) & (event_arr == 1)).sum()
         if n_risk > 0:
             S *= (1 - n_events / n_risk)
         records.append({'t': t, 'S': S, 'n_events': n_events, 'n_risk': n_risk})
     return pd.DataFrame(records)
 
-def fit_weibull(km_df):
-    fd = km_df[(km_df['t'] > 0) & (km_df['S'] > 0) & (km_df['S'] < 1)].copy()
-    fd['ln_t']         = np.log(fd['t'])
-    fd['ln_neg_ln_S']  = np.log(-np.log(fd['S']))
-    fd = fd.replace([np.inf, -np.inf], np.nan).dropna()
-    if len(fd) < 3:
+@st.cache_data(show_spinner=False)
+def fit_weibull(t_arr, S_arr):
+    """Weibullフィッティング（配列を受け取りキャッシュ対応）"""
+    mask = (t_arr > 0) & (S_arr > 0) & (S_arr < 1)
+    t_f, S_f = t_arr[mask], S_arr[mask]
+    ln_t        = np.log(t_f)
+    ln_neg_ln_S = np.log(-np.log(S_f))
+    valid = np.isfinite(ln_t) & np.isfinite(ln_neg_ln_S)
+    ln_t, ln_neg_ln_S = ln_t[valid], ln_neg_ln_S[valid]
+    if len(ln_t) < 3:
         return None, None, None, None
-    k, b, r, *_ = stats.linregress(fd['ln_t'], fd['ln_neg_ln_S'])
+    k, b, r, *_ = stats.linregress(ln_t, ln_neg_ln_S)
     lam = np.exp(-b / k)
+    fd = pd.DataFrame({'ln_t': ln_t, 'ln_neg_ln_S': ln_neg_ln_S})
     return k, lam, r**2, fd
 
-def ltv_inf(k, lam, arpu):
+def _compute_km_df(df):
+    """DataFrameからKM計算（内部ヘルパー）"""
+    return compute_km(df['duration'].values, df['event'].values)
+
+def _fit_weibull_df(km_df):
+    """KM DataFrameからWeibullフィット（内部ヘルパー）"""
+    return fit_weibull(km_df['t'].values.astype(float), km_df['S'].values.astype(float))
+
+@st.cache_data(show_spinner=False)
+def load_and_preprocess_csv(file_bytes, dormancy_days, billing_cycle, business_type):
+    """CSVの読み込みと前処理をキャッシュ化（同じファイル・設定なら再計算しない）"""
+    import io as _io
+    df_raw = pd.read_csv(_io.BytesIO(file_bytes))
+    df_raw.columns = df_raw.columns.str.strip().str.lower()
+
+    col_map = {}
+    for c in df_raw.columns:
+        if any(x in c for x in ['id','customer','顧客']):       col_map.setdefault('customer_id', c)
+        if any(x in c for x in ['start','開始','契約']):        col_map.setdefault('start_date', c)
+        if any(x in c for x in ['end','解約','終了','cancel']):  col_map.setdefault('end_date', c)
+        if any(x in c for x in ['revenue','売上','arpu','rev','price','amount']):
+            col_map.setdefault('revenue', c)
+
+    missing = [k for k in ['start_date','end_date','revenue'] if k not in col_map]
+    if missing:
+        return None, missing, None, None, None, None
+
+    for c in df_raw.columns:
+        if any(x in c for x in ['last','最終','purchase','購買','購入']):
+            col_map.setdefault('last_purchase_date', c)
+
+    df = df_raw.rename(columns={v: k for k, v in col_map.items()})
+    df['start_date'] = pd.to_datetime(df['start_date'], errors='coerce')
+    df['end_date']   = pd.to_datetime(df['end_date'],   errors='coerce')
+    if 'last_purchase_date' in df.columns:
+        df['last_purchase_date'] = pd.to_datetime(df['last_purchase_date'], errors='coerce')
+    else:
+        df['last_purchase_date'] = pd.NaT
+
+    n_input = len(df)
+    bad_dates = df['start_date'].isna().sum()
+    df = df.dropna(subset=['start_date'])
+
+    today = pd.Timestamp.today()
+    n_dormant = 0
+    if dormancy_days is not None and df['last_purchase_date'].notna().any():
+        dormant_mask = (
+            df['end_date'].isna() &
+            df['last_purchase_date'].notna() &
+            ((today - df['last_purchase_date']).dt.days > dormancy_days)
+        )
+        n_dormant = dormant_mask.sum()
+        df.loc[dormant_mask, 'end_date'] = df.loc[dormant_mask, 'last_purchase_date']
+
+    def get_end(row):
+        if pd.notna(row['end_date']):
+            return row['end_date'], 1
+        if dormancy_days is not None and pd.notna(row['last_purchase_date']):
+            if (today - row['last_purchase_date']).days > dormancy_days:
+                return row['last_purchase_date'], 1
+        return today, 0
+
+    result = df.apply(get_end, axis=1, result_type='expand')
+    df['end_resolved'] = result[0]
+    df['event']        = result[1]
+    df['duration']     = (df['end_resolved'] - df['start_date']).dt.days
+
+    n_corrected = (df['duration'] == 0).sum()
+    df['duration'] = df['duration'].clip(lower=1)
+    n_excluded = (df['duration'] < 0).sum()
+    df = df[df['duration'] > 0]
+
+    df['revenue_total'] = pd.to_numeric(df['revenue'], errors='coerce')
+
+    meta = {
+        'n_input': n_input,
+        'n_dormant': n_dormant,
+        'n_corrected': n_corrected,
+        'n_excluded': n_excluded,
+        'bad_dates': bad_dates,
+    }
+    return df, None, meta, billing_cycle, business_type, col_map
     surv_int = lam * gamma(1 + 1/k)
     return surv_int * arpu, surv_int
 
@@ -376,25 +516,29 @@ with st.sidebar:
         )
         dormancy_days = None  # 休眠判定なし
         st.markdown("**契約期間**")
-        billing_cycle = st.radio(
+        billing_cycle_display = st.radio(
             "契約期間",
             [
-                "カレンダーベース（月またぎ）← 月額サブスク推奨",
-                "30日固定 ← 30日プラン",
-                "365日固定 ← 年額サブスク",
+                "カレンダーベース",
+                "30日固定",
+                "365日固定",
                 "カスタム入力（日数固定）",
             ],
             index=0,
         )
-        if billing_cycle == "カスタム入力（日数固定）":
+        _billing_map = {
+            "カレンダーベース": "カレンダーベース（月またぎ）← 月額サブスク推奨",
+            "30日固定": "30日固定 ← 30日プラン",
+            "365日固定": "365日固定 ← 年額サブスク",
+            "カスタム入力（日数固定）": "カスタム入力（日数固定）",
+        }
+        billing_cycle = _billing_map[billing_cycle_display]
+
+        if billing_cycle_display == "カスタム入力（日数固定）":
             custom_cycle_days = st.number_input("契約日数", min_value=1, max_value=365, value=30)
         else:
             custom_cycle_days = None
-        st.caption(
-            "**カレンダーベース**：実際の月の日数（28〜31日）で計算。日本の月額サブスクの大半はこちら。"
-            "　**30日固定**：1ヶ月を常に30日として計算。"
-            "　**年額**：1年を365日として計算。"
-        )
+        st.caption("カレンダーベース：実際の月の日数（28〜31日）で計算。30日固定：1ヶ月を常に30日として計算。365日固定：1年を365日として計算。")
 
     else:  # 都度課金型
         st.caption(
@@ -502,7 +646,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: Inter, sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v32</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -709,8 +853,8 @@ except Exception as e:
 # Run analysis
 # ══════════════════════════════════════════════════════════════
 
-km_df = compute_km(df)
-k, lam, r2, fit_df = fit_weibull(km_df)
+km_df = _compute_km_df(df)
+k, lam, r2, fit_df = _fit_weibull_df(km_df)
 
 if k is None:
     st.error(" Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
@@ -1048,8 +1192,8 @@ with exp1:
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
                         continue
                     try:
-                        km_s = compute_km(df_s)
-                        k_s, lam_s, r2_s, _ = fit_weibull(km_s)
+                        km_s = _compute_km_df(df_s)
+                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
                         arpu_s = df_s['arpu_daily'].mean()
                         gp_s   = arpu_s * gpm
@@ -1165,6 +1309,46 @@ with exp2:
                 txbox(s2, rv, cx, row_y, 2.6, 0.32, size=9, color=WHITE)
             row_y += 0.34
 
+        # ── Slide 2: 示唆ボックス（CAC健全性 & 回収見込み）──
+        ltv_1y = ltv_horizon(k, lam, arpu_daily, 365)
+        ltv_2y = ltv_horizon(k, lam, arpu_daily, 730)
+        pct_1y_pp = ltv_1y / ltv_rev * 100
+        pct_2y_pp = ltv_2y / ltv_rev * 100
+
+        # CACヘルス診断（既知CACがある場合）
+        if cac_known:
+            cac_ratio = ltv_val / cac_input
+            if cac_ratio >= 3.0:
+                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1  健全（3:1以上）。現在の顧客獲得コストは収益性の観点で適切な水準です。"
+            elif cac_ratio >= 1.5:
+                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1  要注意（3:1未満）。CAC削減またはLTV向上施策が急務です。"
+            else:
+                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1  危険水域（1.5:1未満）。現状では顧客獲得コストが粗利を圧迫しています。即時改善が必要です。"
+        else:
+            cac_health = f"CAC上限（粗利ベース）は ¥{cac_upper:,.0f}。この金額以内に顧客獲得コストを抑えることでユニットエコノミクスが成立します。"
+
+        # 離脱パターン別示唆
+        if k < 0.8:
+            action_hint = "k<0.8: 初回〜30日以内の離脱が集中。オンボーディング・初期体験の改善が最優先施策です。"
+        elif k < 1.0:
+            action_hint = f"k={k:.3f}: 離脱率がほぼ一定（指数分布）。継続的なエンゲージメント施策が有効です。"
+        else:
+            action_hint = f"k={k:.3f}: 時間とともに離脱が増加。長期継続顧客（1年超）の特別フォローが重要です。"
+
+        # 回収スピード
+        if pct_1y_pp >= 80:
+            recovery_hint = f"1年でLTV∞の{pct_1y_pp:.0f}%を回収できる高速回収ビジネス。比較的積極的なCAC投資が可能です。"
+        elif pct_1y_pp >= 50:
+            recovery_hint = f"1年時点でLTV∞の{pct_1y_pp:.0f}%、2年で{pct_2y_pp:.0f}%。中期での回収を前提にCAC設計が必要です。"
+        else:
+            recovery_hint = f"1年時点でのLTV回収率が{pct_1y_pp:.0f}%と低め。長期キャッシュフローを考慮した資金計画が重要です。"
+
+        insight_box = s2.shapes.add_shape(1, Inches(0.5), Inches(6.35), Inches(12.3), Inches(0.95))
+        insight_box.fill.solid(); insight_box.fill.fore_color.rgb = RGBColor(0x05,0x18,0x28)
+        insight_box.line.color.rgb = GOLD
+        insight_text = f"示唆  {cac_health}  |  {action_hint}  |  {recovery_hint}"
+        txbox(s2, insight_text, 0.6, 6.38, 12.1, 0.88, size=8, color=RGBColor(0xc8,0xd8,0xe8))
+
         # ── Slide 3: Charts ──
         s3 = prs.slides.add_slide(blank)
         add_bg(s3, prs)
@@ -1177,23 +1361,40 @@ with exp2:
         param_box.fill.solid(); param_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
         param_box.line.color.rgb = GOLD
 
-        txbox(s3, 'Weibullパラメータの読み方', 0.55, 5.05, 12, 0.3, size=9, bold=True, color=GOLD)
+        txbox(s3, 'Weibullパラメータの読み方と示唆', 0.55, 5.05, 12, 0.3, size=9, bold=True, color=GOLD)
+
+        # k の詳細解釈
+        if k < 0.7:
+            k_insight = f"k={k:.3f}（強い初期集中型）: 入会直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
+        elif k < 1.0:
+            k_insight = f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
+        elif k < 1.5:
+            k_insight = f"k={k:.3f}（逓増型・中程度）: 継続期間が長いほど離脱リスクが増す。1年超の顧客へのエンゲージメント強化が鍵。"
+        else:
+            k_insight = f"k={k:.3f}（強い逓増型）: 長期顧客ほど急速に離脱。VIP施策・継続特典による長期繋ぎ止めが急務。"
 
         k_text = (
             f"k（形状パラメータ） = {k:.3f}\n"
-            f"→ 左グラフ（Survival Curve）の曲線の急峻さを決める値\n"
-            f"→ k<1: 初期に離脱が集中  k>1: 時間とともに離脱が増加\n"
-            f"→ 今回は k={k:.3f} のため: {'初期に離脱が集中するパターン' if k < 1 else '継続するほど離脱が増えるパターン'}"
+            f"→ 左グラフ（Survival Curve）の曲線の急峻さを決める値。k=1で指数分布（一定離脱率）\n"
+            f"→ {k_insight}"
         )
-        txbox(s3, k_text, 0.55, 5.4, 6.0, 1.5, size=8, color=WHITE)
+        txbox(s3, k_text, 0.55, 5.4, 6.1, 1.6, size=8, color=WHITE)
+
+        # λ と R² の詳細解釈
+        lam_yr = lam / 365
+        if r2 >= 0.95:
+            r2_comment = f"R²={r2:.3f}: 非常に高精度。LTV∞推定値の信頼性は高い。"
+        elif r2 >= 0.85:
+            r2_comment = f"R²={r2:.3f}: 許容範囲内。推定値に±15%程度の幅を見込んで意思決定を。"
+        else:
+            r2_comment = f"R²={r2:.3f}: やや低め。データ件数不足または複数の離脱パターンが混在している可能性あり。セグメント分割を推奨。"
 
         lam_text = (
-            f"λ（尺度パラメータ） = {lam:.1f}日\n"
-            f"→ 右グラフ（Weibull Plot）の直線の切片から算出\n"
-            f"→ 顧客の典型的な継続期間の目安\n"
-            f"→ R²={r2:.3f}: フィット精度（1.0が理想、0.9以上を推奨）"
+            f"λ（尺度パラメータ） = {lam:.1f}日（約{lam_yr:.1f}年）\n"
+            f"→ 顧客の「典型的な継続期間」の目安。LTV∞の約63.2%はこの期間までに積み上がる\n"
+            f"→ {r2_comment}"
         )
-        txbox(s3, lam_text, 6.8, 5.4, 6.0, 1.5, size=8, color=WHITE)
+        txbox(s3, lam_text, 6.75, 5.4, 6.1, 1.6, size=8, color=WHITE)
 
         # 共通データ部分
         pdata = (
@@ -1270,8 +1471,8 @@ with exp2:
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
                         continue
                     try:
-                        km_s = compute_km(df_s)
-                        k_s, lam_s, r2_s, _ = fit_weibull(km_s)
+                        km_s = _compute_km_df(df_s)
+                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
                         arpu_s = df_s['arpu_daily'].mean()
                         gp_s   = arpu_s * gpm
@@ -1307,24 +1508,49 @@ with exp2:
                     row_y += 0.3
 
                 # 推奨ボックス
-                rec_box = s_seg.shapes.add_shape(1, Inches(0.5), Inches(5.0), Inches(12.3), Inches(1.8))
-                rec_box.fill.solid(); rec_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+                rec_box = s_seg.shapes.add_shape(1, Inches(0.5), Inches(5.0), Inches(12.3), Inches(2.3))
+                rec_box.fill.solid(); rec_box.fill.fore_color.rgb = RGBColor(0x05,0x18,0x28)
                 rec_box.line.color.rgb = GOLD
+
+                # 優先セグメントの示唆テキスト生成
+                _k_b   = None
+                _lam_b = None
+                for _r in pp_rows:
+                    if _r['seg'] == best_pp['seg']:
+                        # k/lam を再取得
+                        try:
+                            _df_b = df[df[sc] == best_pp['seg']]
+                            _km_b = _compute_km_df(_df_b)
+                            _k_b, _lam_b, _r2_b, _ = _fit_weibull_df(_km_b)
+                        except Exception:
+                            pass
+                        break
+
+                if _k_b is not None and _k_b < 1.0:
+                    seg_strategy = "初期離脱型（k<1）: オンボーディング強化で離脱を抑えると大幅なLTV改善が期待できます。"
+                elif _k_b is not None:
+                    seg_strategy = "逓増離脱型（k>1）: 長期継続顧客への特別フォロー・特典設計が離脱防止の鍵です。"
+                else:
+                    seg_strategy = "このセグメントに顧客獲得投資を集中させることで収益性を維持しながら積極的な拡大が可能です。"
+
                 rec_text = (
-                    f"\U0001f3af 優先獲得推奨：{best_pp['seg']}\n"
-                    f"LTV∞（売上）¥{best_pp['ltv_r']:,.0f}（全平均比 +{premium_pp:.1f}%）　"
-                    f"LTV∞（粗利）¥{best_pp['ltv_g']:,.0f}　"
-                    f"CAC上限（粗利）¥{best_pp['cac']:,.0f}\n"
-                    f"→ このセグメントに顧客獲得投資を集中させることで、CAC上限¥{best_pp['cac']:,.0f}の範囲内で収益性を維持しながら積極的な顧客獲得が可能です。"
+                    f"優先獲得推奨セグメント: {best_pp['seg']}\n"
+                    f"LTV∞（売上）¥{best_pp['ltv_r']:,.0f}  全平均比 +{premium_pp:.1f}%  |  "
+                    f"LTV∞（粗利）¥{best_pp['ltv_g']:,.0f}  |  CAC上限（粗利）¥{best_pp['cac']:,.0f}\n"
+                    f"示唆: {seg_strategy}"
                 )
                 if cac_known:
                     ratio_pp = best_pp['ltv_g'] / cac_input
-                    judge_pp = " 健全" if ratio_pp >= 3.0 else " 要改善"
-                    rec_text += f"\nLTV:CAC比率（粗利）= {ratio_pp:.1f}:1　{judge_pp}"
-                rec_box = s_seg.shapes.add_shape(1, Inches(0.5), Inches(5.0), Inches(12.3), Inches(1.8))
-                rec_box.fill.solid(); rec_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
-                rec_box.line.color.rgb = GOLD
-                txbox(s_seg, rec_text, 0.6, 5.05, 12.0, 1.7, size=9, color=WHITE)
+                    judge_pp = "健全（3:1以上）" if ratio_pp >= 3.0 else ("要注意（3:1未満）" if ratio_pp >= 1.5 else "危険水域（1.5:1未満）")
+                    rec_text += f"\nLTV:CAC比率（粗利）= {ratio_pp:.1f}:1  {judge_pp}"
+
+                # セグメント間格差の示唆
+                if len(pp_rows) >= 2:
+                    worst = pp_rows[-1]
+                    gap = (best_pp['ltv_r'] - worst['ltv_r']) / worst['ltv_r'] * 100
+                    rec_text += f"\n最上位 vs 最下位 セグメントのLTV差: +{gap:.0f}%。獲得チャネル・訴求をセグメント別に最適化する余地があります。"
+
+                txbox(s_seg, rec_text, 0.65, 5.05, 12.0, 2.15, size=8, color=RGBColor(0xc8,0xd8,0xe8))
         # 全セグメント詳細スライド（4分割レイアウト）
         if segment_cols_input.strip():
             seg_cols_all = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
@@ -1335,8 +1561,8 @@ with exp2:
                     if len(df_sv_all) < 10 or df_sv_all['event'].sum() < 5:
                         continue
                     try:
-                        km_sv_all = compute_km(df_sv_all)
-                        k_sv, lam_sv, r2_sv, _ = fit_weibull(km_sv_all)
+                        km_sv_all = _compute_km_df(df_sv_all)
+                        k_sv, lam_sv, r2_sv, _ = _fit_weibull_df(km_sv_all)
                         if k_sv is None: continue
                         arpu_sv = df_sv_all['arpu_daily'].mean()
                         ltv_inf_sv = lam_sv * __import__('scipy').special.gamma(1 + 1/k_sv) * arpu_sv
@@ -1354,8 +1580,8 @@ with exp2:
                             _df2 = df[df[sc_all] == _sv2]
                             if len(_df2) >= 10 and _df2['event'].sum() >= 5:
                                 try:
-                                    _km2 = compute_km(_df2)
-                                    _k2, _l2, _, _ = fit_weibull(_km2)
+                                    _km2 = _compute_km_df(_df2)
+                                    _k2, _l2, _, _ = _fit_weibull_df(_km2)
                                     if _k2: seg_ltvs_all[str(_sv2)] = lam_sv * __import__('scipy').special.gamma(1+1/_k2) * _df2['arpu_daily'].mean()
                                 except: pass
                         is_best_slide = bool(seg_ltvs_all) and str(sv_all) == max(seg_ltvs_all, key=seg_ltvs_all.get)
@@ -1441,6 +1667,46 @@ with exp2:
                             for cx, rv in zip(col_xa, row_vals_a):
                                 txbox(s_all, rv, cx, row_ya, 2.5, 0.3, size=9, color=WHITE)
                             row_ya += 0.34
+
+                        # ── セグメント詳細 示唆ボックス ──
+                        # k に基づく施策示唆
+                        if k_sv < 0.8:
+                            sv_action = f"k={k_sv:.3f}: 初期集中型。入会30日以内のオンボーディング改善が最優先です。"
+                        elif k_sv < 1.0:
+                            sv_action = f"k={k_sv:.3f}: 緩やかな初期集中。継続的なリテンション施策とオンボーディング改善を並行実施してください。"
+                        elif k_sv < 1.5:
+                            sv_action = f"k={k_sv:.3f}: 逓増離脱型。1年超の長期顧客フォロー施策（特典・コミュニティ等）が有効です。"
+                        else:
+                            sv_action = f"k={k_sv:.3f}: 強い逓増型。継続インセンティブ設計を急務とし、定期的な利用促進施策を投入してください。"
+
+                        # λに基づく回収サイクル示唆
+                        lam_sv_yr = lam_sv / 365
+                        ltv_1y_sv = ltv_horizon(k_sv, lam_sv, arpu_sv, 365)
+                        pct_1y_sv = ltv_1y_sv / ltv_inf_sv * 100 if ltv_inf_sv > 0 else 0
+                        if pct_1y_sv >= 75:
+                            sv_recovery = f"1年でLTV∞の{pct_1y_sv:.0f}%を回収（高速）。CACは積極的に投資可能です。"
+                        elif pct_1y_sv >= 45:
+                            sv_recovery = f"1年時点でLTV∞の{pct_1y_sv:.0f}%（中程度）。18〜24ヶ月の回収計画でCACを設定してください。"
+                        else:
+                            sv_recovery = f"1年時点でのLTV回収率{pct_1y_sv:.0f}%（低速）。長期キャッシュフローを見据えた資金計画が必要です。"
+
+                        # R² コメント
+                        if r2_sv >= 0.93:
+                            sv_r2 = f"R²={r2_sv:.3f}: 高精度。この推定値は意思決定に十分活用できます。"
+                        elif r2_sv >= 0.80:
+                            sv_r2 = f"R²={r2_sv:.3f}: 中程度の精度。推定値に±20%の幅を持たせて判断してください。"
+                        else:
+                            sv_r2 = f"R²={r2_sv:.3f}: 精度に注意。データ件数{len(df_sv_all):,}件での推定のため参考値として扱ってください。"
+
+                        # テーブルの最終行のy座標を使って示唆ボックスを配置
+                        insight_y = min(row_ya + 0.05, 6.8)
+                        insight_h = 7.3 - insight_y
+                        if insight_h > 0.4:
+                            ib = s_all.shapes.add_shape(1, Inches(0.3), Inches(insight_y), Inches(12.3), Inches(insight_h))
+                            ib.fill.solid(); ib.fill.fore_color.rgb = RGBColor(0x05,0x18,0x28)
+                            ib.line.color.rgb = GOLD
+                            ib_text = f"示唆  {sv_action}  |  {sv_recovery}  |  {sv_r2}"
+                            txbox(s_all, ib_text, 0.4, insight_y + 0.03, 12.1, insight_h - 0.05, size=7.5, color=RGBColor(0xc8,0xd8,0xe8))
 
                     except Exception:
                         continue
@@ -1572,8 +1838,8 @@ with exp3:
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
                         continue
                     try:
-                        km_s = compute_km(df_s)
-                        k_s, lam_s, r2_s, _ = fit_weibull(km_s)
+                        km_s = _compute_km_df(df_s)
+                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
                         arpu_s = df_s['arpu_daily'].mean()
                         gp_s   = arpu_s * gpm
@@ -1623,8 +1889,8 @@ with exp3:
                     if len(df_sv2) < 10 or df_sv2['event'].sum() < 5:
                         continue
                     try:
-                        km_sv2 = compute_km(df_sv2)
-                        k_sv2, lam_sv2, r2_sv2, _ = fit_weibull(km_sv2)
+                        km_sv2 = _compute_km_df(df_sv2)
+                        k_sv2, lam_sv2, r2_sv2, _ = _fit_weibull_df(km_sv2)
                         if k_sv2 is None: continue
                         arpu_sv2 = df_sv2['arpu_daily'].mean()
                         ltv_inf_sv2 = lam_sv2 * __import__('scipy').special.gamma(1 + 1/k_sv2) * arpu_sv2
@@ -1771,8 +2037,8 @@ if segment_cols_input.strip():
                     continue
 
                 try:
-                    km_seg   = compute_km(df_seg)
-                    k_s, lam_s, r2_s, _ = fit_weibull(km_seg)
+                    km_seg   = _compute_km_df(df_seg)
+                    k_s, lam_s, r2_s, _ = _fit_weibull_df(km_seg)
                     if k_s is None:
                         continue
                     arpu_s   = df_seg['arpu_daily'].mean()
@@ -1945,7 +2211,7 @@ if segment_cols_input.strip():
                     expanded=is_best
                 ):
                     try:
-                        km_sv = compute_km(df_sv)
+                        km_sv = _compute_km_df(df_sv)
 
                         # ── グラフ2枚（全体と同じ）──
                         col_g1, col_g2 = st.columns(2)
