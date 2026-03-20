@@ -605,6 +605,23 @@ with st.sidebar:
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
+    st.markdown("### 異常値処理")
+    iqr_multiplier = st.select_slider(
+        "外れ値カット強度（IQR倍率）",
+        options=[0.0, 1.5, 2.0, 2.5, 3.0],
+        value=0.0,
+        format_func=lambda x: "除外なし" if x == 0.0 else f"IQR × {x}"
+    )
+    outlier_removal = iqr_multiplier > 0.0
+    st.caption(
+        "**除外なし**：全データを使用。"
+        "　**IQR × 1.5**：厳しめ（上位約1〜3%除外）。"
+        "　**IQR × 2.0**：標準（上位約0.5〜2%除外）。"
+        "　**IQR × 2.5**：緩め（上位約0.2〜1%除外）。"
+        "　**IQR × 3.0**：最小限（明らかな外れ値のみ除外）。"
+        "　累計金額の下位1%（¥0・極端な低額）は常時除外されます。"
+    )
+
     st.markdown("### ビジネスタイプ")
     business_type = st.radio(
         "ビジネスタイプを選択してください",
@@ -685,14 +702,6 @@ with st.sidebar:
     cac_recover_days = None
     st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV（粗利）÷ 3")
 
-    st.markdown("### 異常値処理")
-    outlier_removal = st.toggle("異常値を除外する", value=False)
-    if outlier_removal:
-        st.caption(
-            "利用期間・累計金額の上位外れ値をIQR×3で除外します。"
-            "累計金額の下位1%（¥0・極端な低額）も除外します。"
-        )
-
     st.markdown("### セグメント分析")
     st.caption(
         "**セグメント列とは？**\n\n"
@@ -749,7 +758,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v37</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v39</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -940,16 +949,16 @@ try:
     n_outlier = 0
     if outlier_removal:
         before = len(df)
-        # 利用期間：上位IQR×3でカット
+        # 利用期間：上位IQR×倍率でカット
         q1_d = df['duration'].quantile(0.25)
         q3_d = df['duration'].quantile(0.75)
-        upper_d = q3_d + 3 * (q3_d - q1_d)
+        upper_d = q3_d + iqr_multiplier * (q3_d - q1_d)
         df = df[df['duration'] <= upper_d]
-        # 累計売上：下位1%と上位IQR×3でカット
+        # 累計売上：下位1%と上位IQR×倍率でカット
         lower_r = df['revenue_total'].quantile(0.01)
         q1_r = df['revenue_total'].quantile(0.25)
         q3_r = df['revenue_total'].quantile(0.75)
-        upper_r = q3_r + 3 * (q3_r - q1_r)
+        upper_r = q3_r + iqr_multiplier * (q3_r - q1_r)
         df = df[(df['revenue_total'] >= lower_r) & (df['revenue_total'] <= upper_r)]
         n_outlier = before - len(df)
 
