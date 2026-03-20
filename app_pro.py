@@ -959,6 +959,47 @@ for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
 if r2 < 0.85:
     st.warning(f" R²={r2:.3f} — フィット精度がやや低めです。データ点数を増やすか、観測期間を見直してください。")
 
+# ── サマリー解説ボックス ──────────────────────────────────────
+if k < 1.0:
+    k_summary = (
+        f"k={k:.3f}の初期離脱型です。入会直後に解約が集中しますが、"
+        f"初期を乗り越えた顧客はλ={lam:.0f}日（約{lam/365:.1f}年）スパンで継続する傾向があります。"
+        f"LTV∞は¥{ltv_rev:,.0f}ですが投資回収は比較的長期になるため、"
+        f"暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
+    )
+else:
+    k_summary = (
+        f"k={k:.3f}の逓増離脱型です。初期の継続率が高く、"
+        f"λ={lam:.0f}日（約{lam/365:.1f}年）を経過するにつれ解約が増えるパターンです。"
+        f"LTV∞は¥{ltv_rev:,.0f}で、比較的短期での投資回収が見込めます。"
+    )
+
+if r2 >= 0.95:
+    r2_summary = f"R²={r2:.3f}はモデル精度が非常に高く、この推定値は意思決定に十分活用できます。"
+elif r2 >= 0.85:
+    r2_summary = f"R²={r2:.3f}は許容範囲内の精度です。推定値に±15%程度の幅を見込んでください。"
+else:
+    r2_summary = f"R²={r2:.3f}はやや低めです。推定値の信頼性に注意してください。"
+
+summary_text = f"{k_summary}{r2_summary}"
+
+st.markdown(f"""
+<div style='
+    border: 1px solid #2a4a5a;
+    border-radius: 10px;
+    padding: 18px 24px;
+    margin: 14px 0 4px 0;
+    background: #0a1520;
+    line-height: 1.8;
+'>
+    <div style='
+        font-size: 0.95rem;
+        color: #a8dadc;
+        letter-spacing: 0.01em;
+    '>{summary_text}</div>
+</div>
+""", unsafe_allow_html=True)
+
 # ══════════════════════════════════════════════════════════════
 # Charts
 # ══════════════════════════════════════════════════════════════
