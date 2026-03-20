@@ -528,13 +528,13 @@ with st.sidebar:
     })
 
     # ── 都度購入：ファストファッションEC ────────────────
-    # k=0.750（初期離脱型）、λ=237日
-    # 1年：25%、2年：10%、3年：4%
-    # 1注文：4,000〜15,000円、休眠判定：365日推奨
-    # LTV∞イメージ：約2万円、99%到達9年
-    ff_unit   = np.random.choice([4000, 7000, 10000, 15000], n_sample, p=[0.30, 0.40, 0.20, 0.10])
-    ff_surv   = np.random.weibull(0.750, n_sample) * 237
-    ff_active = np.random.random(n_sample) < 0.40
+    # 推定後：k≈0.81、λ≈319日、99%到達約10年
+    # 1年で約75%離脱（業界データに即した設定）
+    # 1注文：8,000〜30,000円、購入間隔90日、休眠判定：365日推奨
+    # LTV∞イメージ：約7万円
+    ff_unit   = np.random.choice([8000, 15000, 25000, 30000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
+    ff_surv   = np.random.weibull(1.0, n_sample) * 200
+    ff_active = np.random.random(n_sample) < 0.20
 
     last_purchase_dates = []
     revenues_spot       = []
@@ -548,7 +548,7 @@ with st.sidebar:
             lp = sd + pd.Timedelta(days=max(1, int(ff_surv[i])))
             lp = min(lp, today_ts - pd.Timedelta(days=1))
         last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
-        purchases = max(1, round((lp - sd).days / 90))
+        purchases = max(1, round((lp - sd).days / 90))  # 購入間隔90日（年4回）
         revenues_spot.append(price * purchases)
 
     ff_gender   = np.random.choice(['男性', '女性', '未回答'],
@@ -758,7 +758,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v39</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v44</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -962,8 +962,9 @@ try:
         df = df[(df['revenue_total'] >= lower_r) & (df['revenue_total'] <= upper_r)]
         n_outlier = before - len(df)
 
-    arpu_daily = df['arpu_daily'].mean()
-    gp_daily   = df['gp_daily'].mean()
+    # 加重平均ARPU：総売上÷総継続日数（短期顧客の高ARPUに引きずられない）
+    arpu_daily = df['revenue_total'].sum() / df['duration'].sum()
+    gp_daily   = arpu_daily * gpm
 
     # ビジネスタイプ依存ラベル（データ読み込みブロック内で使用）
     acq_label  = "初回購入" if business_type == "都度購入型" else "契約"
@@ -977,7 +978,7 @@ try:
     if n_excluded > 0:
         st.warning(f" {n_excluded}件：start_dateが未来の日付のため除外しました（入力ミスの可能性）。")
     if n_outlier > 0:
-        st.info(f"{n_outlier:,}件を異常値として除外しました（利用期間・累計金額のIQR×3基準）。")
+        st.info(f"{n_outlier:,}件を異常値として除外しました（利用期間・累計金額のIQR×{iqr_multiplier}基準）。")
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0 and n_outlier == 0:
         st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
 
@@ -1582,7 +1583,7 @@ with exp1:
                         km_s = _compute_km_df(df_s)
                         k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
-                        arpu_s = df_s['arpu_daily'].mean()
+                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum()
                         gp_s   = arpu_s * gpm
                         ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
                         ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
@@ -1861,7 +1862,7 @@ with exp2:
                         km_s = _compute_km_df(df_s)
                         k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
-                        arpu_s = df_s['arpu_daily'].mean()
+                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum()
                         gp_s   = arpu_s * gpm
                         ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
                         ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
@@ -1951,7 +1952,7 @@ with exp2:
                         km_sv_all = _compute_km_df(df_sv_all)
                         k_sv, lam_sv, r2_sv, _ = _fit_weibull_df(km_sv_all)
                         if k_sv is None: continue
-                        arpu_sv = df_sv_all['arpu_daily'].mean()
+                        arpu_sv = df_sv_all['revenue_total'].sum() / df_sv_all['duration'].sum()
                         ltv_inf_sv = lam_sv * __import__('scipy').special.gamma(1 + 1/k_sv) * arpu_sv
 
                         s_all = prs.slides.add_slide(blank)
@@ -2228,7 +2229,7 @@ with exp3:
                         km_s = _compute_km_df(df_s)
                         k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
-                        arpu_s = df_s['arpu_daily'].mean()
+                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum()
                         gp_s   = arpu_s * gpm
                         ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
                         ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
@@ -2279,7 +2280,7 @@ with exp3:
                         km_sv2 = _compute_km_df(df_sv2)
                         k_sv2, lam_sv2, r2_sv2, _ = _fit_weibull_df(km_sv2)
                         if k_sv2 is None: continue
-                        arpu_sv2 = df_sv2['arpu_daily'].mean()
+                        arpu_sv2 = df_sv2['revenue_total'].sum() / df_sv2['duration'].sum()
                         ltv_inf_sv2 = lam_sv2 * __import__('scipy').special.gamma(1 + 1/k_sv2) * arpu_sv2
 
                         story.append(Paragraph(
@@ -2428,7 +2429,7 @@ if segment_cols_input.strip():
                     k_s, lam_s, r2_s, _ = _fit_weibull_df(km_seg)
                     if k_s is None:
                         continue
-                    arpu_s   = df_seg['arpu_daily'].mean()
+                    arpu_s   = df_seg['revenue_total'].sum() / df_seg['duration'].sum()
                     gp_s     = arpu_s * gpm
                     ltv_rev_s, _ = ltv_inf(k_s, lam_s, arpu_s)
                     ltv_gp_s, _  = ltv_inf(k_s, lam_s, gp_s)
@@ -2588,7 +2589,7 @@ if segment_cols_input.strip():
                 r2_s  = sr['R²']
                 n_s   = sr['顧客数']
                 df_sv  = df[df[seg_col] == sv]
-                arpu_s = df_sv['arpu_daily'].mean()
+                arpu_s = df_sv['revenue_total'].sum() / df_sv['duration'].sum()
                 gp_s   = arpu_s * gpm
                 ltv_inf_s = lam_s * __import__('scipy').special.gamma(1 + 1/k_s) * arpu_s
                 is_best = (sv == seg_df.iloc[0]['セグメント'])
