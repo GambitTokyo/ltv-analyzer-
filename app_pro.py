@@ -1038,7 +1038,7 @@ st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", u
 
 horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 
-# λ時点（63.2%）と99%到達日数を逆算
+# λ時点と99%到達日数を逆算
 try:
     days_99 = brentq(
         lambda h: ltv_horizon(k, lam, arpu_daily, h) / ltv_rev - 0.99,
@@ -1068,15 +1068,16 @@ for h in horizons:
         'LTV∞への到達率':    f'{lh_rev/ltv_rev*100:.1f}%',
     })
 
-# λ行（63.2%）
-lam_rev = ltv_horizon(k, lam, arpu_daily, lam)
-lam_gp  = ltv_horizon(k, lam, gp_daily,   lam)
+# λ行（実際の到達率を計算）
+lam_rev  = ltv_horizon(k, lam, arpu_daily, lam)
+lam_gp   = ltv_horizon(k, lam, gp_daily,   lam)
+lam_pct  = lam_rev / ltv_rev * 100
 tbl_rows.append({
     'ホライズン':     f'λ（{int(lam):,}日）',
     'LTV（売上）':    f'¥{lam_rev:,.0f}',
     'LTV（粗利）':    f'¥{lam_gp:,.0f}',
     'CAC上限':        f'¥{lam_gp/cac_n:,.0f}',
-    'LTV∞への到達率': '63.2%',
+    'LTV∞への到達率': f'{lam_pct:.1f}%',
 })
 
 # 99%到達行
@@ -1140,19 +1141,31 @@ pct_1y  = ltv_1y  / ltv_rev * 100
 pct_2y  = ltv_2y  / ltv_rev * 100
 pct_3y  = ltv_3y  / ltv_rev * 100
 
-# CAC回収期間を逆算（何日でCAC上限を回収できるか）
+# CAC回収期間を逆算（売上ベース・粗利ベース両方）
+def recover_str(days):
+    return f"{days/365:.1f}年（{int(days):,}日）" if days >= 365 else f"{int(days)}日"
+
 try:
-    cac_recover_days = brentq(
+    cac_recover_rev = brentq(
         lambda h: ltv_horizon(k, lam, arpu_daily, h) - cac_upper,
-        1, 9999
+        1, 36500
     )
-    cac_recover_str = (
-        f"{cac_recover_days/365:.1f}年（{int(cac_recover_days)}日）"
-        if cac_recover_days >= 365
-        else f"{int(cac_recover_days)}日"
-    )
+    cac_recover_rev_str = recover_str(cac_recover_rev)
 except Exception:
-    cac_recover_str = "算出不可（LTV∞がCAC上限を下回っています）"
+    cac_recover_rev_str = "算出不可"
+
+try:
+    cac_recover_gp = brentq(
+        lambda h: ltv_horizon(k, lam, gp_daily, h) - cac_upper,
+        1, 36500
+    )
+    cac_recover_gp_str = recover_str(cac_recover_gp)
+except Exception:
+    cac_recover_gp_str = "算出不可"
+
+# 後方互換用
+cac_recover_days = cac_recover_rev if cac_recover_rev_str != "算出不可" else None
+cac_recover_str  = cac_recover_rev_str
 
 # λの解釈
 if lam < 180:
@@ -1183,7 +1196,7 @@ insight_html = f"""
     <span style='color:#56b4d3;'>2年時点</span>で<b style='color:#a8dadc;'>{pct_2y:.1f}%</b>（¥{ltv_2y:,.0f}）、
     <span style='color:#56b4d3;'>3年時点</span>で<b style='color:#a8dadc;'>{pct_3y:.1f}%</b>（¥{ltv_3y:,.0f}）を回収できます。
   </div>
-  <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）を回収できるのは{acq_label}から約 <b style='color:#a8dadc;'>{cac_recover_str}</b> 後です。</div>
+  <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 <b style='color:#a8dadc;'>{cac_recover_rev_str}</b> / 粗利ベース 約 <b style='color:#56b4d3;'>{cac_recover_gp_str}</b>（{acq_label}から）</div>
 </div>
 """
 st.markdown(insight_html, unsafe_allow_html=True)
@@ -1537,7 +1550,7 @@ with exp2:
 
         lam_text = (
             f"λ（尺度パラメータ） = {lam:.1f}日（約{lam_yr:.1f}年）\n"
-            f"→ 顧客の「典型的な継続期間」の目安。LTV∞の約63.2%はこの期間までに積み上がる\n"
+            f"→ 顧客の「典型的な継続期間」の目安。λ日時点での暫定LTVの到達率（k=1のとき63.2%、k値により異なる）\n"
             f"→ {r2_comment}"
         )
         txbox(s3, lam_text, 6.75, 5.4, 6.1, 1.6, size=8, color=WHITE)
