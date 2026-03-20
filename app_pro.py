@@ -594,7 +594,7 @@ with st.sidebar:
         st.caption("`end_date`: 解約日（継続中は空欄）")
     with col_dl2:
         st.markdown(f"""
-<a href="data:text/csv;base64,{spot_b64}" download="sample_spot_purchase.csv" style="
+<a href="data:text/csv;base64,{spot_b64}" download="sample_FEC_spot_purchase.csv" style="
     display:block; text-align:center; text-decoration:none;
     background:#0d1a28; color:#a8c8d8;
     border:1px solid #1c3a4a; border-radius:8px;
@@ -741,7 +741,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v33</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v34</div>
 </div>
 """, unsafe_allow_html=True)
 
