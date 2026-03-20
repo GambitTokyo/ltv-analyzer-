@@ -418,6 +418,10 @@ def load_and_preprocess_csv(file_bytes, dormancy_days, billing_cycle, business_t
     surv_int = lam * gamma(1 + 1/k)
     return surv_int * arpu, surv_int
 
+def ltv_inf(k, lam, arpu):
+    surv_int = lam * gamma(1 + 1/k)
+    return surv_int * arpu, surv_int
+
 def ltv_horizon(k, lam, arpu, h):
     x = (h / lam) ** k
     return lam * gamma(1 + 1/k) * gammainc(1 + 1/k, x) * arpu
@@ -738,6 +742,10 @@ if uploaded is None:
 # Load & validate data
 # ══════════════════════════════════════════════════════════════
 
+# デフォルト値（tryブロックが途中終了した場合のフォールバック）
+arpu_daily = None
+gp_daily   = None
+
 try:
     df_raw = pd.read_csv(uploaded)
     df_raw.columns = df_raw.columns.str.strip().str.lower()
@@ -909,6 +917,10 @@ k, lam, r2, fit_df = _fit_weibull_df(km_df)
 
 if k is None:
     st.error(" Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
+    st.stop()
+
+if arpu_daily is None or gp_daily is None:
+    st.error(" ARPU計算に失敗しました。CSVの revenue 列と日付列を確認してください。")
     st.stop()
 
 ltv_rev, surv_int = ltv_inf(k, lam, arpu_daily)   # 売上ベース
