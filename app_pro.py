@@ -528,13 +528,11 @@ with st.sidebar:
     })
 
     # ── 都度購入：ファストファッションEC ────────────────
-    # 推定後：k≈0.81、λ≈319日、99%到達約10年
-    # 1年で約75%離脱（業界データに即した設定）
-    # 1注文：8,000〜30,000円、購入間隔90日、休眠判定：365日推奨
-    # LTV∞イメージ：約7万円
+    # 推定後：k≈0.71、λ≈212日、99%到達約10年
+    # LTV∞イメージ：約5万円、購入間隔90日、休眠判定：365日推奨
     ff_unit   = np.random.choice([8000, 15000, 25000, 30000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
-    ff_surv   = np.random.weibull(1.0, n_sample) * 200
-    ff_active = np.random.random(n_sample) < 0.20
+    ff_surv   = np.random.weibull(1.2, n_sample) * 120
+    ff_active = np.random.random(n_sample) < 0.15
 
     last_purchase_dates = []
     revenues_spot       = []
@@ -758,7 +756,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v44</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v45</div>
 </div>
 """, unsafe_allow_html=True)
 
