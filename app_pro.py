@@ -1042,10 +1042,11 @@ horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 try:
     days_99 = brentq(
         lambda h: ltv_horizon(k, lam, arpu_daily, h) / ltv_rev - 0.99,
-        1, 36500
+        1, 365000  # 上限1000年に拡大
     )
 except Exception:
-    days_99 = None
+    # 上限でも99%に届かない場合は上限値で近似
+    days_99 = 365000
 
 def fmt_horizon(days):
     if days < 365:
@@ -1080,17 +1081,16 @@ tbl_rows.append({
     'LTV∞への到達率': f'{lam_pct:.1f}%',
 })
 
-# 99%到達行
-if days_99 is not None:
-    rev_99 = ltv_horizon(k, lam, arpu_daily, days_99)
-    gp_99  = ltv_horizon(k, lam, gp_daily,   days_99)
-    tbl_rows.append({
-        'ホライズン':     f'99%到達（{int(days_99):,}日）',
-        'LTV（売上）':    f'¥{rev_99:,.0f}',
-        'LTV（粗利）':    f'¥{gp_99:,.0f}',
-        'CAC上限':        f'¥{gp_99/cac_n:,.0f}',
-        'LTV∞への到達率': '99.0%',
-    })
+# 99%到達行（必ず表示）
+rev_99 = ltv_horizon(k, lam, arpu_daily, days_99)
+gp_99  = ltv_horizon(k, lam, gp_daily,   days_99)
+tbl_rows.append({
+    'ホライズン':     f'99%到達（{int(days_99):,}日）',
+    'LTV（売上）':    f'¥{rev_99:,.0f}',
+    'LTV（粗利）':    f'¥{gp_99:,.0f}',
+    'CAC上限':        f'¥{gp_99/cac_n:,.0f}',
+    'LTV∞への到達率': '99.0%',
+})
 
 # HTML テーブルで描画（カスタムスタイル）
 header_cols = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞への到達率']
