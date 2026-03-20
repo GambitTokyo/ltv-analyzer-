@@ -606,19 +606,17 @@ with st.sidebar:
     st.markdown("### 異常値処理")
     iqr_multiplier = st.select_slider(
         "外れ値カット強度（IQR倍率）",
-        options=[0.0, 1.5, 2.0, 2.5, 3.0],
+        options=[0.0, 3.0, 2.5, 2.0, 1.5],
         value=0.0,
-        format_func=lambda x: "除外なし" if x == 0.0 else f"IQR × {x}"
+        format_func=lambda x: "全データ使用：除外なし" if x == 0.0 else {
+            3.0: "上位約0.2〜1%除外：IQR × 3.0",
+            2.5: "上位約0.5〜2%除外：IQR × 2.5",
+            2.0: "上位約1〜3%除外：IQR × 2.0",
+            1.5: "上位約3〜5%除外：IQR × 1.5",
+        }[x]
     )
     outlier_removal = iqr_multiplier > 0.0
-    st.caption(
-        "**除外なし**：全データを使用。"
-        "　**IQR × 1.5**：厳しめ（上位約1〜3%除外）。"
-        "　**IQR × 2.0**：標準（上位約0.5〜2%除外）。"
-        "　**IQR × 2.5**：緩め（上位約0.2〜1%除外）。"
-        "　**IQR × 3.0**：最小限（明らかな外れ値のみ除外）。"
-        "　累計金額の下位1%（¥0・極端な低額）は常時除外されます。"
-    )
+    st.caption("累計金額の下位1%（¥0・極端な低額）は常時除外されます。")
 
     st.markdown("### ビジネスタイプ")
     business_type = st.radio(
@@ -756,7 +754,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v45</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v48</div>
 </div>
 """, unsafe_allow_html=True)
 
