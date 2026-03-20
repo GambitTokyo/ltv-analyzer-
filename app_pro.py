@@ -1036,40 +1036,101 @@ plt.close()
 
 st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
 
-horizons = [90, 180, 365, 730, 1095, 1825]  # 90日・180日・1年・2年・3年・5年
+horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 
-# LTV∞の95%到達日数を逆算
+# λ時点（63.2%）と99%到達日数を逆算
 try:
-    days_95 = brentq(
-        lambda h: ltv_horizon(k, lam, arpu_daily, h) / ltv_rev - 0.95,
+    days_99 = brentq(
+        lambda h: ltv_horizon(k, lam, arpu_daily, h) / ltv_rev - 0.99,
         1, 36500
     )
-    label_95 = f"{days_95/365:.1f}年（{int(days_95):,}日）" if days_95 >= 365 else f"{int(days_95)}日"
 except Exception:
-    days_95  = None
-    label_95 = "算出不可"
+    days_99 = None
 
-rows = []
+def fmt_horizon(days):
+    if days < 365:
+        return f'{int(days)}日'
+    elif days % 365 == 0:
+        return f'{int(days//365)}年（{int(days):,}日）'
+    else:
+        return f'{days/365:.1f}年（{int(days):,}日）'
+
+# テーブルデータ構築
+tbl_rows = []
 for h in horizons:
-    lh = ltv_horizon(k, lam, arpu_daily, h)
-    rows.append({
-        'ホライズン': f'{h//365}年' if h >= 365 and h % 365 == 0 else f'{h}日',
-        '暫定LTV（売上ベース）': f'¥{lh:,.0f}',
-        'LTV∞比（売上）': f'{lh/ltv_rev*100:.1f}%',
-        f'CAC上限（粗利ベース）({cac_label})': f'¥{lh/cac_n:,.0f}',
+    lh_rev = ltv_horizon(k, lam, arpu_daily, h)
+    lh_gp  = ltv_horizon(k, lam, gp_daily,   h)
+    tbl_rows.append({
+        'ホライズン':        fmt_horizon(h),
+        'LTV（売上）':       f'¥{lh_rev:,.0f}',
+        'LTV（粗利）':       f'¥{lh_gp:,.0f}',
+        'CAC上限':           f'¥{lh_gp/cac_n:,.0f}',
+        'LTV∞への到達率':    f'{lh_rev/ltv_rev*100:.1f}%',
     })
 
-# 95%到達行を追加
-if days_95 is not None:
-    lh_95 = ltv_horizon(k, lam, arpu_daily, days_95)
-    rows.append({
-        'ホライズン': f'95%到達 {label_95}',
-        '暫定LTV（売上ベース）': f'¥{lh_95:,.0f}',
-        'LTV∞比（売上）': '95.0%',
-        f'CAC上限（粗利ベース）({cac_label})': f'¥{lh_95/cac_n:,.0f}',
+# λ行（63.2%）
+lam_rev = ltv_horizon(k, lam, arpu_daily, lam)
+lam_gp  = ltv_horizon(k, lam, gp_daily,   lam)
+tbl_rows.append({
+    'ホライズン':     f'λ（{int(lam):,}日）',
+    'LTV（売上）':    f'¥{lam_rev:,.0f}',
+    'LTV（粗利）':    f'¥{lam_gp:,.0f}',
+    'CAC上限':        f'¥{lam_gp/cac_n:,.0f}',
+    'LTV∞への到達率': '63.2%',
+})
+
+# 99%到達行
+if days_99 is not None:
+    rev_99 = ltv_horizon(k, lam, arpu_daily, days_99)
+    gp_99  = ltv_horizon(k, lam, gp_daily,   days_99)
+    tbl_rows.append({
+        'ホライズン':     f'99%到達（{int(days_99):,}日）',
+        'LTV（売上）':    f'¥{rev_99:,.0f}',
+        'LTV（粗利）':    f'¥{gp_99:,.0f}',
+        'CAC上限':        f'¥{gp_99/cac_n:,.0f}',
+        'LTV∞への到達率': '99.0%',
     })
 
-st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+# HTML テーブルで描画（カスタムスタイル）
+header_cols = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞への到達率']
+ACCENT = '#56b4d3'
+BG_HEAD = '#0d1f2d'
+BG_ROW1 = '#0d1520'
+BG_ROW2 = '#0a1018'
+BG_SPECIAL = '#0d2a1a'  # λ・99%行
+
+html_rows = ''
+for i, row in enumerate(tbl_rows):
+    is_special = 'λ' in row['ホライズン'] or '99%' in row['ホライズン']
+    bg = BG_SPECIAL if is_special else (BG_ROW1 if i % 2 == 0 else BG_ROW2)
+    color = '#a8dadc' if is_special else '#c8d0d8'
+    html_rows += f"<tr style='background:{bg};'>"
+    # ホライズン列：左寄せ
+    html_rows += f"<td style='text-align:left; padding:8px 12px; color:{color}; font-size:0.85rem;'>{row['ホライズン']}</td>"
+    # 数値列：左寄せ
+    for col in ['LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞への到達率']:
+        val = row[col]
+        html_rows += f"<td style='text-align:right; padding:8px 12px; color:{color}; font-size:0.85rem; font-variant-numeric:tabular-nums;'>{val}</td>"
+    html_rows += '</tr>'
+
+tbl_html = f"""
+<table style='width:100%; border-collapse:collapse; margin-top:4px;'>
+  <thead>
+    <tr style='background:{BG_HEAD};'>
+      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>ホライズン</th>
+      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV（売上）</th>
+      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV（粗利）</th>
+      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>CAC上限</th>
+      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV∞への到達率</th>
+    </tr>
+  </thead>
+  <tbody>
+    {html_rows}
+  </tbody>
+</table>
+"""
+st.markdown(tbl_html, unsafe_allow_html=True)
+
 
 # 解釈ガイドを自動生成
 ltv_1y  = ltv_horizon(k, lam, arpu_daily, 365)
