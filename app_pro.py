@@ -878,6 +878,10 @@ try:
     arpu_daily = df['arpu_daily'].mean()
     gp_daily   = df['gp_daily'].mean()
 
+    # ビジネスタイプ依存ラベル（データ読み込みブロック内で使用）
+    acq_label  = "初回購入" if business_type == "都度課金型" else "契約"
+    date_label = "初回購入日" if business_type == "都度課金型" else "契約開始日"
+
     # ── 通知メッセージ ──
     if n_dormant > 0:
         st.info(f"{n_dormant:,}件を休眠顧客（最終購買から{dormancy_days}日超）として実質離脱に変換しました。")
