@@ -625,14 +625,17 @@ with st.sidebar:
     st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します")
 
     st.markdown("### CAC 上限")
-    cac_mode = st.radio("算出方法", ['LTV : CAC = N : 1', '回収期間（月）'])
+    cac_mode = st.radio("算出方法", ['LTV : CAC = N : 1', '回収期間（日）'])
     if cac_mode == 'LTV : CAC = N : 1':
         cac_n = st.slider("N（LTV:CAC = N:1）", 1.0, 10.0, 3.0, 0.5)
         cac_label = f"LTV:CAC = {cac_n}:1"
-        st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV ÷ 3")
+        cac_recover_days = None
+        st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV（粗利）÷ 3")
     else:
-        cac_n = st.slider("回収期間（月）", 1, 36, 12)
-        cac_label = f"{cac_n}ヶ月回収"
+        cac_recover_days = st.slider("CAC回収期間（日）", 30, 1095, 180, 30)
+        cac_label = f"{cac_recover_days}日回収"
+        cac_n = None  # 後でltv_horizonから算出
+        st.caption(f"{cac_recover_days}日時点の暫定LTV（粗利）をCAC上限とします")
 
     st.markdown("### セグメント分析")
     st.caption(
@@ -905,8 +908,14 @@ if k is None:
     st.stop()
 
 ltv_rev, surv_int = ltv_inf(k, lam, arpu_daily)   # 売上ベース
-ltv_val, _        = ltv_inf(k, lam, gp_daily)      # 粗利ベース（CACに使う）
-cac_upper = ltv_val / cac_n
+ltv_val, _        = ltv_inf(k, lam, gp_daily)      # 粗利ベース
+
+if cac_mode == 'LTV : CAC = N : 1':
+    cac_upper = ltv_val / cac_n
+else:
+    # N日時点の暫定LTV（粗利）をそのままCAC上限に
+    cac_upper = ltv_horizon(k, lam, gp_daily, cac_recover_days)
+    cac_n = ltv_val / cac_upper if cac_upper > 0 else 1  # 表示用に逆算
 
 # ══════════════════════════════════════════════════════════════
 # Metrics
