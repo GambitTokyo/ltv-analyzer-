@@ -438,21 +438,22 @@ with st.sidebar:
 
     # ══════════════════════════════════════════════════════
     # サンプルデータ生成
-    # サブスク：オンライン英会話（月額3,980〜9,800円、平均継続8ヶ月）
-    # 都度購入：ファストファッションEC（1回3,000〜12,000円、購入間隔90日）
+    # サブスク：フィットネスジム（月額7,000〜12,000円、k>1・逓増離脱型）
+    # 都度購入：ファストファッションEC（1回4,000〜15,000円、購入間隔90日）
     # ══════════════════════════════════════════════════════
     np.random.seed(42)
     n_sample = 10000
     today_ts = pd.Timestamp.today()
     start_dates = pd.date_range('2022-01-01', '2024-06-30', periods=n_sample)
 
-    # ── サブスク：オンライン英会話 ──────────────────────
-    # k=0.75（初期離脱型）、λ=240日（平均8ヶ月で解約）
-    # 月額プラン：3,980 / 6,980 / 9,800円
-    # LTV∞イメージ：約3〜7万円
-    ec_plans    = np.random.choice([3980, 6980, 9800], n_sample, p=[0.55, 0.30, 0.15])
-    ec_survival = np.random.weibull(0.85, n_sample) * 150
-    ec_churned  = np.random.random(n_sample) < 0.72
+    # ── サブスク：フィットネスジム ──────────────────────
+    # k=1.43（逓増離脱型）、λ=521日
+    # 6ヶ月：80%生存、1年：55%、2年：20%、3年：5%
+    # 月額プラン：7,000 / 9,800 / 12,000円
+    # LTV∞イメージ：約12万円、99%到達5年
+    ec_plans    = np.random.choice([7000, 9800, 12000], n_sample, p=[0.50, 0.35, 0.15])
+    ec_survival = np.random.weibull(1.43, n_sample) * 521
+    ec_churned  = np.random.random(n_sample) < 0.85
 
     end_dates_sub = []
     revenues_sub  = []
@@ -472,10 +473,10 @@ with st.sidebar:
             months = max(1, int((today_ts - sd).days // 30) + 1)
         revenues_sub.append(fee * months)
 
-    ec_plan_label = np.where(ec_plans == 3980, 'ベーシック（¥3,980）',
-                    np.where(ec_plans == 6980, 'スタンダード（¥6,980）', 'プレミアム（¥9,800）'))
+    ec_plan_label = np.where(ec_plans == 7000,  'レギュラー（¥7,000）',
+                    np.where(ec_plans == 9800,  'プレミアム（¥9,800）', 'パーソナル（¥12,000）'))
     channels_sub  = np.random.choice(['SNS広告', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.35, 0.30, 0.15, 0.20])
-    ages_sub      = np.random.choice(['10代', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.08, 0.30, 0.35, 0.18, 0.09])
+    ages_sub      = np.random.choice(['10代', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.05, 0.25, 0.35, 0.25, 0.10])
     regions_sub   = np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
                         n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09])
     prefs = ['東京','神奈川','大阪','愛知','埼玉','千葉','福岡','北海道','兵庫','静岡',
@@ -486,7 +487,7 @@ with st.sidebar:
     prefs_sub = np.random.choice(prefs, n_sample)
 
     sample_sub = pd.DataFrame({
-        'customer_id':   [f'EC{i:05d}' for i in range(1, n_sample+1)],
+        'customer_id':   [f'GY{i:05d}' for i in range(1, n_sample+1)],
         'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates],
         'end_date':      end_dates_sub,
         'revenue_total': revenues_sub,
@@ -498,12 +499,12 @@ with st.sidebar:
     })
 
     # ── 都度購入：ファストファッションEC ────────────────
-    # k=0.85、λ=270日（購入間隔90日、平均3〜4回購入）
-    # 1注文：3,000〜12,000円
-    # 休眠判定：365日推奨
-    # LTV∞イメージ：約3〜9万円
+    # k=0.978、λ=620日（購入間隔90日）
+    # 1年：55%、2年：31%、5年：6%
+    # 1注文：4,000〜15,000円、休眠判定：365日推奨
+    # LTV∞イメージ：約4万円、99%到達12年
     ff_unit   = np.random.choice([4000, 7000, 10000, 15000], n_sample, p=[0.30, 0.40, 0.20, 0.10])
-    ff_surv   = np.random.weibull(1.1,  n_sample) * 300
+    ff_surv   = np.random.weibull(0.978, n_sample) * 620
     ff_active = np.random.random(n_sample) < 0.40
 
     last_purchase_dates = []
@@ -518,11 +519,11 @@ with st.sidebar:
             lp = sd + pd.Timedelta(days=max(1, int(ff_surv[i])))
             lp = min(lp, today_ts - pd.Timedelta(days=1))
         last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
-        purchases = max(1, round((lp - sd).days / 75))
+        purchases = max(1, round((lp - sd).days / 90))
         revenues_spot.append(price * purchases)
 
     ff_gender   = np.random.choice(['男性', '女性', '未回答'],
-                      n_sample, p=[0.55, 0.38, 0.07])
+                      n_sample, p=[0.38, 0.55, 0.07])
     ff_channels = np.random.choice(['Instagram広告', '検索広告', 'アプリ通知', 'メルマガ', '口コミ'],
                       n_sample, p=[0.35, 0.25, 0.15, 0.15, 0.10])
     ff_ages     = np.random.choice(['10代', '20代', '30代', '40代', '50代以上'],
@@ -547,7 +548,7 @@ with st.sidebar:
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
-            "英会話サブスク サンプル（1万件）",
+            "ジムサブスク サンプル（1万件）",
             sample_sub.to_csv(index=False).encode('utf-8-sig'),
             "sample_subscription.csv", "text/csv",
             use_container_width=True
@@ -1342,6 +1343,11 @@ insight_html = f"""
     <span style='color:#56b4d3;'>3年時点</span>で<b style='color:#a8dadc;'>{pct_3y:.1f}%</b>（¥{ltv_3y:,.0f}）を回収できます。
   </div>
   <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 <b style='color:#a8dadc;'>{cac_recover_rev_str}</b> / 粗利ベース 約 <b style='color:#56b4d3;'>{cac_recover_gp_str}</b>（{acq_label}から）</div>
+  <div style='margin-top:12px; padding-top:10px; border-top:1px solid #1a3a4a;'>
+    <span style='color:#56b4d3; font-weight:600;'>CAC設計の目安</span>：回収期間に迷ったら、
+    <b style='color:#a8dadc;'>λ={int(lam):,}日（約{lam/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}</b>
+    をCAC上限の基準にしてください。λはこのビジネスの顧客が自然に離脱するまでの期間をデータが示した答えです。
+  </div>
 </div>
 """
 st.markdown(insight_html, unsafe_allow_html=True)
@@ -1396,9 +1402,9 @@ with tab2:
     p2 = prompt_base + f"""
 
 【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
-1. k={k:.4f}のビジネスにおいて、CAC上限¥{cac_upper:,.0f}（粗利ベース）を何年で回収する設計が現実的ですか？暫定LTVテーブルの数値（1年:¥{ltv_1y:,.0f}、2年:¥{ltv_2y:,.0f}、3年:¥{ltv_3y:,.0f}）を使って、回収期間別のCAC上限を提示してください。
-2. k{'<' if k < 1 else '>'}1のこのビジネスでLTV∞をそのままCAC判断に使うリスクを説明してください。どの暫定LTVを基準にするのが最も実務的ですか？
-3. λ={lam:.1f}日を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
+1. このビジネスのλ={lam:.0f}日（約{lam/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}をCAC上限の基準とした場合、LTV:CAC={cac_n:.1f}:1の設定でCACの目安はいくらですか？またこの設定は適切ですか？
+2. k={k:.4f}のビジネスにおいて、LTV∞をそのままCAC判断に使うリスクを説明してください。λ日基準・1年基準・2年基準それぞれのCAC上限（1年:¥{ltv_1y*gpm/cac_n:,.0f}、2年:¥{ltv_2y*gpm/cac_n:,.0f}、λ={int(lam)}日:¥{lam_gp/cac_n:,.0f})を比較して、最も実務的な基準はどれですか？
+3. λ={lam:.0f}日を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
     st.markdown(copy_html, unsafe_allow_html=True)
