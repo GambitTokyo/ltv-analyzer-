@@ -476,12 +476,12 @@ with st.sidebar:
     start_dates = pd.date_range('2022-01-01', '2024-06-30', periods=n_sample)
 
     # ── サブスク：フィットネスジム ──────────────────────
-    # k=1.43（逓増離脱型）、λ=521日
-    # 6ヶ月：80%生存、1年：55%、2年：20%、3年：5%
+    # k=0.921（初期離脱型）、λ=273日
+    # 6ヶ月：50%生存、1年：28%、2年：8%、3年：3%
     # 月額プラン：7,000 / 9,800 / 12,000円
-    # LTV∞イメージ：約12万円、99%到達5年
+    # LTV∞イメージ：約8万円、99%到達6年
     ec_plans    = np.random.choice([7000, 9800, 12000], n_sample, p=[0.50, 0.35, 0.15])
-    ec_survival = np.random.weibull(1.43, n_sample) * 521
+    ec_survival = np.random.weibull(0.921, n_sample) * 273
     ec_churned  = np.random.random(n_sample) < 0.85
 
     end_dates_sub = []
@@ -584,7 +584,7 @@ with st.sidebar:
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.markdown(f"""
-<a href="data:text/csv;base64,{sub_b64}" download="sample_subscription.csv" style="
+<a href="data:text/csv;base64,{sub_b64}" download="sample_gym_subscription.csv" style="
     display:block; text-align:center; text-decoration:none;
     background:#0d1a28; color:#a8c8d8;
     border:1px solid #1c3a4a; border-radius:8px;
@@ -741,7 +741,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v32</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v33</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1386,7 +1386,7 @@ insight_html = f"""
   <div style='margin-top:12px; padding-top:10px; border-top:1px solid #1a3a4a;'>
     <span style='color:#56b4d3; font-weight:600;'>CAC設計の目安</span>：回収期間に迷ったら、
     <b style='color:#a8dadc;'>λ={int(lam):,}日（約{lam/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}</b>
-    をCAC上限の基準にしてください。λはこのビジネスの顧客が自然に離脱するまでの期間をデータが示した答えです。
+    を用いてCAC上限を算出してください。λはこのビジネスの顧客が自然に離脱するまでの期間をデータが示した答えです。
   </div>
 </div>
 """
