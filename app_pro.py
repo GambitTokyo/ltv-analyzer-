@@ -436,24 +436,31 @@ def weibull_s(t, k, lam):
 with st.sidebar:
     st.markdown("### データ入力")
 
+    # ══════════════════════════════════════════════════════
     # サンプルデータ生成
+    # サブスク：オンライン英会話（月額3,980〜9,800円、平均継続8ヶ月）
+    # 都度購入：ファストファッションEC（1回3,000〜12,000円、購入間隔90日）
+    # ══════════════════════════════════════════════════════
     np.random.seed(42)
     n_sample = 10000
     today_ts = pd.Timestamp.today()
     start_dates = pd.date_range('2022-01-01', '2024-06-30', periods=n_sample)
-    survival_days = np.random.weibull(1.2, n_sample) * 400
-    churned = np.random.random(n_sample) < 0.65
 
-    # ── サブスク用サンプル ──
-    # end_date: 解約済みは解約日、継続中は空欄
-    # revenue_total: 月額×リニューアル回数の累計売上
-    monthly_fee = np.random.choice([300, 500, 980], n_sample, p=[0.5, 0.35, 0.15])
+    # ── サブスク：オンライン英会話 ──────────────────────
+    # k=0.75（初期離脱型）、λ=240日（平均8ヶ月で解約）
+    # 月額プラン：3,980 / 6,980 / 9,800円
+    # LTV∞イメージ：約3〜7万円
+    ec_plans    = np.random.choice([3980, 6980, 9800], n_sample, p=[0.55, 0.30, 0.15])
+    ec_survival = np.random.weibull(0.75, n_sample) * 240
+    ec_churned  = np.random.random(n_sample) < 0.72
+
     end_dates_sub = []
     revenues_sub  = []
     for i in range(n_sample):
-        sd = start_dates[i]
-        if churned[i]:
-            ed = sd + pd.Timedelta(days=int(survival_days[i]))
+        sd  = start_dates[i]
+        fee = ec_plans[i]
+        if ec_churned[i]:
+            ed = sd + pd.Timedelta(days=max(1, int(ec_survival[i])))
             if ed < today_ts:
                 end_dates_sub.append(ed.strftime('%Y-%m-%d'))
                 months = max(1, round((ed - sd).days / 30))
@@ -463,82 +470,84 @@ with st.sidebar:
         else:
             end_dates_sub.append('')
             months = max(1, round((today_ts - sd).days / 30))
-        revenues_sub.append(monthly_fee[i] * months)
+        revenues_sub.append(fee * months)
 
-    plans    = np.random.choice(['月額300', '月額500', '月額980'], n_sample, p=[0.5, 0.35, 0.15])
-    channels = np.random.choice(['SNS', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.3, 0.3, 0.2, 0.2])
-    ages     = np.random.choice(['10代以下', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.10, 0.25, 0.35, 0.20, 0.10])
+    ec_plan_label = np.where(ec_plans == 3980, 'ベーシック（¥3,980）',
+                    np.where(ec_plans == 6980, 'スタンダード（¥6,980）', 'プレミアム（¥9,800）'))
+    channels_sub  = np.random.choice(['SNS広告', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.35, 0.30, 0.15, 0.20])
+    ages_sub      = np.random.choice(['10代', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.08, 0.30, 0.35, 0.18, 0.09])
+    regions_sub   = np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
+                        n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09])
+    prefs = ['東京','神奈川','大阪','愛知','埼玉','千葉','福岡','北海道','兵庫','静岡',
+             '茨城','広島','京都','宮城','新潟','長野','栃木','岐阜','群馬','岡山',
+             '三重','熊本','鹿児島','山口','愛媛','長崎','奈良','青森','岩手','大分',
+             '石川','山形','富山','秋田','香川','和歌山','佐賀','福井','徳島','高知',
+             '島根','宮崎','鳥取','沖縄','滋賀','山梨','福島']
+    prefs_sub = np.random.choice(prefs, n_sample)
 
-    regions = np.random.choice(
-        ['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
-        n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09]
-    )
-    prefs = np.random.choice(
-        ['東京', '神奈川', '大阪', '愛知', '埼玉', '千葉', '福岡', '北海道',
-         '兵庫', '静岡', '茨城', '広島', '京都', '宮城', '新潟', '長野',
-         '栃木', '岐阜', '群馬', '岡山', '三重', '熊本', '鹿児島', '山口',
-         '愛媛', '長崎', '奈良', '青森', '岩手', '大分', '石川', '山形',
-         '富山', '秋田', '香川', '和歌山', '佐賀', '福井', '徳島', '高知',
-         '島根', '宮崎', '鳥取', '沖縄', '滋賀', '山梨', '福島'],
-        n_sample
-    )
     sample_sub = pd.DataFrame({
-        'customer_id':  [f'S{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':   [d.strftime('%Y-%m-%d') for d in start_dates],
-        'end_date':     end_dates_sub,
+        'customer_id':   [f'EC{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates],
+        'end_date':      end_dates_sub,
         'revenue_total': revenues_sub,
-        'plan':         plans,
-        'channel':      channels,
-        'age_group':    ages,
-        'region':       regions,
-        'prefecture':   prefs,
+        'plan':          ec_plan_label,
+        'channel':       channels_sub,
+        'age_group':     ages_sub,
+        'region':        regions_sub,
+        'prefecture':    prefs_sub,
     })
 
-    # ── 都度課金用サンプル ──
-    # end_dateは基本空欄、last_purchase_dateで休眠判定
-    # revenue_total: 実際の累計購買額
-    unit_price = np.random.choice([3000, 5000, 10000], n_sample, p=[0.5, 0.35, 0.15])
-    last_purchase_dates = []
-    revenues_spot = []
-    for i in range(n_sample):
-        sd = start_dates[i]
-        if churned[i]:
-            lp = sd + pd.Timedelta(days=int(survival_days[i]))
-            lp = min(lp, today_ts - pd.Timedelta(days=1))
-        else:
-            # アクティブ：直近180日以内にランダムに購買
-            if np.random.random() < 0.2:
-                lp = today_ts - pd.Timedelta(days=np.random.randint(200, 600))
-            else:
-                lp = today_ts - pd.Timedelta(days=np.random.randint(1, 180))
-        last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
-        purchases = max(1, round((lp - sd).days / 60))
-        revenues_spot.append(unit_price[i] * purchases)
+    # ── 都度購入：ファストファッションEC ────────────────
+    # k=0.85、λ=270日（購入間隔90日、平均3〜4回購入）
+    # 1注文：3,000〜12,000円
+    # 休眠判定：365日推奨
+    # LTV∞イメージ：約3〜9万円
+    ff_unit   = np.random.choice([3000, 5500, 8000, 12000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
+    ff_surv   = np.random.weibull(0.85, n_sample) * 270
+    ff_active = np.random.random(n_sample) < 0.40
 
-    spot_plans    = np.random.choice(['ベーシック', 'スタンダード', 'プレミアム'], n_sample, p=[0.5, 0.35, 0.15])
-    spot_channels = np.random.choice(['SNS', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.3, 0.3, 0.2, 0.2])
-    spot_ages     = np.random.choice(['10代以下', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.10, 0.25, 0.35, 0.20, 0.10])
-    spot_plan_mult = np.where(spot_plans == 'プレミアム', 2.5, np.where(spot_plans == 'スタンダード', 1.5, 1.0))
-    spot_age_mult  = np.where(spot_ages == '50代以上', 1.6, np.where(spot_ages == '40代', 1.3,
-                     np.where(spot_ages == '30代', 1.1, np.where(spot_ages == '20代', 0.9, 0.7))))
-    revenues_spot_adj = np.array(revenues_spot) * spot_plan_mult * spot_age_mult
+    last_purchase_dates = []
+    revenues_spot       = []
+    for i in range(n_sample):
+        sd    = start_dates[i]
+        price = ff_unit[i]
+        if ff_active[i]:
+            days_since = np.random.randint(1, 365)
+            lp = today_ts - pd.Timedelta(days=int(days_since))
+        else:
+            lp = sd + pd.Timedelta(days=max(1, int(ff_surv[i])))
+            lp = min(lp, today_ts - pd.Timedelta(days=1))
+        last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
+        purchases = max(1, round((lp - sd).days / 90))
+        revenues_spot.append(price * purchases)
+
+    ff_gender   = np.random.choice(['男性', '女性', '未回答'],
+                      n_sample, p=[0.55, 0.38, 0.07])
+    ff_channels = np.random.choice(['Instagram広告', '検索広告', 'アプリ通知', 'メルマガ', '口コミ'],
+                      n_sample, p=[0.35, 0.25, 0.15, 0.15, 0.10])
+    ff_ages     = np.random.choice(['10代', '20代', '30代', '40代', '50代以上'],
+                      n_sample, p=[0.15, 0.40, 0.28, 0.12, 0.05])
+    ff_regions  = np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
+                      n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09])
+    prefs_ff    = np.random.choice(prefs, n_sample)
+
     sample_spot = pd.DataFrame({
-        'customer_id':        [f'D{i:05d}' for i in range(1, n_sample+1)],
+        'customer_id':        [f'FF{i:05d}' for i in range(1, n_sample+1)],
         'start_date':         [d.strftime('%Y-%m-%d') for d in start_dates],
         'end_date':           '',
         'last_purchase_date': last_purchase_dates,
-        'revenue_total':      revenues_spot_adj.astype(int),
-        'plan':               spot_plans,
-        'channel':            spot_channels,
-        'age_group':          spot_ages,
-        'region':             np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'], n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09]),
-        'prefecture':         np.random.choice(['東京', '神奈川', '大阪', '愛知', '埼玉', '千葉', '福岡', '北海道', '兵庫', '静岡', '茨城', '広島', '京都', '宮城', '新潟', '長野', '栃木', '岐阜', '群馬', '岡山', '三重', '熊本', '鹿児島', '山口', '愛媛', '長崎', '奈良', '青森', '岩手', '大分', '石川', '山形', '富山', '秋田', '香川', '和歌山', '佐賀', '福井', '徳島', '高知', '島根', '宮崎', '鳥取', '沖縄', '滋賀', '山梨', '福島'], n_sample),
+        'revenue_total':      revenues_spot,
+        'gender':             ff_gender,
+        'channel':            ff_channels,
+        'age_group':          ff_ages,
+        'region':             ff_regions,
+        'prefecture':         prefs_ff,
     })
 
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
-            "サブスク用サンプル（1万件）",
+            "英会話サブスク サンプル（1万件）",
             sample_sub.to_csv(index=False).encode('utf-8-sig'),
             "sample_subscription.csv", "text/csv",
             use_container_width=True
@@ -546,7 +555,7 @@ with st.sidebar:
         st.caption("`end_date`: 解約日（継続中は空欄）")
     with col_dl2:
         st.download_button(
-            "都度課金用サンプル（1万件）",
+            "ファッションEC サンプル（1万件）",
             sample_spot.to_csv(index=False).encode('utf-8-sig'),
             "sample_spot_purchase.csv", "text/csv",
             use_container_width=True
@@ -629,17 +638,11 @@ with st.sidebar:
     st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します")
 
     st.markdown("### CAC 上限")
-    cac_mode = st.radio("算出方法", ['LTV : CAC = N : 1', '回収期間（日）'])
-    if cac_mode == 'LTV : CAC = N : 1':
-        cac_n = st.slider("N（LTV:CAC = N:1）", 1.0, 10.0, 3.0, 0.5)
-        cac_label = f"LTV:CAC = {cac_n}:1"
-        cac_recover_days = None
-        st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV（粗利）÷ 3")
-    else:
-        cac_recover_days = st.slider("CAC回収期間（日）", 30, 1095, 180, 30)
-        cac_label = f"{cac_recover_days}日回収"
-        cac_n = None  # 後でltv_horizonから算出
-        st.caption(f"{cac_recover_days}日時点の暫定LTV（粗利）をCAC上限とします")
+    cac_n = st.slider("N（LTV:CAC = N:1）", 1.0, 10.0, 3.0, 0.5)
+    cac_label = f"LTV:CAC = {cac_n}:1"
+    cac_mode = 'LTV : CAC = N : 1'
+    cac_recover_days = None
+    st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV（粗利）÷ 3")
 
     st.markdown("### セグメント分析")
     st.caption(
@@ -919,19 +922,9 @@ if k is None:
     st.error(" Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
     st.stop()
 
-if arpu_daily is None or gp_daily is None:
-    st.error(" ARPU計算に失敗しました。CSVの revenue 列と日付列を確認してください。")
-    st.stop()
-
 ltv_rev, surv_int = ltv_inf(k, lam, arpu_daily)   # 売上ベース
 ltv_val, _        = ltv_inf(k, lam, gp_daily)      # 粗利ベース
-
-if cac_mode == 'LTV : CAC = N : 1':
-    cac_upper = ltv_val / cac_n
-else:
-    # N日時点の暫定LTV（粗利）をそのままCAC上限に
-    cac_upper = ltv_horizon(k, lam, gp_daily, cac_recover_days)
-    cac_n = ltv_val / cac_upper if cac_upper > 0 else 1  # 表示用に逆算
+cac_upper = ltv_val / cac_n
 
 # ══════════════════════════════════════════════════════════════
 # Metrics
