@@ -1082,6 +1082,76 @@ st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", u
 
 horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 
+# ── 折れ線グラフ（180日〜5年、λを縦線で表示）──────────────
+# グラフ用の細かい点を生成（滑らかな曲線）
+t_range = list(range(1, 1826, 10))
+rev_line = [ltv_horizon(k, lam, arpu_daily, t) for t in t_range]
+gp_line  = [ltv_horizon(k, lam, gp_daily,   t) for t in t_range]
+cac_line = [v / cac_n for v in gp_line]
+
+fig_ltv = go.Figure()
+
+fig_ltv.add_trace(go.Scatter(
+    x=t_range, y=rev_line,
+    name='LTV（売上）', mode='lines',
+    line=dict(color='#56b4d3', width=2),
+))
+fig_ltv.add_trace(go.Scatter(
+    x=t_range, y=gp_line,
+    name='LTV（粗利）', mode='lines',
+    line=dict(color='#a8dadc', width=2, dash='dash'),
+))
+fig_ltv.add_trace(go.Scatter(
+    x=t_range, y=cac_line,
+    name='CAC上限', mode='lines',
+    line=dict(color='#4a7a8a', width=1.5, dash='dot'),
+))
+
+# LTV∞ 水平点線
+fig_ltv.add_hline(
+    y=ltv_rev, line_dash='dot', line_color='#56b4d3',
+    line_width=1, opacity=0.4,
+    annotation_text=f'LTV∞ ¥{ltv_rev:,.0f}',
+    annotation_position='right',
+    annotation_font=dict(color='#56b4d3', size=10),
+)
+
+# λ 縦線（グラフ範囲内のみ）
+if lam <= 1825:
+    fig_ltv.add_vline(
+        x=lam, line_dash='dash', line_color='#a8dadc',
+        line_width=1, opacity=0.6,
+        annotation_text=f'λ {int(lam)}日',
+        annotation_position='top',
+        annotation_font=dict(color='#a8dadc', size=10),
+    )
+
+# X軸のticksをホライズンに合わせる
+tick_vals = [180, 365, 730, 1095, 1825]
+tick_text = ['180日', '1年', '2年', '3年', '5年']
+
+fig_ltv.update_layout(
+    paper_bgcolor='#111820', plot_bgcolor='#111820',
+    height=320, margin=dict(t=30, b=50, l=70, r=100),
+    font=dict(color='#ccc', size=10),
+    legend=dict(
+        orientation='h', y=1.08, x=0,
+        font=dict(size=10), bgcolor='rgba(0,0,0,0)'
+    ),
+    xaxis=dict(
+        title='継続期間', gridcolor='#1a3040',
+        tickvals=tick_vals, ticktext=tick_text,
+        tickfont=dict(color='#888'),
+    ),
+    yaxis=dict(
+        title='金額（円）', gridcolor='#1a3040',
+        tickfont=dict(color='#888'),
+        tickformat='¥,.0f',
+    ),
+)
+st.plotly_chart(fig_ltv, use_container_width=True)
+
+
 # λ時点と99%到達日数を逆算
 try:
     days_99 = brentq(
