@@ -528,12 +528,12 @@ with st.sidebar:
     })
 
     # ── 都度購入：ファストファッションEC ────────────────
-    # k=0.978、λ=620日（購入間隔90日）
-    # 1年：55%、2年：31%、5年：6%
+    # k=0.750（初期離脱型）、λ=237日
+    # 1年：25%、2年：10%、3年：4%
     # 1注文：4,000〜15,000円、休眠判定：365日推奨
-    # LTV∞イメージ：約4万円、99%到達12年
+    # LTV∞イメージ：約2万円、99%到達9年
     ff_unit   = np.random.choice([4000, 7000, 10000, 15000], n_sample, p=[0.30, 0.40, 0.20, 0.10])
-    ff_surv   = np.random.weibull(0.978, n_sample) * 620
+    ff_surv   = np.random.weibull(0.750, n_sample) * 237
     ff_active = np.random.random(n_sample) < 0.40
 
     last_purchase_dates = []
@@ -685,6 +685,14 @@ with st.sidebar:
     cac_recover_days = None
     st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV（粗利）÷ 3")
 
+    st.markdown("### 異常値処理")
+    outlier_removal = st.toggle("異常値を除外する", value=False)
+    if outlier_removal:
+        st.caption(
+            "利用期間・累計金額の上位外れ値をIQR×3で除外します。"
+            "累計金額の下位1%（¥0・極端な低額）も除外します。"
+        )
+
     st.markdown("### セグメント分析")
     st.caption(
         "**セグメント列とは？**\n\n"
@@ -741,7 +749,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v34</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v37</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -927,6 +935,24 @@ try:
     df['gp_daily']   = df['arpu_daily'] * gpm
     df = df.dropna(subset=['arpu_daily'])
     df = df[df['arpu_daily'] > 0]
+
+    # ── 異常値除外（オプション）──
+    n_outlier = 0
+    if outlier_removal:
+        before = len(df)
+        # 利用期間：上位IQR×3でカット
+        q1_d = df['duration'].quantile(0.25)
+        q3_d = df['duration'].quantile(0.75)
+        upper_d = q3_d + 3 * (q3_d - q1_d)
+        df = df[df['duration'] <= upper_d]
+        # 累計売上：下位1%と上位IQR×3でカット
+        lower_r = df['revenue_total'].quantile(0.01)
+        q1_r = df['revenue_total'].quantile(0.25)
+        q3_r = df['revenue_total'].quantile(0.75)
+        upper_r = q3_r + 3 * (q3_r - q1_r)
+        df = df[(df['revenue_total'] >= lower_r) & (df['revenue_total'] <= upper_r)]
+        n_outlier = before - len(df)
+
     arpu_daily = df['arpu_daily'].mean()
     gp_daily   = df['gp_daily'].mean()
 
@@ -941,7 +967,9 @@ try:
         st.info(f"ℹ {n_corrected}件：{date_label}と終端日が同日のため1日に補正しました。")
     if n_excluded > 0:
         st.warning(f" {n_excluded}件：start_dateが未来の日付のため除外しました（入力ミスの可能性）。")
-    if n_dormant == 0 and n_corrected == 0 and n_excluded == 0:
+    if n_outlier > 0:
+        st.info(f"{n_outlier:,}件を異常値として除外しました（利用期間・累計金額のIQR×3基準）。")
+    if n_dormant == 0 and n_corrected == 0 and n_excluded == 0 and n_outlier == 0:
         st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
 
     if len(df) < 10:
@@ -981,8 +1009,8 @@ else:
 metrics = [
     (f"¥{ltv_rev:,.0f}", "LTV∞",       "売上ベース"),
     (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
-    (f"{k:.3f}",           "Weibull k", f"形状パラメータ / {k_desc}"),
-    (f"{lam:.1f}日",       "Weibull λ", "大きいほどLTV∞到達が長期化する（日数）"),
+    (f"{k:.3f}",           "Weibull k", f"{k_desc}"),
+    (f"{lam:.1f}日",       "Weibull λ", "値が大きいほどLTV∞到達が長期化"),
     (f"{r2:.3f}",          "R²",        "0.9以上が理想 / 1.0が最高精度"),
 ]
 for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
@@ -1003,7 +1031,7 @@ if r2 < 0.85:
 # ── サマリー解説ボックス ──────────────────────────────────────
 if k < 1.0:
     k_summary = (
-        f"k={k:.3f}の初期離脱型です。入会直後に解約が集中しますが、"
+        f"k={k:.3f}の初期離脱型です。利用開始直後に解約が集中しますが、"
         f"初期を乗り越えた顧客はλ={lam:.0f}日（約{lam/365:.1f}年）スパンで継続する傾向があります。"
         f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}ですが、"
         f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
@@ -1715,7 +1743,7 @@ with exp2:
 
         # k の詳細解釈
         if k < 0.7:
-            k_insight = f"k={k:.3f}（強い初期集中型）: 入会直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
+            k_insight = f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
         elif k < 1.0:
             k_insight = f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
         elif k < 1.5:
@@ -2021,7 +2049,7 @@ with exp2:
                         # ── セグメント詳細 示唆ボックス ──
                         # k に基づく施策示唆
                         if k_sv < 0.8:
-                            sv_action = f"k={k_sv:.3f}: 初期集中型。入会30日以内のオンボーディング改善が最優先です。"
+                            sv_action = f"k={k_sv:.3f}: 初期集中型。利用開始30日以内のオンボーディング改善が最優先です。"
                         elif k_sv < 1.0:
                             sv_action = f"k={k_sv:.3f}: 緩やかな初期集中。継続的なリテンション施策とオンボーディング改善を並行実施してください。"
                         elif k_sv < 1.5:
