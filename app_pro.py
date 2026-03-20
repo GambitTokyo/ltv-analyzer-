@@ -30,8 +30,7 @@ st.markdown("""
 html {
     font-size: 13px;
 }
-.stApp,
-.stApp *:not(code):not(pre):not(.js-plotly-plot):not(.js-plotly-plot *) {
+.stApp *:not(code):not(pre):not(.js-plotly-plot):not(.js-plotly-plot *):not([class*="material"]):not([class*="icon"]):not([data-testid="stIconMaterial"]) {
     font-family: 'BIZ UDPGothic', sans-serif !important;
 }
 .stApp { background-color: #0a0e14; color: #c8d0d8; }
