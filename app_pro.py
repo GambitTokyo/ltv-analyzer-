@@ -545,10 +545,12 @@ with st.sidebar:
         'prefecture':         prefs_ff,
     })
 
+    st.markdown("#### サンプルデータ")
+    st.caption("サンプルCSVをダウンロードしてフォーマットを確認できます。")
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
-            "ジムサブスク サンプル（1万件）",
+            "サブスク型：ジム",
             sample_sub.to_csv(index=False).encode('utf-8-sig'),
             "sample_subscription.csv", "text/csv",
             use_container_width=True
@@ -556,7 +558,7 @@ with st.sidebar:
         st.caption("`end_date`: 解約日（継続中は空欄）")
     with col_dl2:
         st.download_button(
-            "ファッションEC サンプル（1万件）",
+            "都度購入型：ファッションEC",
             sample_spot.to_csv(index=False).encode('utf-8-sig'),
             "sample_spot_purchase.csv", "text/csv",
             use_container_width=True
@@ -570,7 +572,7 @@ with st.sidebar:
         "ビジネスタイプを選択してください",
         [
             "サブスク・継続課金型",
-            "都度課金型",
+            "都度購入型",
         ],
         index=0,
     )
@@ -605,13 +607,13 @@ with st.sidebar:
             custom_cycle_days = None
         st.caption("カレンダーベース：実際の月の日数（28〜31日）で計算。30日固定：1ヶ月を常に30日として計算。365日固定：1年を365日として計算。")
 
-    else:  # 都度課金型
+    else:  # 都度購入型
         st.caption(
             "最終購買日（last_purchase_date）をベースに休眠判定します。"
             "CSVに `last_purchase_date` 列が必要です。"
             "ARPU = 累計売上 ÷ 継続日数で計算します。"
         )
-        billing_cycle = "日次（都度課金）"
+        billing_cycle = "日次（都度購入）"
         custom_cycle_days = None
         dormancy_option = st.radio(
             "休眠判定期間",
@@ -719,7 +721,7 @@ if uploaded is None:
 | `customer_id` | 顧客ID | 任意の文字列 | C0001 |
 | `start_date` | 契約開始日 / 初回購入日 | YYYY-MM-DD | 2023-01-01 |
 | `end_date` | 解約日（サブスク向け・継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
-| `last_purchase_date` | 最終購買日（都度課金向け・任意） | YYYY-MM-DD | 2024-06-01 |
+| `last_purchase_date` | 最終購買日（都度購入向け・任意） | YYYY-MM-DD | 2024-06-01 |
 | `revenue` | **累計売上**（円） | 数値 | 48000 |
 | `セグメント列`（任意の列名） | **Advanced機能**：プラン・チャネル・年齢層など | 文字列 | 月額300 |
 
@@ -801,7 +803,7 @@ try:
 
     # ── duration・event の確定 ──
     # サブスク（解約日のみ）：end_date あり→解約、なし→継続（今日まで）
-    # 都度課金（休眠判定あり）：end_date あり→解約、
+    # 都度購入（休眠判定あり）：end_date あり→解約、
     #   end_date なし + last_purchase_date から dormancy_days 超→実質離脱（last_purchase_dateまで）
     #   end_date なし + dormancy_days 未満→継続（今日まで）
 
@@ -839,8 +841,8 @@ try:
         if pd.isna(rev) or dur <= 0:
             return np.nan
 
-        if billing_cycle == "日次（都度課金）":
-            # 都度課金：累計売上 ÷ 継続日数
+        if billing_cycle == "日次（都度購入）":
+            # 都度購入：累計売上 ÷ 継続日数
             return rev / dur
 
         elif billing_cycle == "カレンダーベース（月またぎ）← 月額サブスク推奨":
@@ -891,8 +893,8 @@ try:
     gp_daily   = df['gp_daily'].mean()
 
     # ビジネスタイプ依存ラベル（データ読み込みブロック内で使用）
-    acq_label  = "初回購入" if business_type == "都度課金型" else "契約"
-    date_label = "初回購入日" if business_type == "都度課金型" else "契約開始日"
+    acq_label  = "初回購入" if business_type == "都度購入型" else "契約"
+    date_label = "初回購入日" if business_type == "都度購入型" else "契約開始日"
 
     # ── 通知メッセージ ──
     if n_dormant > 0:
@@ -1366,8 +1368,8 @@ churned_count  = int(df['event'].sum())
 active_count   = int((df['event']==0).sum())
 churn_rate     = churned_count / len(df) * 100
 # ビジネスタイプで「契約」「初回購入」を切り替え
-acq_label  = "初回購入" if business_type == "都度課金型" else "契約"
-date_label = "初回購入日" if business_type == "都度課金型" else "契約開始日"
+acq_label  = "初回購入" if business_type == "都度購入型" else "契約"
+date_label = "初回購入日" if business_type == "都度購入型" else "契約開始日"
 
 k_pattern      = f"初期集中型（{acq_label}直後の離脱が多い）" if k < 1 else "逓増型（時間とともに離脱が増える）"
 
