@@ -27,16 +27,12 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 /* ── Base font: BIZ UDPGothic ── */
-html, body, [class*="css"],
-.stApp, .stApp *,
+.stApp,
 [data-testid="stAppViewContainer"],
-[data-testid="stAppViewContainer"] *,
-[data-testid="stSidebar"],
-[data-testid="stSidebar"] *,
-[data-testid="stMain"],
-[data-testid="stMain"] *,
-p, div, span, label, input, button, textarea, select, th, td {
+[data-testid="stSidebar"] {
     font-family: 'BIZ UDPGothic', sans-serif !important;
+    font-size: 14px;
+    letter-spacing: -0.01em;
 }
 .stApp { background-color: #0a0e14; color: #c8d0d8; }
 
