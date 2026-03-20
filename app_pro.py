@@ -463,13 +463,13 @@ with st.sidebar:
             ed = sd + pd.Timedelta(days=max(1, int(ec_survival[i])))
             if ed < today_ts:
                 end_dates_sub.append(ed.strftime('%Y-%m-%d'))
-                months = max(1, round((ed - sd).days / 30))
+                months = max(1, int((ed - sd).days // 30) + 1)
             else:
                 end_dates_sub.append('')
-                months = max(1, round((today_ts - sd).days / 30))
+                months = max(1, int((today_ts - sd).days // 30) + 1)
         else:
             end_dates_sub.append('')
-            months = max(1, round((today_ts - sd).days / 30))
+            months = max(1, int((today_ts - sd).days // 30) + 1)
         revenues_sub.append(fee * months)
 
     ec_plan_label = np.where(ec_plans == 3980, 'ベーシック（¥3,980）',
@@ -1036,7 +1036,19 @@ plt.close()
 
 st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
 
-horizons = [30, 90, 180, 365, 730, 1095, 1825]  # 30日・90日・180日・1年・2年・3年・5年
+horizons = [90, 180, 365, 730, 1095, 1825]  # 90日・180日・1年・2年・3年・5年
+
+# LTV∞の95%到達日数を逆算
+try:
+    days_95 = brentq(
+        lambda h: ltv_horizon(k, lam, arpu_daily, h) / ltv_rev - 0.95,
+        1, 36500
+    )
+    label_95 = f"{days_95/365:.1f}年（{int(days_95):,}日）" if days_95 >= 365 else f"{int(days_95)}日"
+except Exception:
+    days_95  = None
+    label_95 = "算出不可"
+
 rows = []
 for h in horizons:
     lh = ltv_horizon(k, lam, arpu_daily, h)
@@ -1046,6 +1058,17 @@ for h in horizons:
         'LTV∞比（売上）': f'{lh/ltv_rev*100:.1f}%',
         f'CAC上限（粗利ベース）({cac_label})': f'¥{lh/cac_n:,.0f}',
     })
+
+# 95%到達行を追加
+if days_95 is not None:
+    lh_95 = ltv_horizon(k, lam, arpu_daily, days_95)
+    rows.append({
+        'ホライズン': f'95%到達 {label_95}',
+        '暫定LTV（売上ベース）': f'¥{lh_95:,.0f}',
+        'LTV∞比（売上）': '95.0%',
+        f'CAC上限（粗利ベース）({cac_label})': f'¥{lh_95/cac_n:,.0f}',
+    })
+
 st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
 # 解釈ガイドを自動生成
