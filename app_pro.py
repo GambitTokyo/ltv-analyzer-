@@ -233,6 +233,9 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
     border: 1px solid #1c3a4a !important;
     border-radius: 8px !important;
     width: 100% !important;
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+    padding: 6px 10px !important;
 }
 [data-testid="stDownloadButton"] > button:hover {
     background-color: #112030 !important;
@@ -545,12 +548,11 @@ with st.sidebar:
         'prefecture':         prefs_ff,
     })
 
-    st.markdown("#### サンプルデータ")
     st.caption("サンプルCSVをダウンロードしてフォーマットを確認できます。")
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.download_button(
-            "サブスク型：ジム",
+            "サブスク型：\nジム",
             sample_sub.to_csv(index=False).encode('utf-8-sig'),
             "sample_subscription.csv", "text/csv",
             use_container_width=True
@@ -558,7 +560,7 @@ with st.sidebar:
         st.caption("`end_date`: 解約日（継続中は空欄）")
     with col_dl2:
         st.download_button(
-            "都度購入型：ファッションEC",
+            "都度購入型：\nファッションEC",
             sample_spot.to_csv(index=False).encode('utf-8-sig'),
             "sample_spot_purchase.csv", "text/csv",
             use_container_width=True
