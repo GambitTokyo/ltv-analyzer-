@@ -31,6 +31,7 @@ st.markdown("""
 .stApp *:not(code):not(pre):not(.js-plotly-plot):not(.js-plotly-plot *) {
     font-family: 'BIZ UDPGothic', sans-serif !important;
 }
+html { font-size: 11.2px; }  /* 14px × 80% */
 .stApp { background-color: #0a0e14; color: #c8d0d8; }
 
 /* ── Sidebar divider lines ── */
