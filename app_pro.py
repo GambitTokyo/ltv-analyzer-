@@ -933,19 +933,15 @@ cac_upper = ltv_val / cac_n
 st.markdown("<div class='section-title'>分析結果サマリー</div>", unsafe_allow_html=True)
 m1, m2, m3, m4, m5 = st.columns(5)
 
-if k < 0.8:
-    k_desc = "k<1: 初期離脱大・LTV回収が長期化"
-elif k < 1.0:
-    k_desc = "k<1: 離脱率ほぼ一定・回収はやや長期"
-elif k < 1.5:
-    k_desc = "k>1: 逓増離脱型・比較的短期に回収可"
+if k < 1.0:
+    k_desc = "初期離脱大・投資回収が比較的長期"
 else:
-    k_desc = "k>1: 強い逓増型・短期でLTV回収可能"
+    k_desc = "継続後に解約増・投資回収が比較的短期"
 metrics = [
     (f"¥{ltv_rev:,.0f}", "LTV∞",       "売上ベース"),
     (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
     (f"{k:.3f}",           "Weibull k", f"形状パラメータ / {k_desc}"),
-    (f"{lam:.1f}日",       "Weibull λ", "尺度 / 典型的な継続期間の目安"),
+    (f"{lam:.1f}日",       "Weibull λ", "大きいほどLTV∞到達が長期化する（日数）"),
     (f"{r2:.3f}",          "R²",        "0.9以上が理想 / 1.0が最高精度"),
 ]
 for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
@@ -1106,7 +1102,7 @@ tbl_rows.append({
 ACCENT   = '#56b4d3'
 BG_HEAD  = '#0d1f2d'
 BG_ROW1  = '#0d1520'
-BG_ROW2  = '#0a1018'
+BG_ROW2  = '#0d1520'
 SEP_COLOR = '#1a3a4a'  # λ・99%行の区切り線色
 
 html_rows = ''
@@ -1291,7 +1287,7 @@ with tab2:
 【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
 1. k={k:.4f}のビジネスにおいて、CAC上限¥{cac_upper:,.0f}（粗利ベース）を何年で回収する設計が現実的ですか？暫定LTVテーブルの数値（1年:¥{ltv_1y:,.0f}、2年:¥{ltv_2y:,.0f}、3年:¥{ltv_3y:,.0f}）を使って、回収期間別のCAC上限を提示してください。
 2. k{'<' if k < 1 else '>'}1のこのビジネスでLTV∞をそのままCAC判断に使うリスクを説明してください。どの暫定LTVを基準にするのが最も実務的ですか？
-3. λ={lam:.1f}日（典型的な継続期間）を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
+3. λ={lam:.1f}日を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
     st.markdown(copy_html, unsafe_allow_html=True)
@@ -1588,7 +1584,7 @@ with exp2:
 
         lam_text = (
             f"λ（尺度パラメータ） = {lam:.1f}日（約{lam_yr:.1f}年）\n"
-            f"→ 顧客の「典型的な継続期間」の目安。λ日時点での暫定LTVの到達率（k=1のとき63.2%、k値により異なる）\n"
+            f"→ 大きいほどLTV∞到達が長期化する。λ日時点での暫定LTV到達率はk値により異なる（k=1のとき63.2%）\n"
             f"→ {r2_comment}"
         )
         txbox(s3, lam_text, 6.75, 5.4, 6.1, 1.6, size=8, color=WHITE)
