@@ -451,7 +451,7 @@ with st.sidebar:
     # 月額プラン：3,980 / 6,980 / 9,800円
     # LTV∞イメージ：約3〜7万円
     ec_plans    = np.random.choice([3980, 6980, 9800], n_sample, p=[0.55, 0.30, 0.15])
-    ec_survival = np.random.weibull(0.75, n_sample) * 240
+    ec_survival = np.random.weibull(0.85, n_sample) * 150
     ec_churned  = np.random.random(n_sample) < 0.72
 
     end_dates_sub = []
@@ -502,8 +502,8 @@ with st.sidebar:
     # 1注文：3,000〜12,000円
     # 休眠判定：365日推奨
     # LTV∞イメージ：約3〜9万円
-    ff_unit   = np.random.choice([3000, 5500, 8000, 12000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
-    ff_surv   = np.random.weibull(0.85, n_sample) * 270
+    ff_unit   = np.random.choice([4000, 7000, 10000, 15000], n_sample, p=[0.30, 0.40, 0.20, 0.10])
+    ff_surv   = np.random.weibull(1.1,  n_sample) * 300
     ff_active = np.random.random(n_sample) < 0.40
 
     last_purchase_dates = []
@@ -518,7 +518,7 @@ with st.sidebar:
             lp = sd + pd.Timedelta(days=max(1, int(ff_surv[i])))
             lp = min(lp, today_ts - pd.Timedelta(days=1))
         last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
-        purchases = max(1, round((lp - sd).days / 90))
+        purchases = max(1, round((lp - sd).days / 75))
         revenues_spot.append(price * purchases)
 
     ff_gender   = np.random.choice(['男性', '女性', '未回答'],
@@ -933,7 +933,14 @@ cac_upper = ltv_val / cac_n
 st.markdown("<div class='section-title'>分析結果サマリー</div>", unsafe_allow_html=True)
 m1, m2, m3, m4, m5 = st.columns(5)
 
-k_desc  = "k<1: 初期離脱が多い" if k < 1 else "k>1: 時間とともに離脱増"
+if k < 0.8:
+    k_desc = "k<1: 初期離脱大・LTV回収が長期化"
+elif k < 1.0:
+    k_desc = "k<1: 離脱率ほぼ一定・回収はやや長期"
+elif k < 1.5:
+    k_desc = "k>1: 逓増離脱型・比較的短期に回収可"
+else:
+    k_desc = "k>1: 強い逓増型・短期でLTV回収可能"
 metrics = [
     (f"¥{ltv_rev:,.0f}", "LTV∞",       "売上ベース"),
     (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
@@ -1062,67 +1069,84 @@ for h in horizons:
     lh_rev = ltv_horizon(k, lam, arpu_daily, h)
     lh_gp  = ltv_horizon(k, lam, gp_daily,   h)
     tbl_rows.append({
-        'ホライズン':        fmt_horizon(h),
-        'LTV（売上）':       f'¥{lh_rev:,.0f}',
-        'LTV（粗利）':       f'¥{lh_gp:,.0f}',
-        'CAC上限':           f'¥{lh_gp/cac_n:,.0f}',
-        'LTV∞への到達率':    f'{lh_rev/ltv_rev*100:.1f}%',
+        'ホライズン':    fmt_horizon(h),
+        'LTV（売上）':   f'¥{lh_rev:,.0f}',
+        'LTV（粗利）':   f'¥{lh_gp:,.0f}',
+        'CAC上限':       f'¥{lh_gp/cac_n:,.0f}',
+        'LTV∞到達率':   f'{lh_rev/ltv_rev*100:.1f}%',
+        '_type': 'normal',
     })
 
-# λ行（実際の到達率を計算）
+# λ行
 lam_rev  = ltv_horizon(k, lam, arpu_daily, lam)
 lam_gp   = ltv_horizon(k, lam, gp_daily,   lam)
 lam_pct  = lam_rev / ltv_rev * 100
 tbl_rows.append({
-    'ホライズン':     f'λ（{int(lam):,}日）',
-    'LTV（売上）':    f'¥{lam_rev:,.0f}',
-    'LTV（粗利）':    f'¥{lam_gp:,.0f}',
-    'CAC上限':        f'¥{lam_gp/cac_n:,.0f}',
-    'LTV∞への到達率': f'{lam_pct:.1f}%',
+    'ホライズン':    f'λ  {int(lam):,}日',
+    'LTV（売上）':   f'¥{lam_rev:,.0f}',
+    'LTV（粗利）':   f'¥{lam_gp:,.0f}',
+    'CAC上限':       f'¥{lam_gp/cac_n:,.0f}',
+    'LTV∞到達率':   f'{lam_pct:.1f}%',
+    '_type': 'lambda',
 })
 
-# 99%到達行（必ず表示）
+# 99%到達行
 rev_99 = ltv_horizon(k, lam, arpu_daily, days_99)
 gp_99  = ltv_horizon(k, lam, gp_daily,   days_99)
 tbl_rows.append({
-    'ホライズン':     f'99%到達（{int(days_99):,}日）',
-    'LTV（売上）':    f'¥{rev_99:,.0f}',
-    'LTV（粗利）':    f'¥{gp_99:,.0f}',
-    'CAC上限':        f'¥{gp_99/cac_n:,.0f}',
-    'LTV∞への到達率': '99.0%',
+    'ホライズン':    f'LTV∞到達率: 99%  （{int(days_99):,}日）',
+    'LTV（売上）':   f'¥{rev_99:,.0f}',
+    'LTV（粗利）':   f'¥{gp_99:,.0f}',
+    'CAC上限':       f'¥{gp_99/cac_n:,.0f}',
+    'LTV∞到達率':   '99.0%',
+    '_type': '99pct',
 })
 
-# HTML テーブルで描画（カスタムスタイル）
-header_cols = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞への到達率']
-ACCENT = '#56b4d3'
-BG_HEAD = '#0d1f2d'
-BG_ROW1 = '#0d1520'
-BG_ROW2 = '#0a1018'
-BG_SPECIAL = '#0d2a1a'  # λ・99%行
+# HTML テーブルで描画
+ACCENT   = '#56b4d3'
+BG_HEAD  = '#0d1f2d'
+BG_ROW1  = '#0d1520'
+BG_ROW2  = '#0a1018'
+SEP_COLOR = '#1a3a4a'  # λ・99%行の区切り線色
 
 html_rows = ''
 for i, row in enumerate(tbl_rows):
-    is_special = 'λ' in row['ホライズン'] or '99%' in row['ホライズン']
-    bg = BG_SPECIAL if is_special else (BG_ROW1 if i % 2 == 0 else BG_ROW2)
-    color = '#a8dadc' if is_special else '#c8d0d8'
-    html_rows += f"<tr style='background:{bg};'>"
-    # ホライズン列：左寄せ
-    html_rows += f"<td style='text-align:left; padding:8px 12px; color:{color}; font-size:0.85rem;'>{row['ホライズン']}</td>"
-    # 数値列：左寄せ
-    for col in ['LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞への到達率']:
-        val = row[col]
-        html_rows += f"<td style='text-align:right; padding:8px 12px; color:{color}; font-size:0.85rem; font-variant-numeric:tabular-nums;'>{val}</td>"
+    rtype = row['_type']
+    if rtype == 'normal':
+        bg    = BG_ROW1 if i % 2 == 0 else BG_ROW2
+        color = '#c8d0d8'
+        border_top = ''
+    elif rtype == 'lambda':
+        bg    = BG_HEAD
+        color = '#a8dadc'
+        border_top = f"border-top:1px solid {SEP_COLOR};"
+    else:  # 99pct
+        bg    = BG_HEAD
+        color = '#a8dadc'
+        border_top = f"border-top:1px solid {SEP_COLOR};"
+
+    html_rows += f"<tr style='background:{bg}; {border_top}'>"
+    html_rows += f"<td style='text-align:left; padding:8px 14px; color:{color}; font-size:0.85rem; width:28%;'>{row['ホライズン']}</td>"
+    for col in ['LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率']:
+        html_rows += f"<td style='text-align:right; padding:8px 14px; color:{color}; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{row[col]}</td>"
     html_rows += '</tr>'
 
 tbl_html = f"""
-<table style='width:100%; border-collapse:collapse; margin-top:4px;'>
+<table style='width:100%; border-collapse:collapse; margin-top:4px; table-layout:fixed;'>
+  <colgroup>
+    <col style='width:28%;'>
+    <col style='width:18%;'>
+    <col style='width:18%;'>
+    <col style='width:18%;'>
+    <col style='width:18%;'>
+  </colgroup>
   <thead>
     <tr style='background:{BG_HEAD};'>
-      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>ホライズン</th>
-      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV（売上）</th>
-      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV（粗利）</th>
-      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>CAC上限</th>
-      <th style='text-align:center; padding:9px 12px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV∞への到達率</th>
+      <th style='text-align:left; padding:9px 14px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>ホライズン</th>
+      <th style='text-align:right; padding:9px 14px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV（売上）</th>
+      <th style='text-align:right; padding:9px 14px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV（粗利）</th>
+      <th style='text-align:right; padding:9px 14px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>CAC上限</th>
+      <th style='text-align:right; padding:9px 14px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT};'>LTV∞到達率</th>
     </tr>
   </thead>
   <tbody>
@@ -1177,14 +1201,28 @@ elif lam < 730:
 else:
     lam_desc = f"λ={lam:.0f}日（約{lam/365:.1f}年）は長く、顧客が数年にわたって継続するビジネスです。"
 
-# k の解釈
+# k の解釈（投資回収の観点を含む）
 if k < 0.8:
-    k_desc = f"k={k:.3f}は1より大きく小さいため、{acq_label}直後の離脱が特に多いパターンです。初期のオンボーディング改善が最優先です。"
+    k_desc = (
+        f"k={k:.3f}（強い初期離脱型）: {acq_label}直後に大量離脱するパターンです。"
+        f"LTV∞は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。"
+        f"CAC投資判断には暫定LTV（現実的な期間）を使ってください。"
+    )
 elif k < 1.0:
-    k_desc = f"k={k:.3f}は1に近いため、離脱率がほぼ一定（指数分布に近い）パターンです。"
+    k_desc = (
+        f"k={k:.3f}（緩やかな初期離脱型）: 離脱率がほぼ一定に近いパターンです。"
+        f"LTV∞の回収にある程度の期間がかかります。暫定LTVと99%到達日数を確認してCACを設計してください。"
+    )
+elif k < 1.5:
+    k_desc = (
+        f"k={k:.3f}（逓増離脱型）: 初期の離脱は少なく時間とともに解約が増えるパターンです。"
+        f"LTV∞の大部分を比較的短期間で回収できます。積極的なCAC投資が可能な構造です。"
+    )
 else:
-    k_desc = f"k={k:.3f}は1より大きいため、時間とともに離脱率が上がるパターンです。長期継続顧客のフォローが重要です。"
-
+    k_desc = (
+        f"k={k:.3f}（強い逓増型）: 縛り期間や習慣化により初期継続率が高いパターンです。"
+        f"LTV∞をほぼ数年以内に回収できます。ただし離脱が集中する時期のリテンション施策が重要です。"
+    )
 insight_html = f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:10px; padding:18px 20px; margin-top:12px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
   <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:12px;'>このテーブルの読み方</div>
@@ -1240,9 +1278,9 @@ with tab1:
     p1 = prompt_base + f"""
 
 【質問】―― 以下の数値を具体的に使って答えてください ――
-1. k={k:.4f}・λ={lam:.1f}日という値は、このビジネスの顧客離脱パターンをどう示していますか？k<1・k>1それぞれの意味と今回の値の解釈を教えてください。
-2. 解約率{churn_rate:.1f}%（解約{churned_count:,}件・継続{active_count:,}件）という比率から、このビジネスの健全性をどう評価しますか？
-3. LTV∞（売上）¥{ltv_rev:,.0f}に対してCAC上限¥{cac_upper:,.0f}という比率は適切ですか？業界水準と比較して教えてください。
+1. k={k:.4f}という値はこのビジネスの離脱パターンと投資回収のしやすさについて何を示していますか？k<1は「LTV∞の回収に長期間かかる・少数の超長期顧客の影響が大きい」、k>1は「比較的短期にLTV∞を回収できる」という観点で解釈してください。
+2. 99%到達まで{int(days_99):,}日（{days_99/365:.1f}年）かかるという事実は、このビジネスのCAC設計にどう影響しますか？現実的な回収期間として何年を目安にすべきですか？
+3. 解約率{churn_rate:.1f}%（解約{churned_count:,}件・継続{active_count:,}件）という比率から、このビジネスの健全性をどう評価しますか？
 4. R²={r2:.4f}のフィット精度はWeibull分析として許容範囲ですか？この値が示す信頼性の限界を教えてください。"""
     st.code(p1, language=None)
     st.markdown(copy_html, unsafe_allow_html=True)
@@ -1251,9 +1289,9 @@ with tab2:
     p2 = prompt_base + f"""
 
 【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
-1. CAC上限¥{cac_upper:,.0f}（粗利ベースLTV÷{cac_n}）をもとに、CPAとROASの目標値をどう設定すべきですか？計算式も示してください。
-2. λ={lam:.1f}日（典型的な継続期間）を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？推奨タイミングと施策内容を教えてください。
-3. ARPU_daily¥{arpu_daily:,.2f}・LTV∞¥{ltv_rev:,.0f}の水準で費用対効果的に合いやすい広告チャネルはどれですか？CPAとの関係で説明してください。
+1. k={k:.4f}のビジネスにおいて、CAC上限¥{cac_upper:,.0f}（粗利ベース）を何年で回収する設計が現実的ですか？暫定LTVテーブルの数値（1年:¥{ltv_1y:,.0f}、2年:¥{ltv_2y:,.0f}、3年:¥{ltv_3y:,.0f}）を使って、回収期間別のCAC上限を提示してください。
+2. k{'<' if k < 1 else '>'}1のこのビジネスでLTV∞をそのままCAC判断に使うリスクを説明してください。どの暫定LTVを基準にするのが最も実務的ですか？
+3. λ={lam:.1f}日（典型的な継続期間）を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
     st.markdown(copy_html, unsafe_allow_html=True)
