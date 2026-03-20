@@ -24,11 +24,11 @@ st.set_page_config(
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+JP:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 /* ── Base ── */
 html, body, [class*="css"] {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 14px;
     letter-spacing: -0.01em;
 }
@@ -234,22 +234,35 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
 [data-testid="stDecoration"] { background-color: #0a0e14 !important; display: none; }
 .stAppHeader, header[data-testid="stHeader"] { background: #0a0e14 !important; }
 
-/* ── Download buttons (sample CSV cards) ── */
-[data-testid="stDownloadButton"] > button,
-[data-testid="stDownloadButton"] button,
-div[data-testid="stDownloadButton"] > button p,
-div[data-testid="stDownloadButton"] button p {
+/* ── Download buttons: sidebar (sample CSV) ── */
+[data-testid="stSidebar"] [data-testid="stDownloadButton"] > button,
+[data-testid="stSidebar"] [data-testid="stDownloadButton"] button {
     background-color: #0d1a28 !important;
     color: #a8c8d8 !important;
     border: 1px solid #1c3a4a !important;
     border-radius: 8px !important;
     width: 100% !important;
-    font-size: 0.72rem !important;
+    font-size: 0.78rem !important;
     line-height: 1.4 !important;
-    padding: 6px 8px !important;
+    padding: 6px 10px !important;
 }
-[data-testid="stDownloadButton"] > button:hover,
-[data-testid="stDownloadButton"] button:hover {
+[data-testid="stSidebar"] [data-testid="stDownloadButton"] > button:hover,
+[data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover {
+    background-color: #112030 !important;
+    border-color: #56b4d3 !important;
+    color: #56b4d3 !important;
+}
+
+/* ── Download buttons: main area (export) ── */
+.main [data-testid="stDownloadButton"] > button,
+.main [data-testid="stDownloadButton"] button {
+    background-color: #0d1a28 !important;
+    color: #a8c8d8 !important;
+    border: 1px solid #1c3a4a !important;
+    border-radius: 8px !important;
+}
+.main [data-testid="stDownloadButton"] > button:hover,
+.main [data-testid="stDownloadButton"] button:hover {
     background-color: #112030 !important;
     border-color: #56b4d3 !important;
     color: #56b4d3 !important;
@@ -725,7 +738,7 @@ with st.sidebar:
 
 st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
-  <div style='font-family: Inter, sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
+  <div style='font-family: 'Noto Sans JP', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
   <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v32</div>
 </div>
