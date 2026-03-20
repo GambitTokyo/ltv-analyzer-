@@ -227,17 +227,21 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
 .stAppHeader, header[data-testid="stHeader"] { background: #0a0e14 !important; }
 
 /* ── Download buttons (sample CSV cards) ── */
-[data-testid="stDownloadButton"] > button {
+[data-testid="stDownloadButton"] > button,
+[data-testid="stDownloadButton"] button,
+div[data-testid="stDownloadButton"] > button p,
+div[data-testid="stDownloadButton"] button p {
     background-color: #0d1a28 !important;
     color: #a8c8d8 !important;
     border: 1px solid #1c3a4a !important;
     border-radius: 8px !important;
     width: 100% !important;
-    font-size: 0.78rem !important;
+    font-size: 0.72rem !important;
     line-height: 1.4 !important;
-    padding: 6px 10px !important;
+    padding: 6px 8px !important;
 }
-[data-testid="stDownloadButton"] > button:hover {
+[data-testid="stDownloadButton"] > button:hover,
+[data-testid="stDownloadButton"] button:hover {
     background-color: #112030 !important;
     border-color: #56b4d3 !important;
     color: #56b4d3 !important;
@@ -548,23 +552,33 @@ with st.sidebar:
         'prefecture':         prefs_ff,
     })
 
+    import base64
+    sub_csv  = sample_sub.to_csv(index=False).encode('utf-8-sig')
+    spot_csv = sample_spot.to_csv(index=False).encode('utf-8-sig')
+    sub_b64  = base64.b64encode(sub_csv).decode()
+    spot_b64 = base64.b64encode(spot_csv).decode()
+
     st.caption("サンプルCSVをダウンロードしてフォーマットを確認できます。")
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
-        st.download_button(
-            "サブスク型：\nジム",
-            sample_sub.to_csv(index=False).encode('utf-8-sig'),
-            "sample_subscription.csv", "text/csv",
-            use_container_width=True
-        )
+        st.markdown(f"""
+<a href="data:text/csv;base64,{sub_b64}" download="sample_subscription.csv" style="
+    display:block; text-align:center; text-decoration:none;
+    background:#0d1a28; color:#a8c8d8;
+    border:1px solid #1c3a4a; border-radius:8px;
+    padding:8px 6px; font-size:0.75rem; line-height:1.5;
+">サブスク型：<br>ジム</a>
+""", unsafe_allow_html=True)
         st.caption("`end_date`: 解約日（継続中は空欄）")
     with col_dl2:
-        st.download_button(
-            "都度購入型：\nファッションEC",
-            sample_spot.to_csv(index=False).encode('utf-8-sig'),
-            "sample_spot_purchase.csv", "text/csv",
-            use_container_width=True
-        )
+        st.markdown(f"""
+<a href="data:text/csv;base64,{spot_b64}" download="sample_spot_purchase.csv" style="
+    display:block; text-align:center; text-decoration:none;
+    background:#0d1a28; color:#a8c8d8;
+    border:1px solid #1c3a4a; border-radius:8px;
+    padding:8px 6px; font-size:0.75rem; line-height:1.5;
+">都度購入型：<br>ファッションEC</a>
+""", unsafe_allow_html=True)
         st.caption("`last_purchase_date`: 最終購買日")
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
