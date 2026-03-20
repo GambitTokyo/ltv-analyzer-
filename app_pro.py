@@ -191,7 +191,15 @@ div[data-baseweb="radio"] input:checked ~ * { border-color: #56b4d3 !important; 
 div[data-baseweb="radio"] [data-focused="true"] { box-shadow: 0 0 0 3px rgba(86,180,211,0.3) !important; }
 
 /* ── Radio & Slider accent color (override Streamlit red) ── */
-[data-testid="stRadio"] label div p { color: #c8d0d8 !important; }
+/* ── Radio label ── */
+[data-testid="stRadio"] > label {
+    color: #4a6a7a !important;
+    font-size: 0.78rem !important;
+}
+[data-testid="stRadio"] label div p {
+    color: #8aaabb !important;
+    font-size: 0.82rem !important;
+}
 
 /* Radio: 選択済みの塗り・ボーダー */
 div[data-baseweb="radio"] div { background-color: #56b4d3 !important; border-color: #56b4d3 !important; }
