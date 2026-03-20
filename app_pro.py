@@ -28,11 +28,8 @@ st.markdown("""
 
 /* ── Base font: BIZ UDPGothic ── */
 .stApp,
-[data-testid="stAppViewContainer"],
-[data-testid="stSidebar"] {
+.stApp *:not(code):not(pre):not(.js-plotly-plot):not(.js-plotly-plot *) {
     font-family: 'BIZ UDPGothic', sans-serif !important;
-    font-size: 14px;
-    letter-spacing: -0.01em;
 }
 .stApp { background-color: #0a0e14; color: #c8d0d8; }
 
