@@ -406,6 +406,14 @@ def load_and_preprocess_csv(file_bytes, dormancy_days, billing_cycle, business_t
     df = df.dropna(subset=['start_date'])
 
     today = pd.Timestamp.today()
+    dates_for_today = [df['start_date'].max()]
+    if df['last_purchase_date'].notna().any():
+        dates_for_today.append(df['last_purchase_date'].max())
+    if df['end_date'].notna().any():
+        dates_for_today.append(df['end_date'].max())
+    ref_date = max(d for d in dates_for_today if pd.notna(d))
+    if ref_date <= today:
+        today = ref_date
     n_dormant = 0
     if dormancy_days is not None and df['last_purchase_date'].notna().any():
         dormant_mask = (
@@ -424,7 +432,6 @@ def load_and_preprocess_csv(file_bytes, dormancy_days, billing_cycle, business_t
             return row['end_date'], 1
         if dormancy_days is not None and pd.notna(row['last_purchase_date']):
             if (today - row['last_purchase_date']).days > dormancy_days:
-                # 離脱日 = last_purchase_date + dormancy_days
                 return row['last_purchase_date'] + pd.Timedelta(days=dormancy_days), 1
         return today, 0
 
@@ -433,7 +440,7 @@ def load_and_preprocess_csv(file_bytes, dormancy_days, billing_cycle, business_t
     df['event']        = result[1]
     df['duration']     = (df['end_resolved'] - df['start_date']).dt.days
 
-    # サブスクの最低契約期間を保証（契約期間未満で解約されてもその期間は生存扱い）
+    # サブスクの最低契約期間を保証
     if business_type != '都度購入型':
         if billing_cycle == 'カレンダーベース（月またぎ）← 月額サブスク推奨':
             min_dur = 30
@@ -778,7 +785,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v69</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v72</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -865,6 +872,17 @@ try:
     today = pd.Timestamp.today()
     n_input = len(df)
 
+    # 分析基準日：CSVの最新観測日（last_purchase_dateまたはend_dateの最大値）
+    # → 同じCSVなら何日に分析しても結果が変わらない（再現性の確保）
+    dates_for_today = [df['start_date'].max()]
+    if df['last_purchase_date'].notna().any():
+        dates_for_today.append(df['last_purchase_date'].max())
+    if df['end_date'].notna().any():
+        dates_for_today.append(df['end_date'].max())
+    ref_date = max(dates_for_today)
+    if ref_date <= today:
+        today = ref_date
+
     # 休眠判定：end_date がなく last_purchase_date が休眠期間を超えている場合は離脱とみなす
     n_dormant = 0
     if dormancy_days is not None and df['last_purchase_date'].notna().any():
@@ -874,28 +892,36 @@ try:
             ((today - df['last_purchase_date']).dt.days > dormancy_days)
         )
         n_dormant = dormant_mask.sum()
-        df.loc[dormant_mask, 'end_date'] = df.loc[dormant_mask, 'last_purchase_date']
+        # 離脱日 = last_purchase_date + dormancy_days（休眠判定日が実質の離脱日）
+        df.loc[dormant_mask, 'end_date'] = (
+            df.loc[dormant_mask, 'last_purchase_date'] + pd.Timedelta(days=dormancy_days)
+        )
 
     # ── duration・event の確定 ──
-    # サブスク（解約日のみ）：end_date あり→解約、なし→継続（今日まで）
-    # 都度購入（休眠判定あり）：end_date あり→解約、
-    #   end_date なし + last_purchase_date から dormancy_days 超→実質離脱（last_purchase_dateまで）
-    #   end_date なし + dormancy_days 未満→継続（今日まで）
-
-    # 期間の終端日を決定
     def get_end(row):
         if pd.notna(row['end_date']):
             return row['end_date'], 1  # 解約済み
         if dormancy_days is not None and pd.notna(row['last_purchase_date']):
             days_since = (today - row['last_purchase_date']).days
             if days_since > dormancy_days:
-                return row['last_purchase_date'], 1  # 実質離脱
+                # 離脱日 = last_purchase_date + dormancy_days
+                return row['last_purchase_date'] + pd.Timedelta(days=dormancy_days), 1
         return today, 0  # 継続中
 
     result = df.apply(get_end, axis=1, result_type='expand')
     df['end_resolved'] = result[0]
     df['event']        = result[1]
     df['duration']     = (df['end_resolved'] - df['start_date']).dt.days
+
+    # サブスクの最低契約期間を保証（契約期間未満のdurationを引き上げる）
+    if business_type != '都度購入型':
+        if '365日固定' in billing_cycle:
+            min_contract = 365
+        elif custom_cycle_days and 'カスタム' in billing_cycle:
+            min_contract = custom_cycle_days
+        else:
+            min_contract = 30
+        df['duration'] = df['duration'].clip(lower=min_contract)
 
     # duration=0 を1日に自動補正
     n_corrected = (df['duration'] == 0).sum()
