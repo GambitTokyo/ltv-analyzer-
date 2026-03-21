@@ -757,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v57</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v59</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1272,9 +1272,7 @@ tick_text = ['180日', '1年', '2年', '3年', '4年', '5年']
 
 # λをticksに追加（重複しない場合のみ）
 lam_int = int(lam_actual)
-if not any(abs(lam_int - v) < 30 for v in tick_vals):
-    tick_vals.append(lam_int)
-    tick_text.append(f'λ({lam_int}日)')
+# λはX軸には表示しない（縦線で表現）
 
 # λ縦線と各ホライズンのプロット点
 # add_shapeで縦線を前面に描画
@@ -1289,9 +1287,9 @@ fig_ltv.add_shape(
 # 上から20%の位置にアノテーション（中央揃え）
 fig_ltv.add_annotation(
     x=lam_actual,
-    y=0.80,
+    y=0.85 if k < 1.0 else 0.35,
     yref='paper',
-    text=f'λ {lam_int}日',
+    text=f'λ＝{lam_int}日',
     showarrow=False,
     font=dict(color='#a8dadc', size=10),
     xanchor='center',
