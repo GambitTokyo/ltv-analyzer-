@@ -757,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v64</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v65</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2913,20 +2913,6 @@ if segment_cols_input.strip():
 </table>"""
                         st.markdown(hor_tbl_html, unsafe_allow_html=True)
 
-                        # ── 解釈ガイド ──
-                        k_desc_s = "k<1: 初期離脱型" if k_s < 1 else "k>1: 逓増離脱型"
-                        lam_yr_s = lam_s / 365
-                        ltv_1y_s = ltv_horizon(k_s, lam_s, arpu_s, 365)
-                        ltv_2y_s = ltv_horizon(k_s, lam_s, arpu_s, 730)
-                        pct_1y_s = ltv_1y_s / ltv_inf_s * 100
-                        pct_2y_s = ltv_2y_s / ltv_inf_s * 100
-                        st.markdown(f"""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:14px 18px; font-size:0.82rem; color:#ccc; line-height:1.8; margin-top:8px;'>
-  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4; margin-bottom:10px;'>解釈ガイド</div>
-  <div>・k={k_s:.3f}（{k_desc_s}）　λ={lam_s:.0f}日（約{lam_yr_s:.1f}年）</div>
-  <div>・LTV∞（売上）¥{ltv_inf_s:,.0f}　CAC上限（粗利）¥{sr['CAC上限（粗利）']:,.0f}</div>
-  <div>・1年時点でLTV∞の{pct_1y_s:.1f}%（¥{ltv_1y_s:,.0f}）、2年時点で{pct_2y_s:.1f}%（¥{ltv_2y_s:,.0f}）回収</div>
-</div>""", unsafe_allow_html=True)
 
                     except Exception as e_sv:
                         st.caption(f"グラフ生成エラー: {e_sv}")
