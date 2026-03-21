@@ -757,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v60</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v61</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1302,17 +1302,19 @@ fig_ltv.add_annotation(
 plot_points = [180, 365, 730, 1095, 1460, 1825, lam_int]
 plot_points = sorted(set([p for p in plot_points if p <= x_max]))
 
-for arr, color, name in [
-    (rev_line, '#56b4d3', 'LTV（売上）'),
-    (gp_line,  '#a8dadc', 'LTV（粗利）'),
-    (cac_line, '#4a7a8a', 'CAC上限'),
+for arpu_val, color in [
+    (arpu_daily, '#56b4d3'),
+    (gp_daily,   '#a8dadc'),
+    (gp_daily / cac_n, '#4a7a8a'),
 ]:
     px_vals, py_vals = [], []
     for pt in plot_points:
-        # t_rangeから最近傍を探す
-        idx = min(range(len(t_range)), key=lambda i: abs(t_range[i] - pt))
-        px_vals.append(t_range[idx])
-        py_vals.append(arr[idx])
+        if arpu_val == gp_daily / cac_n:
+            y = ltv_horizon_offset(k, lam, gp_daily, pt, ltv_offset_days) / cac_n
+        else:
+            y = ltv_horizon_offset(k, lam, arpu_val, pt, ltv_offset_days)
+        px_vals.append(pt)
+        py_vals.append(y)
     fig_ltv.add_trace(go.Scatter(
         x=px_vals, y=py_vals,
         mode='markers',
