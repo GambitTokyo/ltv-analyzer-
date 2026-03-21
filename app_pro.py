@@ -757,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v62</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v64</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2613,18 +2613,9 @@ if segment_cols_input.strip():
 
             # 結果テーブル
             display_df = seg_df.copy()
-            display_df['LTV∞（売上）'] = display_df['LTV∞（売上）'].apply(lambda x: f'¥{x:,.0f}')
-            display_df['LTV∞（粗利）'] = display_df['LTV∞（粗利）'].apply(lambda x: f'¥{x:,.0f}')
-            display_df['CAC上限（粗利）'] = display_df['CAC上限（粗利）'].apply(lambda x: f'¥{x:,.0f}')
-            display_df['総ポテンシャル'] = display_df['総ポテンシャル'].apply(lambda x: f'¥{x:,.0f}')
-            display_df['k'] = display_df['k'].apply(lambda x: f'{x:.3f}')
-            display_df['λ（日）'] = display_df['λ（日）'].apply(lambda x: f'{x:.1f}')
-            display_df['R²'] = display_df['R²'].apply(lambda x: f'{x:.3f}')
-            if cac_known:
-                display_df['獲得効率'] = display_df['獲得効率'].apply(lambda x: f'{x:.2f}x' if x else '-')
-            else:
-                display_df = display_df.drop(columns=['獲得効率'])
-            display_df = display_df.drop(columns=['優先スコア'])
+            display_df = display_df.drop(columns=['総ポテンシャル', '優先スコア'], errors='ignore')
+            if not cac_known:
+                display_df = display_df.drop(columns=['獲得効率'], errors='ignore')
 
             # セグメント加重平均LTV∞を計算してテーブル上に表示
             total_n = seg_df['顧客数'].sum()
@@ -2642,7 +2633,64 @@ if segment_cols_input.strip():
   <span style='color:{diff_color}; font-size:0.8rem;'>全体値（¥{ltv_rev:,.0f}）との差：{diff_str}</span>
 </div>""", unsafe_allow_html=True)
 
-            st.dataframe(display_df, hide_index=True, use_container_width=True)
+            # HTMLテーブルで描画（数字右寄せ・列幅均等）
+            ACCENT   = '#56b4d3'
+            BG_HEAD  = '#0d1f2d'
+            BG_ROW1  = '#0d1520'
+            BG_ROW2  = '#0a1018'
+            num_cols = ['顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', 'k', 'λ（日）', 'R²']
+            if cac_known:
+                num_cols.append('獲得効率')
+            cols = [c for c in display_df.columns]
+            n_cols = len(cols)
+            seg_col_w = 20
+            num_col_w = round((100 - seg_col_w) / (n_cols - 1), 1)
+
+            # ヘッダー
+            seg_html_rows = ''
+            for i, row in display_df.iterrows():
+                bg = BG_ROW1 if i % 2 == 0 else BG_ROW2
+                seg_html_rows += f"<tr style='background:{bg};'>"
+                for col in cols:
+                    val = row[col]
+                    # 数値フォーマット
+                    if col == '顧客数':
+                        val = f'{int(val):,}'
+                        align = 'right'
+                    elif col in ['LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）']:
+                        val = f'¥{val:,.0f}'
+                        align = 'right'
+                    elif col == 'k':
+                        val = f'{val:.3f}'
+                        align = 'right'
+                    elif col == 'λ（日）':
+                        val = f'{val:.1f}'
+                        align = 'right'
+                    elif col == 'R²':
+                        val = f'{val:.3f}'
+                        align = 'right'
+                    elif col == '獲得効率':
+                        val = f'{val:.2f}x' if val else '-'
+                        align = 'right'
+                    else:
+                        align = 'left'
+                    w = f'{seg_col_w}%' if col == 'セグメント' else f'{num_col_w}%'
+                    seg_html_rows += f"<td style='text-align:{align}; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:{w};'>{val}</td>"
+                seg_html_rows += '</tr>'
+
+            header_html = ''
+            for col in cols:
+                align = 'left' if col == 'セグメント' else 'right'
+                w = f'{seg_col_w}%' if col == 'セグメント' else f'{num_col_w}%'
+                header_html += f"<th style='text-align:{align}; padding:9px 14px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT}; width:{w};'>{col}</th>"
+
+            seg_tbl_html = f"""
+<table style='width:100%; border-collapse:collapse; margin-top:4px; table-layout:fixed;'>
+  <colgroup>{''.join([f'<col style="width:{seg_col_w}%;">' if c == 'セグメント' else f'<col style="width:{num_col_w}%;">' for c in cols])}</colgroup>
+  <thead><tr style='background:{BG_HEAD};'>{header_html}</tr></thead>
+  <tbody>{seg_html_rows}</tbody>
+</table>"""
+            st.markdown(seg_tbl_html, unsafe_allow_html=True)
 
             # テーブル下の説明
             st.markdown(f"""
@@ -2779,19 +2827,91 @@ if segment_cols_input.strip():
                             st.plotly_chart(fig_sv2, use_container_width=True)
                             st.caption(f"Weibull直線化プロット：R²={r2_s:.3f}（1.0に近いほど精度高い）")
 
-                        # ── 暫定LTVテーブル ──
-                        st.markdown("**暫定LTV（観測期間別）**")
-                        hor_rows = []
-                        for h in horizons:
-                            lh_s = ltv_horizon(k_s, lam_s, arpu_s, h)
-                            label = f'{h}日' if h < 365 else f'{h//365}年'
-                            hor_rows.append({
-                                'ホライズン': label,
-                                '暫定LTV（売上）': f'¥{lh_s:,.0f}',
-                                'LTV∞比': f'{lh_s/ltv_inf_s*100:.1f}%',
-                                'CAC上限（粗利）': f'¥{lh_s*gpm/cac_n:,.0f}',
-                            })
-                        st.dataframe(pd.DataFrame(hor_rows), hide_index=True, use_container_width=True)
+                        # ── 暫定LTVテーブル（全体と同仕様）──
+                        st.markdown("<div class='section-title' style='font-size:0.75rem; margin-top:16px;'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
+
+                        # グラフ
+                        lam_s_actual = lam_s + ltv_offset_days
+                        lam_s_int = round(lam_s_actual)
+                        x_max_s = max(1825, lam_s_int + 100) if lam_s_actual > 1825 else 1825
+                        t_range_s = list(range(1, x_max_s + 1, max(1, x_max_s // 300)))
+                        rev_line_s = [ltv_horizon_offset(k_s, lam_s, arpu_s, t, ltv_offset_days) for t in t_range_s]
+                        gp_line_s  = [ltv_horizon_offset(k_s, lam_s, arpu_s * gpm, t, ltv_offset_days) for t in t_range_s]
+                        cac_line_s = [v / cac_n for v in gp_line_s]
+                        ltv_inf_s_offset, _ = ltv_inf_offset(k_s, lam_s, arpu_s, ltv_offset_days)
+
+                        fig_hor_s = go.Figure()
+                        fig_hor_s.add_trace(go.Scatter(x=t_range_s, y=rev_line_s, name='LTV（売上）', mode='lines', line=dict(color='#56b4d3', width=2)))
+                        fig_hor_s.add_trace(go.Scatter(x=t_range_s, y=gp_line_s,  name='LTV（粗利）', mode='lines', line=dict(color='#a8dadc', width=2, dash='dash')))
+                        fig_hor_s.add_trace(go.Scatter(x=t_range_s, y=cac_line_s, name='CAC上限',    mode='lines', line=dict(color='#4a7a8a', width=1.5, dash='dot')))
+                        fig_hor_s.add_hline(y=ltv_inf_s_offset, line_dash='dot', line_color='#56b4d3', line_width=1, opacity=0.4,
+                            annotation_text=f'LTV∞ ¥{ltv_inf_s_offset:,.0f}', annotation_position='right', annotation_font=dict(color='#56b4d3', size=10))
+                        fig_hor_s.add_shape(type='line', x0=lam_s_actual, x1=lam_s_actual, y0=0, y1=1, yref='paper',
+                            line=dict(color='#a8dadc', width=1.5, dash='dash'), layer='above')
+                        fig_hor_s.add_annotation(x=lam_s_actual, y=0.85 if k_s < 1.0 else 0.35, yref='paper',
+                            text=f'λ＝{lam_s_int}日', showarrow=False, font=dict(color='#a8dadc', size=10),
+                            xanchor='center', yanchor='middle', bgcolor='#111820', borderpad=2)
+
+                        # プロット点
+                        plot_pts_s = sorted(set([p for p in [180, 365, 730, 1095, 1460, 1825, lam_s_int] if p <= x_max_s]))
+                        for arpu_v, color in [(arpu_s, '#56b4d3'), (arpu_s * gpm, '#a8dadc')]:
+                            px_s = [p for p in plot_pts_s]
+                            py_s = [ltv_horizon_offset(k_s, lam_s, arpu_v, p, ltv_offset_days) for p in plot_pts_s]
+                            fig_hor_s.add_trace(go.Scatter(x=px_s, y=py_s, mode='markers',
+                                marker=dict(color=color, size=5, line=dict(color='#111820', width=1)),
+                                showlegend=False, hovertemplate='%{x}日: ¥%{y:,.0f}<extra></extra>'))
+
+                        tick_vals_s = [180, 365, 730, 1095, 1460, 1825]
+                        tick_text_s = ['180日', '1年', '2年', '3年', '4年', '5年']
+                        fig_hor_s.update_layout(
+                            paper_bgcolor='#111820', plot_bgcolor='#111820',
+                            height=280, margin=dict(t=30, b=50, l=70, r=120),
+                            font=dict(color='#ccc', size=10),
+                            legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
+                            xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals_s, ticktext=tick_text_s, tickfont=dict(color='#888')),
+                            yaxis=dict(title='金額（円）', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat='¥,.0f'),
+                        )
+                        st.plotly_chart(fig_hor_s, use_container_width=True)
+
+                        # テーブル
+                        ACCENT_S = '#56b4d3'; BG_HEAD_S = '#0d1f2d'; BG_ROW1_S = '#0d1520'; BG_ROW2_S = '#0a1018'
+                        SEP_S = '#1a3a4a'
+                        all_horizons_s = [180, 365, 730, 1095, 1825]
+                        lam_s_rev  = ltv_horizon_offset(k_s, lam_s, arpu_s, lam_s_actual, ltv_offset_days)
+                        lam_s_gp   = ltv_horizon_offset(k_s, lam_s, arpu_s * gpm, lam_s_actual, ltv_offset_days)
+                        rev_99_s_d = brentq(lambda h: ltv_horizon_offset(k_s, lam_s, arpu_s, h, ltv_offset_days) / ltv_inf_s_offset - 0.99, 1, 365000)
+                        rev_99_s   = ltv_horizon_offset(k_s, lam_s, arpu_s, rev_99_s_d, ltv_offset_days)
+                        gp_99_s    = ltv_horizon_offset(k_s, lam_s, arpu_s * gpm, rev_99_s_d, ltv_offset_days)
+
+                        hor_html_rows = ''
+                        for idx_h, h in enumerate(all_horizons_s):
+                            lh_rev_s = ltv_horizon_offset(k_s, lam_s, arpu_s, h, ltv_offset_days)
+                            lh_gp_s  = ltv_horizon_offset(k_s, lam_s, arpu_s * gpm, h, ltv_offset_days)
+                            label = f'{h}日' if h < 365 else f'{h//365}年（{h}日）'
+                            bg = BG_ROW1_S if idx_h % 2 == 0 else BG_ROW2_S
+                            pct = lh_rev_s / ltv_inf_s_offset * 100
+                            hor_html_rows += f"<tr style='background:{bg};'><td style='text-align:left; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; width:28%;'>{label}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lh_rev_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lh_gp_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lh_gp_s/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{pct:.1f}%</td></tr>"
+
+                        # λ行
+                        lam_pct_s = lam_s_rev / ltv_inf_s_offset * 100
+                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>λ {lam_s_int}日</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lam_s_rev:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lam_s_gp:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lam_s_gp/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{lam_pct_s:.1f}%</td></tr>"
+
+                        # 99%行
+                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞到達率: 99%（{int(rev_99_s_d):,}日）</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{rev_99_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{gp_99_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{gp_99_s/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>99.0%</td></tr>"
+
+                        hor_tbl_html = f"""
+<table style='width:100%; border-collapse:collapse; margin-top:4px; table-layout:fixed;'>
+  <colgroup><col style='width:28%;'><col style='width:18%;'><col style='width:18%;'><col style='width:18%;'><col style='width:18%;'></colgroup>
+  <thead><tr style='background:{BG_HEAD_S};'>
+    <th style='text-align:left; padding:9px 14px; color:{ACCENT_S}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT_S};'>ホライズン</th>
+    <th style='text-align:right; padding:9px 14px; color:{ACCENT_S}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT_S};'>LTV（売上）</th>
+    <th style='text-align:right; padding:9px 14px; color:{ACCENT_S}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT_S};'>LTV（粗利）</th>
+    <th style='text-align:right; padding:9px 14px; color:{ACCENT_S}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT_S};'>CAC上限</th>
+    <th style='text-align:right; padding:9px 14px; color:{ACCENT_S}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT_S};'>LTV∞到達率</th>
+  </tr></thead>
+  <tbody>{hor_html_rows}</tbody>
+</table>"""
+                        st.markdown(hor_tbl_html, unsafe_allow_html=True)
 
                         # ── 解釈ガイド ──
                         k_desc_s = "k<1: 初期離脱型" if k_s < 1 else "k>1: 逓増離脱型"
