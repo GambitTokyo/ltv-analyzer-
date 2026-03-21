@@ -414,20 +414,41 @@ def load_and_preprocess_csv(file_bytes, dormancy_days, billing_cycle, business_t
             ((today - df['last_purchase_date']).dt.days > dormancy_days)
         )
         n_dormant = dormant_mask.sum()
-        df.loc[dormant_mask, 'end_date'] = df.loc[dormant_mask, 'last_purchase_date']
+        # 離脱日 = last_purchase_date + dormancy_days（休眠判定日が実質の離脱日）
+        df.loc[dormant_mask, 'end_date'] = (
+            df.loc[dormant_mask, 'last_purchase_date'] + pd.Timedelta(days=dormancy_days)
+        )
 
     def get_end(row):
         if pd.notna(row['end_date']):
             return row['end_date'], 1
         if dormancy_days is not None and pd.notna(row['last_purchase_date']):
             if (today - row['last_purchase_date']).days > dormancy_days:
-                return row['last_purchase_date'], 1
+                # 離脱日 = last_purchase_date + dormancy_days
+                return row['last_purchase_date'] + pd.Timedelta(days=dormancy_days), 1
         return today, 0
 
     result = df.apply(get_end, axis=1, result_type='expand')
     df['end_resolved'] = result[0]
     df['event']        = result[1]
     df['duration']     = (df['end_resolved'] - df['start_date']).dt.days
+
+    # サブスクの最低契約期間を保証（契約期間未満で解約されてもその期間は生存扱い）
+    if business_type != '都度購入型':
+        if billing_cycle == 'カレンダーベース（月またぎ）← 月額サブスク推奨':
+            min_dur = 30
+        elif billing_cycle == '30日固定 ← 30日プラン':
+            min_dur = 30
+        elif billing_cycle == '365日固定 ← 年額サブスク':
+            min_dur = 365
+        elif '日数固定' in billing_cycle:
+            try:
+                min_dur = int(billing_cycle.split('日数固定')[0].strip().split()[-1])
+            except Exception:
+                min_dur = 30
+        else:
+            min_dur = 30
+        df['duration'] = df['duration'].clip(lower=min_dur)
 
     n_corrected = (df['duration'] == 0).sum()
     df['duration'] = df['duration'].clip(lower=1)
@@ -757,7 +778,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v67</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v69</div>
 </div>
 """, unsafe_allow_html=True)
 
