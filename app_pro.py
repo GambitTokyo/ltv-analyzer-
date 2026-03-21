@@ -757,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v56</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v57</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1277,12 +1277,27 @@ if not any(abs(lam_int - v) < 30 for v in tick_vals):
     tick_text.append(f'λ({lam_int}日)')
 
 # λ縦線と各ホライズンのプロット点
-fig_ltv.add_vline(
-    x=lam_actual, line_dash='dash', line_color='#a8dadc',
-    line_width=1, opacity=0.6,
-    annotation_text=f'λ {lam_int}日',
-    annotation_position='top right',
-    annotation_font=dict(color='#a8dadc', size=10),
+# add_shapeで縦線を前面に描画
+fig_ltv.add_shape(
+    type='line',
+    x0=lam_actual, x1=lam_actual,
+    y0=0, y1=1,
+    yref='paper',
+    line=dict(color='#a8dadc', width=1.5, dash='dash'),
+    layer='above',
+)
+# 上から20%の位置にアノテーション（中央揃え）
+fig_ltv.add_annotation(
+    x=lam_actual,
+    y=0.80,
+    yref='paper',
+    text=f'λ {lam_int}日',
+    showarrow=False,
+    font=dict(color='#a8dadc', size=10),
+    xanchor='center',
+    yanchor='middle',
+    bgcolor='#111820',
+    borderpad=2,
 )
 
 # 各ホライズンにプロット点を追加
@@ -1523,7 +1538,7 @@ insight_html = f"""
   <div style='margin-top:12px; padding-top:10px; border-top:1px solid #1a3a4a;'>
     <span style='color:#56b4d3; font-weight:600;'>CAC設計の目安</span>：回収期間に迷ったら、
     <b style='color:#a8dadc;'>λ={int(lam):,}日（約{lam/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}</b>
-    を用いてCAC上限を算出してください。λはこのビジネスの顧客が自然に離脱するまでの期間をデータが示した答えです。
+    を用いてCAC上限を算出してください。λは多くの顧客が離脱するまでの期間の目安をデータが示した答えです。
   </div>
 </div>
 """
