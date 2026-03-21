@@ -757,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v54</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v56</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1074,19 +1074,51 @@ if r2 < 0.85:
     st.warning(f" R²={r2:.3f} — フィット精度がやや低めです。データ点数を増やすか、観測期間を見直してください。")
 
 # ── サマリー解説ボックス ──────────────────────────────────────
-if k < 1.0:
-    k_summary = (
-        f"k={k:.3f}の初期離脱型です。利用開始直後に解約が集中しますが、"
-        f"初期を乗り越えた顧客はλ={lam:.0f}日（約{lam/365:.1f}年）スパンで継続する傾向があります。"
-        f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}ですが、"
-        f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
-    )
+
+# 単発離脱率の計算
+if business_type == "都度購入型":
+    # 初回購入後、休眠判定期間内に再購入しなかった割合
+    churn_period = dormancy_days if dormancy_days else 365
+    single_churn_rate = (1 - weibull_s(churn_period, k, lam)) * 100
+    period_label = f"{churn_period}日"
 else:
-    k_summary = (
-        f"k={k:.3f}の逓増離脱型です。初期の継続率が高く、"
-        f"λ={lam:.0f}日（約{lam/365:.1f}年）を経過するにつれ解約が増えるパターンです。"
-        f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}、比較的短期での投資回収が見込めます。"
-    )
+    # 最初の契約期間のみで解約した割合（オフセット×2時点）
+    churn_period = ltv_offset_days * 2
+    single_churn_rate = (1 - weibull_s(churn_period, k, lam)) * 100
+    period_label = f"{int(ltv_offset_days)}日（1契約期間）"
+
+if business_type == "都度購入型":
+    if k < 1.0:
+        k_summary = (
+            f"k={k:.3f}の初期離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
+            f"{single_churn_rate:.0f}%です。"
+            f"リピートした顧客の多くはλ={lam:.0f}日（約{lam/365:.1f}年）以上購買を継続する傾向があります。"
+            f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}ですが、"
+            f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
+        )
+    else:
+        k_summary = (
+            f"k={k:.3f}の逓増離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
+            f"{single_churn_rate:.0f}%です。"
+            f"リピートした顧客の多くはλ={lam:.0f}日（約{lam/365:.1f}年）以上購買を継続する傾向があります。"
+            f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}、比較的短期での投資回収が見込めます。"
+        )
+else:  # サブスク
+    if k < 1.0:
+        k_summary = (
+            f"k={k:.3f}の初期離脱型です。最初の契約期間のみで解約した顧客は"
+            f"{single_churn_rate:.0f}%です。"
+            f"初期を乗り越えた顧客の多くはλ={lam:.0f}日（約{lam/365:.1f}年）以上継続する傾向があります。"
+            f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}ですが、"
+            f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
+        )
+    else:
+        k_summary = (
+            f"k={k:.3f}の逓増離脱型です。最初の契約期間のみで解約した顧客は"
+            f"{single_churn_rate:.0f}%です。"
+            f"初期を乗り越えた顧客の多くはλ={lam:.0f}日（約{lam/365:.1f}年）以上継続する傾向があります。"
+            f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}、比較的短期での投資回収が見込めます。"
+        )
 
 if r2 >= 0.95:
     r2_summary = f"R²={r2:.3f}はモデル精度が非常に高く、この推定値は意思決定に十分活用できます。"
@@ -1198,7 +1230,11 @@ horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 
 # ── 折れ線グラフ（180日〜5年、λを縦線で表示）──────────────
 # グラフ用の細かい点を生成（滑らかな曲線）
-t_range = list(range(1, 1826, 10))
+# λをグラフ最大値として扱う（5年超の場合はλが最大）
+lam_actual = lam + ltv_offset_days  # 実際のλ位置（オフセット込み）
+x_max = max(1825, int(lam_actual) + 100) if lam_actual > 1825 else 1825
+
+t_range = list(range(1, x_max + 1, max(1, x_max // 300)))
 rev_line = [ltv_horizon_offset(k, lam, arpu_daily, t, ltv_offset_days) for t in t_range]
 gp_line  = [ltv_horizon_offset(k, lam, gp_daily,   t, ltv_offset_days) for t in t_range]
 cac_line = [v / cac_n for v in gp_line]
@@ -1230,23 +1266,51 @@ fig_ltv.add_hline(
     annotation_font=dict(color='#56b4d3', size=10),
 )
 
-# λ 縦線（グラフ範囲内のみ）
-if lam <= 1825:
-    fig_ltv.add_vline(
-        x=lam, line_dash='dash', line_color='#a8dadc',
-        line_width=1, opacity=0.6,
-        annotation_text=f'λ {int(lam)}日',
-        annotation_position='top',
-        annotation_font=dict(color='#a8dadc', size=10),
-    )
+# X軸のticks：180日・1年・2年・3年・4年・5年 + λ
+tick_vals = [180, 365, 730, 1095, 1460, 1825]
+tick_text = ['180日', '1年', '2年', '3年', '4年', '5年']
 
-# X軸のticksをホライズンに合わせる
-tick_vals = [180, 365, 730, 1095, 1825]
-tick_text = ['180日', '1年', '2年', '3年', '5年']
+# λをticksに追加（重複しない場合のみ）
+lam_int = int(lam_actual)
+if not any(abs(lam_int - v) < 30 for v in tick_vals):
+    tick_vals.append(lam_int)
+    tick_text.append(f'λ({lam_int}日)')
+
+# λ縦線と各ホライズンのプロット点
+fig_ltv.add_vline(
+    x=lam_actual, line_dash='dash', line_color='#a8dadc',
+    line_width=1, opacity=0.6,
+    annotation_text=f'λ {lam_int}日',
+    annotation_position='top right',
+    annotation_font=dict(color='#a8dadc', size=10),
+)
+
+# 各ホライズンにプロット点を追加
+plot_points = [180, 365, 730, 1095, 1460, 1825, lam_int]
+plot_points = sorted(set([p for p in plot_points if p <= x_max]))
+
+for arr, color, name in [
+    (rev_line, '#56b4d3', 'LTV（売上）'),
+    (gp_line,  '#a8dadc', 'LTV（粗利）'),
+    (cac_line, '#4a7a8a', 'CAC上限'),
+]:
+    px_vals, py_vals = [], []
+    for pt in plot_points:
+        # t_rangeから最近傍を探す
+        idx = min(range(len(t_range)), key=lambda i: abs(t_range[i] - pt))
+        px_vals.append(t_range[idx])
+        py_vals.append(arr[idx])
+    fig_ltv.add_trace(go.Scatter(
+        x=px_vals, y=py_vals,
+        mode='markers',
+        marker=dict(color=color, size=6, line=dict(color='#111820', width=1)),
+        showlegend=False,
+        hovertemplate='%{x}日: ¥%{y:,.0f}<extra></extra>',
+    ))
 
 fig_ltv.update_layout(
     paper_bgcolor='#111820', plot_bgcolor='#111820',
-    height=320, margin=dict(t=30, b=50, l=70, r=100),
+    height=340, margin=dict(t=30, b=50, l=70, r=120),
     font=dict(color='#ccc', size=10),
     legend=dict(
         orientation='h', y=1.08, x=0,
@@ -1254,8 +1318,9 @@ fig_ltv.update_layout(
     ),
     xaxis=dict(
         title='継続期間', gridcolor='#1a3040',
-        tickvals=tick_vals, ticktext=tick_text,
+        tickvals=sorted(tick_vals), ticktext=[t for _, t in sorted(zip(tick_vals, tick_text))],
         tickfont=dict(color='#888'),
+        range=[0, x_max + 50],
     ),
     yaxis=dict(
         title='金額（円）', gridcolor='#1a3040',
@@ -1264,7 +1329,6 @@ fig_ltv.update_layout(
     ),
 )
 st.plotly_chart(fig_ltv, use_container_width=True)
-
 
 # λ時点と99%到達日数を逆算
 try:
