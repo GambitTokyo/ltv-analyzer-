@@ -757,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v65</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v67</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1678,8 +1678,9 @@ with exp1:
         if segment_cols_input.strip():
             seg_cols_xl = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
             for sc in seg_cols_xl:
+                # ── セグメント概要シート ──
                 ws_seg = wb.create_sheet(f'SEG_{sc}'[:31])
-                ws_seg.append(['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', '総ポテンシャル', 'k', 'λ（日）', 'R²', '獲得効率'])
+                ws_seg.append(['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', 'k', 'λ（日）', 'R²', '獲得効率'])
                 seg_vals = df[sc].dropna().unique()
                 seg_rows = []
                 for sv in sorted(seg_vals):
@@ -1692,16 +1693,60 @@ with exp1:
                         if k_s is None: continue
                         arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
                         gp_s   = arpu_s * gpm
-                        ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
-                        ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
-                        eff = round(ltv_g / cac_input, 2) if cac_known else '-'
-                        seg_rows.append([sv, len(df_s), round(ltv_r,0), round(ltv_g,0), round(ltv_g/cac_n,0), round(ltv_r*len(df_s),0), round(k_s,4), round(lam_s,1), round(r2_s,4), eff])
+                        ltv_r_s, _ = ltv_inf_offset(k_s, lam_s, arpu_s, ltv_offset_days)
+                        ltv_g_s, _ = ltv_inf_offset(k_s, lam_s, gp_s,   ltv_offset_days)
+                        eff = round(ltv_g_s / cac_input, 2) if cac_known else '-'
+                        seg_rows.append([sv, len(df_s), round(ltv_r_s,0), round(ltv_g_s,0), round(ltv_g_s/cac_n,0), round(k_s,4), round(lam_s,1), round(r2_s,4), eff])
                     except Exception:
                         continue
                 seg_rows.sort(key=lambda x: x[2], reverse=True)
                 for row in seg_rows:
                     ws_seg.append(row)
                 ws_seg.column_dimensions['A'].width = 20
+
+                # ── セグメント別暫定LTV詳細シート ──
+                ws_seg_hor = wb.create_sheet(f'SEG_{sc}_暫定LTV'[:31])
+                hor_header = ['セグメント', 'ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率（%）']
+                ws_seg_hor.append(hor_header)
+                hor_points = [180, 365, 730, 1095, 1825]
+                for sv in sorted(seg_vals):
+                    df_s = df[df[sc] == sv]
+                    if len(df_s) < 10 or df_s['event'].sum() < 5:
+                        continue
+                    try:
+                        km_s = _compute_km_df(df_s)
+                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
+                        if k_s is None: continue
+                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
+                        gp_s   = arpu_s * gpm
+                        ltv_inf_s, _ = ltv_inf_offset(k_s, lam_s, arpu_s, ltv_offset_days)
+                        lam_s_actual = lam_s + ltv_offset_days
+                        # 通常ホライズン
+                        for h in hor_points:
+                            label = f'{h}日' if h < 365 else f'{h//365}年（{h}日）'
+                            lh_r = ltv_horizon_offset(k_s, lam_s, arpu_s, h, ltv_offset_days)
+                            lh_g = ltv_horizon_offset(k_s, lam_s, gp_s,   h, ltv_offset_days)
+                            pct  = round(lh_r / ltv_inf_s * 100, 1) if ltv_inf_s > 0 else 0
+                            ws_seg_hor.append([str(sv), label, round(lh_r,0), round(lh_g,0), round(lh_g/cac_n,0), pct])
+                        # λ行
+                        lam_r = ltv_horizon_offset(k_s, lam_s, arpu_s, lam_s_actual, ltv_offset_days)
+                        lam_g = ltv_horizon_offset(k_s, lam_s, gp_s,   lam_s_actual, ltv_offset_days)
+                        lam_pct = round(lam_r / ltv_inf_s * 100, 1) if ltv_inf_s > 0 else 0
+                        ws_seg_hor.append([str(sv), f'λ（{int(lam_s_actual)}日）', round(lam_r,0), round(lam_g,0), round(lam_g/cac_n,0), lam_pct])
+                        # 99%到達行
+                        try:
+                            days_99_s = brentq(lambda h: ltv_horizon_offset(k_s, lam_s, arpu_s, h, ltv_offset_days) / ltv_inf_s - 0.99, 1, 365000)
+                            r99_r = ltv_horizon_offset(k_s, lam_s, arpu_s, days_99_s, ltv_offset_days)
+                            r99_g = ltv_horizon_offset(k_s, lam_s, gp_s,   days_99_s, ltv_offset_days)
+                            ws_seg_hor.append([str(sv), f'LTV∞到達率: 99%（{int(days_99_s):,}日）', round(r99_r,0), round(r99_g,0), round(r99_g/cac_n,0), 99.0])
+                        except Exception:
+                            pass
+                        # 空行で区切り
+                        ws_seg_hor.append([''] * 6)
+                    except Exception:
+                        continue
+                ws_seg_hor.column_dimensions['A'].width = 20
+                ws_seg_hor.column_dimensions['B'].width = 18
 
         xl_buf = io.BytesIO()
         wb.save(xl_buf)
