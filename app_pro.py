@@ -617,8 +617,7 @@ with st.sidebar:
     )
     outlier_removal = iqr_multiplier > 0.0
     st.caption(
-        "利用期間・累計金額の上位外れ値を除外します。"
-        "強度はIQR（四分位範囲）の倍率で設定。"
+        "累計金額の上位外れ値をIQR（四分位範囲）の倍率で除外します。"
         "累計金額の下位1%（¥0・極端な低額）は常時除外されます。"
     )
 
@@ -758,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v49</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v54</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -949,12 +948,7 @@ try:
     n_outlier = 0
     if outlier_removal:
         before = len(df)
-        # 利用期間：上位IQR×倍率でカット
-        q1_d = df['duration'].quantile(0.25)
-        q3_d = df['duration'].quantile(0.75)
-        upper_d = q3_d + iqr_multiplier * (q3_d - q1_d)
-        df = df[df['duration'] <= upper_d]
-        # 累計売上：下位1%と上位IQR×倍率でカット
+        # 累計売上：下位1%（¥0・極端な低額）と上位IQR×倍率でカット
         lower_r = df['revenue_total'].quantile(0.01)
         q1_r = df['revenue_total'].quantile(0.25)
         q3_r = df['revenue_total'].quantile(0.75)
@@ -962,9 +956,14 @@ try:
         df = df[(df['revenue_total'] >= lower_r) & (df['revenue_total'] <= upper_r)]
         n_outlier = before - len(df)
 
-    # 加重平均ARPU：総売上÷総継続日数（短期顧客の高ARPUに引きずられない）
-    arpu_daily = df['revenue_total'].sum() / df['duration'].sum()
-    gp_daily   = arpu_daily * gpm
+    # ARPU計算：サブスクは算術平均（月額÷月日数で正規化済み）、都度購入は加重平均
+    if billing_cycle == "日次（都度購入）":
+        # 都度購入：継続日数で重み付け（短期高額顧客の影響を抑制）
+        arpu_daily = df['revenue_total'].sum() / df['duration'].sum()
+    else:
+        # サブスク：billing_cycleで月額÷月日数に正規化済みなので算術平均が正確
+        arpu_daily = df['arpu_daily'].mean()
+    gp_daily = arpu_daily * gpm
 
     # ビジネスタイプ依存ラベル（データ読み込みブロック内で使用）
     acq_label  = "初回購入" if business_type == "都度購入型" else "契約"
@@ -978,7 +977,7 @@ try:
     if n_excluded > 0:
         st.warning(f" {n_excluded}件：start_dateが未来の日付のため除外しました（入力ミスの可能性）。")
     if n_outlier > 0:
-        st.info(f"{n_outlier:,}件を異常値として除外しました（利用期間・累計金額のIQR×{iqr_multiplier}基準）。")
+        st.info(f"{n_outlier:,}件を異常値として除外しました（累計金額のIQR×{iqr_multiplier}基準）。")
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0 and n_outlier == 0:
         st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
 
@@ -994,15 +993,51 @@ except Exception as e:
 # Run analysis
 # ══════════════════════════════════════════════════════════════
 
-km_df = _compute_km_df(df)
+# ── サブスクの最低継続期間オフセット ──
+# 月額サブスクは最低1契約期間分は継続するため、
+# durationからオフセットを引いてWeibullフィッティングし、
+# LTV計算時にオフセット分のARPUを加算する
+if business_type == "都度購入型":
+    ltv_offset_days = 0
+elif billing_cycle_display == "カレンダーベース":
+    ltv_offset_days = 30.44
+elif billing_cycle_display == "30日固定":
+    ltv_offset_days = 30
+elif billing_cycle_display == "365日固定":
+    ltv_offset_days = 365
+elif billing_cycle_display == "カスタム入力（日数固定）":
+    ltv_offset_days = custom_cycle_days or 30
+else:
+    ltv_offset_days = 30.44
+
+# オフセット適用：durationからオフセットを引いてフィッティング
+if ltv_offset_days > 0:
+    df_fit = df.copy()
+    df_fit['duration'] = (df_fit['duration'] - ltv_offset_days).clip(lower=1)
+    km_df = _compute_km_df(df_fit)
+else:
+    km_df = _compute_km_df(df)
+
 k, lam, r2, fit_df = _fit_weibull_df(km_df)
 
 if k is None:
     st.error(" Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
     st.stop()
 
-ltv_rev, surv_int = ltv_inf(k, lam, arpu_daily)   # 売上ベース
-ltv_val, _        = ltv_inf(k, lam, gp_daily)      # 粗利ベース
+# LTV計算（オフセット分を加算）
+def ltv_inf_offset(k, lam, arpu, offset_days):
+    surv_int = lam * gamma(1 + 1/k)
+    return (surv_int + offset_days) * arpu, surv_int
+
+def ltv_horizon_offset(k, lam, arpu, h, offset_days):
+    h_adj = max(h - offset_days, 0)
+    if h_adj == 0:
+        return offset_days * arpu
+    x = (h_adj / lam) ** k
+    return (lam * gamma(1 + 1/k) * gammainc(1 + 1/k, x) + offset_days) * arpu
+
+ltv_rev, surv_int = ltv_inf_offset(k, lam, arpu_daily, ltv_offset_days)  # 売上ベース
+ltv_val, _        = ltv_inf_offset(k, lam, gp_daily,   ltv_offset_days)  # 粗利ベース
 cac_upper = ltv_val / cac_n
 
 # ══════════════════════════════════════════════════════════════
@@ -1164,8 +1199,8 @@ horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 # ── 折れ線グラフ（180日〜5年、λを縦線で表示）──────────────
 # グラフ用の細かい点を生成（滑らかな曲線）
 t_range = list(range(1, 1826, 10))
-rev_line = [ltv_horizon(k, lam, arpu_daily, t) for t in t_range]
-gp_line  = [ltv_horizon(k, lam, gp_daily,   t) for t in t_range]
+rev_line = [ltv_horizon_offset(k, lam, arpu_daily, t, ltv_offset_days) for t in t_range]
+gp_line  = [ltv_horizon_offset(k, lam, gp_daily,   t, ltv_offset_days) for t in t_range]
 cac_line = [v / cac_n for v in gp_line]
 
 fig_ltv = go.Figure()
@@ -1234,7 +1269,7 @@ st.plotly_chart(fig_ltv, use_container_width=True)
 # λ時点と99%到達日数を逆算
 try:
     days_99 = brentq(
-        lambda h: ltv_horizon(k, lam, arpu_daily, h) / ltv_rev - 0.99,
+        lambda h: ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days) / ltv_rev - 0.99,
         1, 365000  # 上限1000年に拡大
     )
 except Exception:
@@ -1252,8 +1287,8 @@ def fmt_horizon(days):
 # テーブルデータ構築
 tbl_rows = []
 for h in horizons:
-    lh_rev = ltv_horizon(k, lam, arpu_daily, h)
-    lh_gp  = ltv_horizon(k, lam, gp_daily,   h)
+    lh_rev = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
+    lh_gp  = ltv_horizon_offset(k, lam, gp_daily,   h, ltv_offset_days)
     tbl_rows.append({
         'ホライズン':    fmt_horizon(h),
         'LTV（売上）':   f'¥{lh_rev:,.0f}',
@@ -1264,8 +1299,8 @@ for h in horizons:
     })
 
 # λ行
-lam_rev  = ltv_horizon(k, lam, arpu_daily, lam)
-lam_gp   = ltv_horizon(k, lam, gp_daily,   lam)
+lam_rev  = ltv_horizon_offset(k, lam, arpu_daily, lam + ltv_offset_days, ltv_offset_days)
+lam_gp   = ltv_horizon_offset(k, lam, gp_daily,   lam + ltv_offset_days, ltv_offset_days)
 lam_pct  = lam_rev / ltv_rev * 100
 tbl_rows.append({
     'ホライズン':    f'λ  {int(lam):,}日',
@@ -1277,8 +1312,8 @@ tbl_rows.append({
 })
 
 # 99%到達行
-rev_99 = ltv_horizon(k, lam, arpu_daily, days_99)
-gp_99  = ltv_horizon(k, lam, gp_daily,   days_99)
+rev_99 = ltv_horizon_offset(k, lam, arpu_daily, days_99, ltv_offset_days)
+gp_99  = ltv_horizon_offset(k, lam, gp_daily,   days_99, ltv_offset_days)
 tbl_rows.append({
     'ホライズン':    f'LTV∞到達率: 99%  （{int(days_99):,}日）',
     'LTV（売上）':   f'¥{rev_99:,.0f}',
@@ -1344,9 +1379,9 @@ st.markdown(tbl_html, unsafe_allow_html=True)
 
 
 # 解釈ガイドを自動生成
-ltv_1y  = ltv_horizon(k, lam, arpu_daily, 365)
-ltv_2y  = ltv_horizon(k, lam, arpu_daily, 730)
-ltv_3y  = ltv_horizon(k, lam, arpu_daily, 1095)
+ltv_1y  = ltv_horizon_offset(k, lam, arpu_daily, 365,  ltv_offset_days)
+ltv_2y  = ltv_horizon_offset(k, lam, arpu_daily, 730,  ltv_offset_days)
+ltv_3y  = ltv_horizon_offset(k, lam, arpu_daily, 1095, ltv_offset_days)
 pct_1y  = ltv_1y  / ltv_rev * 100
 pct_2y  = ltv_2y  / ltv_rev * 100
 pct_3y  = ltv_3y  / ltv_rev * 100
@@ -1357,7 +1392,7 @@ def recover_str(days):
 
 try:
     cac_recover_rev = brentq(
-        lambda h: ltv_horizon(k, lam, arpu_daily, h) - cac_upper,
+        lambda h: ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days) - cac_upper,
         1, 36500
     )
     cac_recover_rev_str = recover_str(cac_recover_rev)
@@ -1366,7 +1401,7 @@ except Exception:
 
 try:
     cac_recover_gp = brentq(
-        lambda h: ltv_horizon(k, lam, gp_daily, h) - cac_upper,
+        lambda h: ltv_horizon_offset(k, lam, gp_daily, h, ltv_offset_days) - cac_upper,
         1, 36500
     )
     cac_recover_gp_str = recover_str(cac_recover_gp)
@@ -1564,7 +1599,7 @@ with exp1:
         ws3 = wb.create_sheet('暫定LTV')
         ws3.append(['ホライズン（日）', '暫定LTV（¥）', 'LTV∞比（%）', f'CAC上限（¥）'])
         for h in horizons:
-            lh = ltv_horizon(k, lam, arpu_daily, h)
+            lh = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
             ws3.append([h, round(lh, 0), round(lh/ltv_val*100, 1), round(lh/cac_n, 0)])
 
         # セグメント別シート追加
@@ -1583,7 +1618,7 @@ with exp1:
                         km_s = _compute_km_df(df_s)
                         k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
-                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum()
+                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
                         gp_s   = arpu_s * gpm
                         ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
                         ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
@@ -1688,7 +1723,7 @@ with exp2:
             txbox(s2, ch, cx, 4.4, 2.6, 0.35, size=9, bold=True, color=GOLD)
         row_y = 4.8
         for h in horizons[:5]:
-            lh = ltv_horizon(k, lam, arpu_daily, h)
+            lh = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
             row_vals = [
                 f'{h}日' if h<365 else f'{h//365}年',
                 f'¥{lh:,.0f}', f'{lh/ltv_val*100:.1f}%', f'¥{lh/cac_n:,.0f}'
@@ -1862,7 +1897,7 @@ with exp2:
                         km_s = _compute_km_df(df_s)
                         k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
-                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum()
+                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
                         gp_s   = arpu_s * gpm
                         ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
                         ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
@@ -1952,7 +1987,7 @@ with exp2:
                         km_sv_all = _compute_km_df(df_sv_all)
                         k_sv, lam_sv, r2_sv, _ = _fit_weibull_df(km_sv_all)
                         if k_sv is None: continue
-                        arpu_sv = df_sv_all['revenue_total'].sum() / df_sv_all['duration'].sum()
+                        arpu_sv = df_sv_all['revenue_total'].sum() / df_sv_all['duration'].sum() if billing_cycle == '日次（都度購入）' else df_sv_all['arpu_daily'].mean()
                         ltv_inf_sv = lam_sv * __import__('scipy').special.gamma(1 + 1/k_sv) * arpu_sv
 
                         s_all = prs.slides.add_slide(blank)
@@ -2229,7 +2264,7 @@ with exp3:
                         km_s = _compute_km_df(df_s)
                         k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
-                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum()
+                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
                         gp_s   = arpu_s * gpm
                         ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
                         ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
@@ -2280,7 +2315,7 @@ with exp3:
                         km_sv2 = _compute_km_df(df_sv2)
                         k_sv2, lam_sv2, r2_sv2, _ = _fit_weibull_df(km_sv2)
                         if k_sv2 is None: continue
-                        arpu_sv2 = df_sv2['revenue_total'].sum() / df_sv2['duration'].sum()
+                        arpu_sv2 = df_sv2['revenue_total'].sum() / df_sv2['duration'].sum() if billing_cycle == '日次（都度購入）' else df_sv2['arpu_daily'].mean()
                         ltv_inf_sv2 = lam_sv2 * __import__('scipy').special.gamma(1 + 1/k_sv2) * arpu_sv2
 
                         story.append(Paragraph(
@@ -2429,7 +2464,7 @@ if segment_cols_input.strip():
                     k_s, lam_s, r2_s, _ = _fit_weibull_df(km_seg)
                     if k_s is None:
                         continue
-                    arpu_s   = df_seg['revenue_total'].sum() / df_seg['duration'].sum()
+                    arpu_s   = df_seg['revenue_total'].sum() / df_seg['duration'].sum() if billing_cycle == '日次（都度購入）' else df_seg['arpu_daily'].mean()
                     gp_s     = arpu_s * gpm
                     ltv_rev_s, _ = ltv_inf(k_s, lam_s, arpu_s)
                     ltv_gp_s, _  = ltv_inf(k_s, lam_s, gp_s)
@@ -2589,7 +2624,7 @@ if segment_cols_input.strip():
                 r2_s  = sr['R²']
                 n_s   = sr['顧客数']
                 df_sv  = df[df[seg_col] == sv]
-                arpu_s = df_sv['revenue_total'].sum() / df_sv['duration'].sum()
+                arpu_s = df_sv['revenue_total'].sum() / df_sv['duration'].sum() if billing_cycle == '日次（都度購入）' else df_sv['arpu_daily'].mean()
                 gp_s   = arpu_s * gpm
                 ltv_inf_s = lam_s * __import__('scipy').special.gamma(1 + 1/k_s) * arpu_s
                 is_best = (sv == seg_df.iloc[0]['セグメント'])
