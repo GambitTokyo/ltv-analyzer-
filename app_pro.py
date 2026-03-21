@@ -757,7 +757,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v61</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v62</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1382,7 +1382,7 @@ lam_rev  = ltv_horizon_offset(k, lam, arpu_daily, lam + ltv_offset_days, ltv_off
 lam_gp   = ltv_horizon_offset(k, lam, gp_daily,   lam + ltv_offset_days, ltv_offset_days)
 lam_pct  = lam_rev / ltv_rev * 100
 tbl_rows.append({
-    'ホライズン':    f'λ  {int(lam):,}日',
+    'ホライズン':    f'λ  {round(lam + ltv_offset_days):,}日',
     'LTV（売上）':   f'¥{lam_rev:,.0f}',
     'LTV（粗利）':   f'¥{lam_gp:,.0f}',
     'CAC上限':       f'¥{lam_gp/cac_n:,.0f}',
@@ -1549,7 +1549,7 @@ st.markdown(insight_html, unsafe_allow_html=True)
 # ══════════════════════════════════════════════════════════════
 
 st.markdown("<div class='section-title'>AI Prompt Generator</div>", unsafe_allow_html=True)
-st.markdown("<div class='help-box'>この結果の読み方や戦略への活用方法がわからない場合は、以下のプロンプトをClaude・ChatGPT・Geminiにコピペしてください。</div>", unsafe_allow_html=True)
+st.markdown("<div class='help-box'>この結果の読み方や戦略への活用方法がわからない場合は、以下のプロンプトをClaude・ChatGPT・Geminiにコピペしてください。テキストボックス右上の <b>コピーアイコン</b> をクリックすると全文コピーできます。</div>", unsafe_allow_html=True)
 
 tab1, tab2, tab3 = st.tabs(["分析結果の解釈", "マーケティング意思決定", "分析の限界と改善"])
 
@@ -1575,10 +1575,6 @@ prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル
 ・Weibull λ（尺度）: {lam:.1f}日 / R²（フィット精度）: {r2:.4f}
 ・分析手法: Kaplan-Meier法 + Weibullモデルによる生存分析"""
 
-copy_html = """<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:10px 14px; font-size:0.82rem; color:#56b4d3; margin-top:4px;'>
-上のテキストボックス右上の <b>コピーアイコン</b> をクリック → Claude / ChatGPT / Gemini に貼り付けてください
-</div>"""
-
 with tab1:
     p1 = prompt_base + f"""
 
@@ -1588,7 +1584,6 @@ with tab1:
 3. 解約率{churn_rate:.1f}%（解約{churned_count:,}件・継続{active_count:,}件）という比率から、このビジネスの健全性をどう評価しますか？
 4. R²={r2:.4f}のフィット精度はWeibull分析として許容範囲ですか？この値が示す信頼性の限界を教えてください。"""
     st.code(p1, language=None)
-    st.markdown(copy_html, unsafe_allow_html=True)
 
 with tab2:
     p2 = prompt_base + f"""
@@ -1599,7 +1594,6 @@ with tab2:
 3. λ={lam:.0f}日を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
-    st.markdown(copy_html, unsafe_allow_html=True)
 
 with tab3:
     p3 = prompt_base + f"""
@@ -1611,7 +1605,6 @@ with tab3:
 {"4. 解約日ベースで分析していますが、解約データの欠損や遅延がある場合にLTV推定にどんな影響が出ますか？" if dormancy_days is None else f"4. 休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"}
 """
     st.code(p3, language=None)
-    st.markdown(copy_html, unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
 # Export buttons
