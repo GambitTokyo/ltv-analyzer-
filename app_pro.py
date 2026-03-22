@@ -223,6 +223,13 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
 [data-testid="stSidebar"] .stCaption p { color: #8aaabb !important; }
 [data-testid="stSidebar"] .stRadio label p { color: #c8d0d8 !important; }
 
+/* ── Toggle font size ── */
+[data-testid="stSidebar"] [data-testid="stToggle"] label p,
+[data-testid="stSidebar"] [data-testid="stToggle"] > label {
+    font-size: 0.82rem !important;
+    color: #8aaabb !important;
+}
+
 /* ── Main area background ── */
 .stApp { background-color: #0a0e14 !important; }
 
