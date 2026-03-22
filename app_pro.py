@@ -573,20 +573,26 @@ with st.sidebar:
     ff_unit   = np.random.choice([8000, 15000, 25000, 30000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
     ff_surv   = np.random.weibull(1.2, n_sample) * 120
     ff_active = np.random.random(n_sample) < 0.15
+    ff_single = np.random.random(n_sample) < 0.60  # 単発購入者60%
 
     last_purchase_dates = []
     revenues_spot       = []
     for i in range(n_sample):
         sd    = start_dates[i]
         price = ff_unit[i]
-        if ff_active[i]:
+        if ff_single[i]:
+            # 単発購入：first=last、売上=単価1回分
+            lp = sd
+            purchases = 1
+        elif ff_active[i]:
             days_since = np.random.randint(1, 365)
             lp = today_ts - pd.Timedelta(days=int(days_since))
+            purchases = max(1, round((lp - sd).days / 90))
         else:
             lp = sd + pd.Timedelta(days=max(1, int(ff_surv[i])))
             lp = min(lp, today_ts - pd.Timedelta(days=1))
+            purchases = max(1, round((lp - sd).days / 90))
         last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
-        purchases = max(1, round((lp - sd).days / 90))  # 購入間隔90日（年4回）
         revenues_spot.append(price * purchases)
 
     ff_gender   = np.random.choice(['男性', '女性', '未回答'],
@@ -646,20 +652,26 @@ with st.sidebar:
     sp_unit   = np.random.choice([3000, 5000, 8000, 12000], n_sample, p=[0.25, 0.40, 0.25, 0.10])
     sp_surv   = np.random.weibull(1.3, n_sample) * 180
     sp_active = np.random.random(n_sample) < 0.25
+    sp_single = np.random.random(n_sample) < 0.45  # 単発購入者45%
 
     sp_last_purchase = []
     sp_revenues      = []
     for i in range(n_sample):
         sd    = start_dates[i]
         price = sp_unit[i]
-        if sp_active[i]:
+        if sp_single[i]:
+            # 単発購入：first=last、売上=単価1回分
+            lp = sd
+            purchases = 1
+        elif sp_active[i]:
             days_since = np.random.randint(1, 90)
             lp = today_ts - pd.Timedelta(days=int(days_since))
+            purchases = max(1, round((lp - sd).days / 45))
         else:
             lp = sd + pd.Timedelta(days=max(1, int(sp_surv[i])))
             lp = min(lp, today_ts - pd.Timedelta(days=1))
+            purchases = max(1, round((lp - sd).days / 45))
         sp_last_purchase.append(lp.strftime('%Y-%m-%d'))
-        purchases = max(1, round((lp - sd).days / 45))
         sp_revenues.append(price * purchases)
 
     sp_gender   = np.random.choice(['男性', '女性', '未回答'], n_sample, p=[0.35, 0.58, 0.07])
@@ -888,7 +900,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v96</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v98</div>
 </div>
 """, unsafe_allow_html=True)
 
