@@ -919,7 +919,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v103</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v105</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1775,7 +1775,7 @@ else:
     lam_gp   = ltv_horizon_offset(k, lam, gp_daily,   lam + ltv_offset_days, ltv_offset_days)
 lam_pct  = lam_rev / ltv_rev * 100
 tbl_rows.append({
-    'ホライズン':    f'λ  {round(lam + ltv_offset_days):,}日',
+    'ホライズン':    f'λ  {int(lam_display):,}日',
     'LTV（売上）':   f'¥{lam_rev:,.0f}',
     'LTV（粗利）':   f'¥{lam_gp:,.0f}',
     'CAC上限':       f'¥{lam_gp/cac_n:,.0f}',
@@ -1942,7 +1942,7 @@ insight_html = f"""
   <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 <b style='color:#a8dadc;'>{cac_recover_rev_str}</b> / 粗利ベース 約 <b style='color:#56b4d3;'>{cac_recover_gp_str}</b>（{acq_label}から）</div>
   <div style='margin-top:12px; padding-top:10px; border-top:1px solid #1a3a4a;'>
     <span style='color:#56b4d3; font-weight:600;'>CAC設計の目安</span>：回収期間に迷ったら、
-    <b style='color:#a8dadc;'>λ={int(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}</b>
+    <b style='color:#a8dadc;'>λ={int(lam_display):,}日（約{lam_display/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}</b>
     を用いてCAC上限を算出してください。λは{"リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == "都度購入型" else "多くの顧客が離脱するまでの期間の目安"}をデータが示した答えです。
   </div>
 </div>
@@ -1996,7 +1996,7 @@ with tab2:
 【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
 1. このビジネスのλ={lam_display:.0f}日（約{lam_display/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}をCAC上限の基準とした場合、LTV:CAC={cac_n:.1f}:1の設定でCACの目安はいくらですか？またこの設定は適切ですか？
 2. k={k:.4f}のビジネスにおいて、LTV∞をそのままCAC判断に使うリスクを説明してください。λ日基準・1年基準・2年基準それぞれのCAC上限（1年:¥{ltv_1y*gpm/cac_n:,.0f}、2年:¥{ltv_2y*gpm/cac_n:,.0f}、λ={int(lam_display)}日:¥{lam_gp/cac_n:,.0f})を比較して、最も実務的な基準はどれですか？
-3. λ={lam:.0f}日を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
+3. λ={lam_display:.0f}日を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
 
@@ -2369,7 +2369,7 @@ with exp2:
             f"平均日次ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
             f"LTV∞ 売上ベース: ¥{ltv_rev:,.0f} / 粗利ベース: ¥{ltv_val:,.0f}\n"
             f"CAC上限 ({cac_label}): ¥{cac_upper:,.0f}\n"
-            f"Weibull k={k:.4f} / λ={lam:.1f}日 / R²={r2:.4f}\n"
+            f"Weibull k={k:.4f} / λ={lam_display:.1f}日 / R²={r2:.4f}\n"
             f"分析手法: Kaplan-Meier法 + Weibullモデル"
         )
 
@@ -2760,7 +2760,7 @@ with exp3:
             f"平均日次ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
             f"LTV∞ 売上ベース: ¥{ltv_rev:,.0f} / 粗利ベース: ¥{ltv_val:,.0f}\n"
             f"CAC上限 ({cac_label}): ¥{cac_upper:,.0f}\n"
-            f"Weibull k={k:.4f} / λ={lam:.1f}日 / R²={r2:.4f}"
+            f"Weibull k={k:.4f} / λ={lam_display:.1f}日 / R²={r2:.4f}"
         )
         prompt_style = ParagraphStyle('P', fontName='HeiseiMin-W3', fontSize=8,
                                       textColor=colors.HexColor('#111111'),
