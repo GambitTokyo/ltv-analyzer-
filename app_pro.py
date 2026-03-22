@@ -888,7 +888,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v93</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v94</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1304,6 +1304,21 @@ def ltv_horizon_offset(k, lam, arpu, h, offset_days):
     x = (h_adj / lam) ** k
     return (lam * gamma(1 + 1/k) * gammainc(1 + 1/k, x) + offset_days) * arpu
 
+def ltv_horizon_spot(k, lam, arpu_0d, arpu_long, h, dorm):
+    """都度購入型専用LTVホライズン計算
+    h: 総ホライズン（初回購入からの日数）
+    dorm: dormancy_days
+    """
+    h_short = min(h, dorm)
+    h_long  = max(h - dorm, 0)
+    ltv_s   = h_short * arpu_0d
+    if h_long > 0:
+        x     = (h_long / lam) ** k
+        ltv_l = lam * gamma(1 + 1/k) * gammainc(1 + 1/k, x) * arpu_long
+    else:
+        ltv_l = 0
+    return ltv_s + ltv_l
+
 if business_type == "都度購入型":
     # LTV = LTV_short（固定部分）+ LTV_long（Weibull積分部分）
     _dorm_off = dormancy_days or 180
@@ -1446,14 +1461,30 @@ st.markdown(f"""
 st.markdown("<div class='section-title'>分析グラフ</div>", unsafe_allow_html=True)
 c1, c2 = st.columns(2)
 
-t_smooth = np.linspace(1, km_df_raw['t'].max() * 1.3, 600)
-S_wei    = weibull_s(t_smooth, k, lam)
-
-# オフセット込みのKM描画用データ（t=0から始める）
-km_t_plot = np.concatenate([[0], km_df_raw['t'].values + ltv_offset_days])
-km_s_plot = np.concatenate([[1.0], km_df_raw['S'].values])
-t_smooth_plot = t_smooth + ltv_offset_days
-S_wei_plot    = S_wei
+# ── グラフ描画用データ準備 ──
+if business_type == "都度購入型":
+    # 都度購入型：
+    # KM曲線はオフセット後（df_fit）のkm_dfを元の時間軸に戻して描画
+    # t_plot = df_fitのt + ltv_offset_days（元の時間軸に戻す）
+    km_t_plot = np.concatenate([[0], km_df['t'].values + ltv_offset_days])
+    km_s_plot = np.concatenate([[1.0], km_df['S'].values])
+    # t=0〜ltv_offset_daysはS=1.0のフラット部分を追加
+    _t_flat = np.array([0, ltv_offset_days])
+    _s_flat = np.array([1.0, 1.0])
+    km_t_plot = np.concatenate([_t_flat, km_df['t'].values + ltv_offset_days])
+    km_s_plot = np.concatenate([_s_flat, km_df['S'].values])
+    # Weibullはオフセット後のlam/kで計算し、t軸を元に戻す
+    t_smooth = np.linspace(1, km_df['t'].max() * 1.3, 600)
+    S_wei    = weibull_s(t_smooth, k, lam)
+    t_smooth_plot = t_smooth + ltv_offset_days
+    S_wei_plot    = S_wei
+else:
+    t_smooth = np.linspace(1, km_df_raw['t'].max() * 1.3, 600)
+    S_wei    = weibull_s(t_smooth, k, lam)
+    km_t_plot = np.concatenate([[0], km_df_raw['t'].values + ltv_offset_days])
+    km_s_plot = np.concatenate([[1.0], km_df_raw['S'].values])
+    t_smooth_plot = t_smooth + ltv_offset_days
+    S_wei_plot    = S_wei
 
 with c1:
     fig, ax = plt.subplots(figsize=(6, 3.8))
@@ -1534,8 +1565,13 @@ lam_actual = lam + ltv_offset_days  # 実際のλ位置（オフセット込み�
 x_max = max(1825, int(lam_actual) + 100) if lam_actual > 1825 else 1825
 
 t_range = list(range(1, x_max + 1, max(1, x_max // 300)))
-rev_line = [ltv_horizon_offset(k, lam, arpu_daily, t, ltv_offset_days) for t in t_range]
-gp_line  = [ltv_horizon_offset(k, lam, gp_daily,   t, ltv_offset_days) for t in t_range]
+if business_type == "都度購入型":
+    _dorm_off = dormancy_days or 180
+    rev_line = [ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, t, _dorm_off) for t in t_range]
+    gp_line  = [ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, t, _dorm_off) for t in t_range]
+else:
+    rev_line = [ltv_horizon_offset(k, lam, arpu_daily, t, ltv_offset_days) for t in t_range]
+    gp_line  = [ltv_horizon_offset(k, lam, gp_daily,   t, ltv_offset_days) for t in t_range]
 cac_line = [v / cac_n for v in gp_line]
 
 fig_ltv = go.Figure()
@@ -1608,10 +1644,19 @@ for arpu_val, color in [
 ]:
     px_vals, py_vals = [], []
     for pt in plot_points:
-        if arpu_val == gp_daily / cac_n:
-            y = ltv_horizon_offset(k, lam, gp_daily, pt, ltv_offset_days) / cac_n
+        if business_type == "都度購入型":
+            _dorm_off = dormancy_days or 180
+            if arpu_val == gp_daily / cac_n:
+                y = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, pt, _dorm_off) / cac_n
+            elif arpu_val == gp_daily:
+                y = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, pt, _dorm_off)
+            else:
+                y = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, pt, _dorm_off)
         else:
-            y = ltv_horizon_offset(k, lam, arpu_val, pt, ltv_offset_days)
+            if arpu_val == gp_daily / cac_n:
+                y = ltv_horizon_offset(k, lam, gp_daily, pt, ltv_offset_days) / cac_n
+            else:
+                y = ltv_horizon_offset(k, lam, arpu_val, pt, ltv_offset_days)
         px_vals.append(pt)
         py_vals.append(y)
     fig_ltv.add_trace(go.Scatter(
@@ -1646,10 +1691,17 @@ st.plotly_chart(fig_ltv, use_container_width=True)
 
 # λ時点と99%到達日数を逆算
 try:
-    days_99 = brentq(
-        lambda h: ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days) / ltv_rev - 0.99,
-        1, 365000  # 上限1000年に拡大
-    )
+    if business_type == "都度購入型":
+        _dorm_off = dormancy_days or 180
+        days_99 = brentq(
+            lambda h: ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_off) / ltv_rev - 0.99,
+            1, 365000
+        )
+    else:
+        days_99 = brentq(
+            lambda h: ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days) / ltv_rev - 0.99,
+            1, 365000  # 上限1000年に拡大
+        )
 except Exception:
     # 上限でも99%に届かない場合は上限値で近似
     days_99 = 365000
@@ -1665,8 +1717,13 @@ def fmt_horizon(days):
 # テーブルデータ構築
 tbl_rows = []
 for h in horizons:
-    lh_rev = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
-    lh_gp  = ltv_horizon_offset(k, lam, gp_daily,   h, ltv_offset_days)
+    if business_type == "都度購入型":
+        _dorm_off = dormancy_days or 180
+        lh_rev = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_off)
+        lh_gp  = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, _dorm_off)
+    else:
+        lh_rev = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
+        lh_gp  = ltv_horizon_offset(k, lam, gp_daily,   h, ltv_offset_days)
     tbl_rows.append({
         'ホライズン':    fmt_horizon(h),
         'LTV（売上）':   f'¥{lh_rev:,.0f}',
@@ -1677,8 +1734,13 @@ for h in horizons:
     })
 
 # λ行
-lam_rev  = ltv_horizon_offset(k, lam, arpu_daily, lam + ltv_offset_days, ltv_offset_days)
-lam_gp   = ltv_horizon_offset(k, lam, gp_daily,   lam + ltv_offset_days, ltv_offset_days)
+if business_type == "都度購入型":
+    _dorm_off = dormancy_days or 180
+    lam_rev = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, lam + _dorm_off, _dorm_off)
+    lam_gp  = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, lam + _dorm_off, _dorm_off)
+else:
+    lam_rev  = ltv_horizon_offset(k, lam, arpu_daily, lam + ltv_offset_days, ltv_offset_days)
+    lam_gp   = ltv_horizon_offset(k, lam, gp_daily,   lam + ltv_offset_days, ltv_offset_days)
 lam_pct  = lam_rev / ltv_rev * 100
 tbl_rows.append({
     'ホライズン':    f'λ  {round(lam + ltv_offset_days):,}日',
@@ -1690,8 +1752,13 @@ tbl_rows.append({
 })
 
 # 99%到達行
-rev_99 = ltv_horizon_offset(k, lam, arpu_daily, days_99, ltv_offset_days)
-gp_99  = ltv_horizon_offset(k, lam, gp_daily,   days_99, ltv_offset_days)
+if business_type == "都度購入型":
+    _dorm_off = dormancy_days or 180
+    rev_99 = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, days_99, _dorm_off)
+    gp_99  = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, days_99, _dorm_off)
+else:
+    rev_99 = ltv_horizon_offset(k, lam, arpu_daily, days_99, ltv_offset_days)
+    gp_99  = ltv_horizon_offset(k, lam, gp_daily,   days_99, ltv_offset_days)
 tbl_rows.append({
     'ホライズン':    f'LTV∞到達率: 99%  （{int(days_99):,}日）',
     'LTV（売上）':   f'¥{rev_99:,.0f}',
@@ -1757,9 +1824,15 @@ st.markdown(tbl_html, unsafe_allow_html=True)
 
 
 # 解釈ガイドを自動生成
-ltv_1y  = ltv_horizon_offset(k, lam, arpu_daily, 365,  ltv_offset_days)
-ltv_2y  = ltv_horizon_offset(k, lam, arpu_daily, 730,  ltv_offset_days)
-ltv_3y  = ltv_horizon_offset(k, lam, arpu_daily, 1095, ltv_offset_days)
+if business_type == "都度購入型":
+    _dorm_off = dormancy_days or 180
+    ltv_1y = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, 365,  _dorm_off)
+    ltv_2y = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, 730,  _dorm_off)
+    ltv_3y = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, 1095, _dorm_off)
+else:
+    ltv_1y  = ltv_horizon_offset(k, lam, arpu_daily, 365,  ltv_offset_days)
+    ltv_2y  = ltv_horizon_offset(k, lam, arpu_daily, 730,  ltv_offset_days)
+    ltv_3y  = ltv_horizon_offset(k, lam, arpu_daily, 1095, ltv_offset_days)
 pct_1y  = ltv_1y  / ltv_rev * 100
 pct_2y  = ltv_2y  / ltv_rev * 100
 pct_3y  = ltv_3y  / ltv_rev * 100
@@ -1770,7 +1843,7 @@ def recover_str(days):
 
 try:
     cac_recover_rev = brentq(
-        lambda h: ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days) - cac_upper,
+        lambda h: (ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, dormancy_days or 180) if business_type == "都度購入型" else ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)) - cac_upper,
         1, 36500
     )
     cac_recover_rev_str = recover_str(cac_recover_rev)
@@ -1779,7 +1852,7 @@ except Exception:
 
 try:
     cac_recover_gp = brentq(
-        lambda h: ltv_horizon_offset(k, lam, gp_daily, h, ltv_offset_days) - cac_upper,
+        lambda h: (ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, dormancy_days or 180) if business_type == "都度購入型" else ltv_horizon_offset(k, lam, gp_daily, h, ltv_offset_days)) - cac_upper,
         1, 36500
     )
     cac_recover_gp_str = recover_str(cac_recover_gp)
@@ -1964,18 +2037,34 @@ with exp1:
         ws2.append(['t (days)', 'S(t) KM Observed', 'S(t) Weibull Fit'])
         # t=0：生存率100%
         ws2.append([0, 1.0, 1.0])
-        # オフセットがある場合はt=offset_daysも追加（最初の更新日）
-        if ltv_offset_days > 0:
-            ws2.append([int(ltv_offset_days), 1.0, round(float(weibull_s(0, k, lam)), 6)])
-        for _, row in km_df_raw.iterrows():
-            t = row['t']
-            ws2.append([int(t + ltv_offset_days), round(row['S'], 6), round(float(weibull_s(t, k, lam)), 6)])
+        if business_type == "都度購入型":
+            # 都度購入型：オフセット後のkm_dfを使い、t軸を元に戻す
+            ws2.append([int(ltv_offset_days), 1.0, 1.0])
+            for _, row in km_df.iterrows():
+                t_orig = int(row['t'] + ltv_offset_days)
+                ws2.append([t_orig, round(row['S'], 6), round(float(weibull_s(row['t'], k, lam)), 6)])
+        else:
+            # サブスク：従来通りkm_df_rawを使用
+            if ltv_offset_days > 0:
+                ws2.append([int(ltv_offset_days), 1.0, round(float(weibull_s(0, k, lam)), 6)])
+            for _, row in km_df_raw.iterrows():
+                t = row['t']
+                ws2.append([int(t + ltv_offset_days), round(row['S'], 6), round(float(weibull_s(t, k, lam)), 6)])
 
         # Horizon sheet
         ws3 = wb.create_sheet('暫定LTV')
         ws3.append(['ホライズン（日）', '暫定LTV（¥）', 'LTV∞比（%）', f'CAC上限（¥）'])
         for h in horizons:
-            lh = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
+            if business_type == "都度購入型":
+                # 都度購入型：LTV_short（固定）+ LTV_long（Weibull積分）
+                _dorm_off = dormancy_days or 180
+                _h_short  = min(h, _dorm_off)
+                _h_long   = max(h - _dorm_off, 0)
+                _lh_short = _h_short * arpu_0_dorm
+                _lh_long  = ltv_horizon_offset(k, lam, arpu_long, _h_long, 0) if _h_long > 0 else 0
+                lh = _lh_short + _lh_long
+            else:
+                lh = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
             ws3.append([h, round(lh, 0), round(lh/ltv_val*100, 1), round(lh/cac_n, 0)])
 
         # セグメント別シート追加
