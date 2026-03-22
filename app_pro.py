@@ -513,7 +513,7 @@ with st.sidebar:
     np.random.seed(42)
     n_sample  = 10000
     BASE_DATE = pd.Timestamp('2025-12-31')  # 基準日固定
-    OBS_START = pd.Timestamp('2023-01-01')  # 観測期間開始
+    OBS_START = pd.Timestamp('2021-01-01')  # 観測期間開始（5年間）
     today_ts  = BASE_DATE
 
     # start_datesを観測期間内（2023-01-01〜2025-12-31）で均等に生成
@@ -585,8 +585,8 @@ with st.sidebar:
     # 単発65%：1回買って離脱、リピート35%：継続購入
     np.random.seed(43)
     ff_unit   = np.random.choice([8000, 15000, 25000, 30000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
-    ff_surv   = np.random.weibull(0.75, n_sample) * 300   # k<1：初期離脱型
-    ff_single = np.random.random(n_sample) < 0.778         # 単発65%相当（カットオフ補正済）
+    ff_surv   = np.random.weibull(0.75, n_sample) * 800   # k<1：初期離脱型、λ≈800日
+    ff_single = np.random.random(n_sample) < 0.721         # 単発65%相当（カットオフ補正済）
     ff_active = np.random.random(n_sample) < 0.20          # リピートのうちアクティブ20%
 
     last_purchase_dates = []
@@ -608,7 +608,7 @@ with st.sidebar:
             # 離脱リピート：観測期間内に購入後180日超で休眠
             surv_days = max(1, int(ff_surv[i]))
             lp        = sd + pd.Timedelta(days=surv_days)
-            lp        = min(lp, BASE_DATE - pd.Timedelta(days=181))  # 必ず休眠判定される
+            lp        = min(lp, BASE_DATE - pd.Timedelta(days=1))  # 基準日を超えない
             lp        = max(lp, sd + pd.Timedelta(days=1))
             purchases = max(2, round((lp - sd).days / 90))
         last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
@@ -668,8 +668,8 @@ with st.sidebar:
     # 単発45%：初回購入後リピートなし、リピート55%：定期的に購入
     np.random.seed(99)
     sp_unit   = np.random.choice([3000, 5000, 8000, 12000], n_sample, p=[0.25, 0.40, 0.25, 0.10])
-    sp_surv   = np.random.weibull(1.3, n_sample) * 400   # k>1：逓増離脱型
-    sp_single = np.random.random(n_sample) < 0.539        # 単発45%相当（カットオフ補正済）
+    sp_surv   = np.random.weibull(1.3, n_sample) * 600   # k>1：逓増離脱型、λ≈600日
+    sp_single = np.random.random(n_sample) < 0.499        # 単発45%相当（カットオフ補正済）
     sp_active = np.random.random(n_sample) < 0.25         # リピートのうちアクティブ25%
 
     sp_last_purchase = []
@@ -688,10 +688,10 @@ with st.sidebar:
             lp         = max(lp, sd + pd.Timedelta(days=1))
             purchases  = max(2, round((lp - sd).days / 45))
         else:
-            # 離脱リピート：観測期間内に購入後180日超で休眠
+            # 離脱リピート：生存期間に従い自然に離脱
             surv_days = max(1, int(sp_surv[i]))
             lp        = sd + pd.Timedelta(days=surv_days)
-            lp        = min(lp, BASE_DATE - pd.Timedelta(days=181))
+            lp        = min(lp, BASE_DATE - pd.Timedelta(days=1))  # 基準日を超えない
             lp        = max(lp, sd + pd.Timedelta(days=1))
             purchases = max(2, round((lp - sd).days / 45))
         sp_last_purchase.append(lp.strftime('%Y-%m-%d'))
@@ -919,7 +919,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v108</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v109</div>
 </div>
 """, unsafe_allow_html=True)
 
