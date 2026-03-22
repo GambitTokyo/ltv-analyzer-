@@ -587,7 +587,7 @@ with st.sidebar:
     ff_unit   = np.random.choice([8000, 15000, 25000, 30000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
     ff_surv   = np.random.weibull(0.75, n_sample) * 800   # k<1：初期離脱型、λ≈800日
     ff_single = np.random.random(n_sample) < 0.721         # 単発65%相当（カットオフ補正済）
-    ff_active = np.random.random(n_sample) < 0.20          # リピートのうちアクティブ20%
+    ff_active = np.random.random(n_sample) < 0.45          # リピートのうちアクティブ45%
 
     last_purchase_dates = []
     revenues_spot       = []
@@ -670,7 +670,7 @@ with st.sidebar:
     sp_unit   = np.random.choice([3000, 5000, 8000, 12000], n_sample, p=[0.25, 0.40, 0.25, 0.10])
     sp_surv   = np.random.weibull(1.3, n_sample) * 600   # k>1：逓増離脱型、λ≈600日
     sp_single = np.random.random(n_sample) < 0.499        # 単発45%相当（カットオフ補正済）
-    sp_active = np.random.random(n_sample) < 0.25         # リピートのうちアクティブ25%
+    sp_active = np.random.random(n_sample) < 0.40         # リピートのうちアクティブ40%
 
     sp_last_purchase = []
     sp_revenues      = []
@@ -919,7 +919,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v109</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v112</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1495,20 +1495,20 @@ c1, c2 = st.columns(2)
 
 # ── グラフ描画用データ準備 ──
 if business_type == "都度購入型":
-    # 都度購入型：
-    # KM曲線はオフセット後（df_fit）のkm_dfを元の時間軸に戻して描画
-    # t_plot = df_fitのt + ltv_offset_days（元の時間軸に戻す）
-    km_t_plot = np.concatenate([[0], km_df['t'].values + ltv_offset_days])
-    km_s_plot = np.concatenate([[1.0], km_df['S'].values])
-    # t=0〜ltv_offset_daysはS=1.0のフラット部分を追加
-    _t_flat = np.array([0, ltv_offset_days])
-    _s_flat = np.array([1.0, 1.0])
-    km_t_plot = np.concatenate([_t_flat, km_df['t'].values + ltv_offset_days])
-    km_s_plot = np.concatenate([_s_flat, km_df['S'].values])
-    # Weibullはオフセット後のlam/kで計算し、t軸を元に戻す
-    # t_smoothはWeibullのλを基準に十分長い範囲を確保
-    _t_max   = max(km_df['t'].max() * 1.5, lam * 5, 1825)  # 最低5年分確保
-    t_smooth = np.linspace(1, _t_max, 600)
+    # 都度購入型：km_df_rawをそのままグラフ表示（全顧客ベース）
+    # KM曲線は打ち切り顧客の最大durationまで水平延長
+    km_t_plot = np.concatenate([[0], km_df_raw['t'].values])
+    km_s_plot = np.concatenate([[1.0], km_df_raw['S'].values])
+
+    # 打ち切り顧客の最大durationまで水平延長
+    _km_t_end = df['duration'].max()
+    if _km_t_end > km_t_plot[-1]:
+        km_t_plot = np.append(km_t_plot, _km_t_end)
+        km_s_plot = np.append(km_s_plot, km_s_plot[-1])
+
+    # Weibullはオフセット後のlam/kで計算し、t軸をオフセット分戻す
+    _t_max   = max(km_df_raw['t'].max() * 1.5, (lam + ltv_offset_days) * 3, 1825)
+    t_smooth = np.linspace(1, _t_max - ltv_offset_days, 600)
     S_wei    = weibull_s(t_smooth, k, lam)
     t_smooth_plot = t_smooth + ltv_offset_days
     S_wei_plot    = S_wei
