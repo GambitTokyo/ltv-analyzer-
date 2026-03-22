@@ -796,7 +796,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v77</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v78</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -994,6 +994,10 @@ try:
             # 都度購入：累計売上 ÷ 継続日数
             return rev / dur
 
+        # 日割りONの場合：実際の日数で割る
+        if prorate_cancel:
+            return rev / max(dur, 1)
+
         elif billing_cycle == "カレンダーベース（月またぎ）← 月額サブスク推奨":
             # 契約開始日の「日」を基準に何ヶ月分更新されたかを数える
             s, e = start, end_r
@@ -1089,10 +1093,8 @@ except Exception as e:
 # ══════════════════════════════════════════════════════════════
 
 # ── サブスクの最低継続期間オフセット ──
-# 月額サブスクは最低1契約期間分は継続するため、
-# durationからオフセットを引いてWeibullフィッティングし、
-# LTV計算時にオフセット分のARPUを加算する
-if business_type == "都度購入型":
+# 日割りONの場合はオフセットなし（実際の解約日をそのまま使用）
+if business_type == "都度購入型" or prorate_cancel:
     ltv_offset_days = 0
 elif billing_cycle_display == "カレンダーベース":
     ltv_offset_days = 30.44
