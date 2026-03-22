@@ -789,7 +789,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v75</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v77</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1249,11 +1249,17 @@ c1, c2 = st.columns(2)
 t_smooth = np.linspace(1, km_df_raw['t'].max() * 1.3, 600)
 S_wei    = weibull_s(t_smooth, k, lam)
 
+# オフセット込みのKM描画用データ（t=0から始める）
+km_t_plot = np.concatenate([[0], km_df_raw['t'].values + ltv_offset_days])
+km_s_plot = np.concatenate([[1.0], km_df_raw['S'].values])
+t_smooth_plot = t_smooth + ltv_offset_days
+S_wei_plot    = S_wei
+
 with c1:
     fig, ax = plt.subplots(figsize=(6, 3.8))
-    ax.step(km_df_raw['t'], km_df_raw['S'], where='post', color=ACCENT, lw=1.8, label='KM Curve (Observed)')
-    ax.plot(t_smooth, S_wei, color=ACCENT2, lw=1.5, ls='--', label='Weibull Fit')
-    ax.fill_between(t_smooth, S_wei, alpha=0.06, color=ACCENT2)
+    ax.step(km_t_plot, km_s_plot, where='post', color=ACCENT, lw=1.8, label='KM Curve (Observed)')
+    ax.plot(t_smooth_plot, S_wei_plot, color=ACCENT2, lw=1.5, ls='--', label='Weibull Fit')
+    ax.fill_between(t_smooth_plot, S_wei_plot, alpha=0.06, color=ACCENT2)
     ax.set(xlabel='Days', ylabel='Survival Rate S(t)', ylim=(0,1.05))
     ax.legend(fontsize=8, framealpha=0.15)
     ax.grid(True, alpha=0.25)
@@ -1287,9 +1293,9 @@ with c2:
 
 # Save chart images for export
 fig1, ax1 = plt.subplots(figsize=(7, 4))
-ax1.step(km_df_raw['t'], km_df_raw['S'], where='post', color=ACCENT, lw=2, label='KM Curve')
-ax1.plot(t_smooth, S_wei, color=ACCENT2, lw=1.8, ls='--', label='Weibull Fit')
-ax1.fill_between(t_smooth, S_wei, alpha=0.07, color=ACCENT2)
+ax1.step(km_t_plot, km_s_plot, where='post', color=ACCENT, lw=2, label='KM Curve')
+ax1.plot(t_smooth_plot, S_wei_plot, color=ACCENT2, lw=1.8, ls='--', label='Weibull Fit')
+ax1.fill_between(t_smooth_plot, S_wei_plot, alpha=0.07, color=ACCENT2)
 ax1.set(xlabel='Days', ylabel='Survival Rate S(t)', ylim=(0,1.05))
 ax1.legend(fontsize=9, framealpha=0.15)
 ax1.grid(True, alpha=0.25)
@@ -1756,6 +1762,11 @@ with exp1:
         # KM sheet
         ws2 = wb.create_sheet('KM_生存曲線')
         ws2.append(['t (days)', 'S(t) KM Observed', 'S(t) Weibull Fit'])
+        # t=0：生存率100%
+        ws2.append([0, 1.0, 1.0])
+        # オフセットがある場合はt=offset_daysも追加（最初の更新日）
+        if ltv_offset_days > 0:
+            ws2.append([int(ltv_offset_days), 1.0, round(float(weibull_s(0, k, lam)), 6)])
         for _, row in km_df_raw.iterrows():
             t = row['t']
             ws2.append([int(t + ltv_offset_days), round(row['S'], 6), round(float(weibull_s(t, k, lam)), 6)])
