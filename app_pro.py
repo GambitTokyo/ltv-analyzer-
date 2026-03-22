@@ -694,7 +694,7 @@ with st.sidebar:
     spot_b64    = base64.b64encode(spot_csv).decode()
     supp_b64    = base64.b64encode(supp_csv).decode()
 
-    st.caption("サンプルCSVをダウンロードしてフォーマットを確認できます。")
+    st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>サンプルCSVをダウンロードしてフォーマットを確認できます。</span>", unsafe_allow_html=True)
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.markdown(f"""
@@ -761,7 +761,7 @@ with st.sidebar:
 
     st.markdown("### ビジネスタイプ")
     business_type = st.radio(
-        "ビジネスタイプを選択してください",
+        "ビジネスタイプ",
         [
             "サブスク・継続課金型",
             "都度購入型",
@@ -843,24 +843,14 @@ with st.sidebar:
     st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV（粗利）÷ 3")
 
     st.markdown("### セグメント分析")
-    st.caption(
-        "**セグメント列とは？**\n\n"
-        "顧客を分類するための列です。CSVに追加しておくことで、"
-        "セグメント別のLTV∞を自動比較し、最も収益性の高い"
-        "優先獲得セグメントを特定します。\n\n"
-        "**指定方法：** CSVの列名をカンマ区切りで入力\n"
-        "例：`plan, channel, age_group`\n\n"
-        "**1セグメント列当たりの項目数：** 最大50種類（都道府県47個も対応）\n"
-        "**指定できる列数：** 最大5列（5列超は分割して入力）\n\n"
-        "**代表的なセグメント軸：**\n"
-        "・プラン別（月額・年額・プランA/B）\n"
-        "・獲得チャネル別（SNS・検索・紹介・自然流入）\n"
-        "・デモグラフィック（年齢層・性別・地域）\n"
-        "・行動（初回購買金額・利用頻度・登録経路）"
-    )
     segment_cols_input = st.text_input(
         "セグメント列名（カンマ区切りで複数指定可）",
         placeholder="例：plan, channel, age_group（最大5列）",
+    )
+    st.caption(
+        "CSVの列名をカンマ区切りで入力してください。"
+        "セグメント別のLTV∞を自動比較し、優先獲得セグメントを特定します。\n"
+        "1列あたり最大50種類・最大5列。代表的な軸：プラン・チャネル・年齢層・性別・地域。"
     )
     st.markdown("### 表示件数")
     seg_display_limit = st.slider(
@@ -875,13 +865,13 @@ with st.sidebar:
     )
 
     st.markdown("### CAC — 顧客獲得コスト")
-    st.caption(
-        "平均CACを入力すると、セグメント別の獲得効率スコア（LTV:CAC比率）も算出されます。"
-        "不明な場合は空欄のままでOKです。LTV∞ベースの優先スコアのみ表示されます。"
-    )
     cac_input = st.number_input(
         "平均CAC/1人当たり（任意・円）",
         min_value=0, value=0, step=1000,
+    )
+    st.caption(
+        "入力するとセグメント別の獲得効率スコア（LTV:CAC比率）も算出されます。"
+        "不明な場合は空欄のままでOKです。"
     )
     cac_known = cac_input > 0
 
