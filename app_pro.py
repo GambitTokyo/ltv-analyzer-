@@ -919,7 +919,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v105</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v106</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1506,7 +1506,9 @@ if business_type == "都度購入型":
     km_t_plot = np.concatenate([_t_flat, km_df['t'].values + ltv_offset_days])
     km_s_plot = np.concatenate([_s_flat, km_df['S'].values])
     # Weibullはオフセット後のlam/kで計算し、t軸を元に戻す
-    t_smooth = np.linspace(1, km_df['t'].max() * 1.3, 600)
+    # t_smoothはWeibullのλを基準に十分長い範囲を確保
+    _t_max   = max(km_df['t'].max() * 1.3, lam * 3)
+    t_smooth = np.linspace(1, _t_max, 600)
     S_wei    = weibull_s(t_smooth, k, lam)
     t_smooth_plot = t_smooth + ltv_offset_days
     S_wei_plot    = S_wei
@@ -1775,7 +1777,7 @@ else:
     lam_gp   = ltv_horizon_offset(k, lam, gp_daily,   lam + ltv_offset_days, ltv_offset_days)
 lam_pct  = lam_rev / ltv_rev * 100
 tbl_rows.append({
-    'ホライズン':    f'λ  {int(lam_display):,}日',
+    'ホライズン':    f'λ  {int(lam + ltv_offset_days):,}日',
     'LTV（売上）':   f'¥{lam_rev:,.0f}',
     'LTV（粗利）':   f'¥{lam_gp:,.0f}',
     'CAC上限':       f'¥{lam_gp/cac_n:,.0f}',
