@@ -689,6 +689,9 @@ with st.sidebar:
             custom_cycle_days = None
         st.caption("カレンダーベース：実際の月の日数（28〜31日）で計算。30日固定：1ヶ月を常に30日として計算。365日固定：1年を365日として計算。")
 
+        prorate_cancel = st.toggle("解約時の日割り計算あり", value=False)
+        st.caption("OFFの場合、解約日を契約更新日に丸めます（一般的なサブスク）。ONの場合、実際の解約日をそのまま使用します。")
+
     else:  # 都度購入型
         st.caption(
             "最終購買日（last_purchase_date）をベースに休眠判定します。"
@@ -697,6 +700,7 @@ with st.sidebar:
         )
         billing_cycle = "日次（都度購入）"
         custom_cycle_days = None
+        prorate_cancel = False
         dormancy_option = st.radio(
             "休眠判定期間",
             [
@@ -785,7 +789,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v74</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v75</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -921,6 +925,40 @@ try:
             min_contract = custom_cycle_days
         else:
             min_contract = 30
+
+        if not prorate_cancel:
+            # 日割りなし：durationを契約更新日に丸める
+            if billing_cycle_display == 'カレンダーベース':
+                # start_dateから月単位で次の更新日を計算
+                import calendar as _cal
+                def round_to_renewal(row):
+                    sd = row['start_date']
+                    dur = row['duration']
+                    ed = sd + pd.Timedelta(days=dur)
+                    # start_dateから何ヶ月後かを計算
+                    months = 0
+                    cur = sd
+                    while True:
+                        m = cur.month + 1 if cur.month < 12 else 1
+                        y = cur.year if cur.month < 12 else cur.year + 1
+                        max_d = _cal.monthrange(y, m)[1]
+                        nxt = pd.Timestamp(y, m, min(sd.day, max_d))
+                        if nxt > ed:
+                            break
+                        months += 1
+                        cur = nxt
+                    # 次の更新日までのduration
+                    m2 = cur.month + 1 if cur.month < 12 else 1
+                    y2 = cur.year if cur.month < 12 else cur.year + 1
+                    max_d2 = _cal.monthrange(y2, m2)[1]
+                    renewal = pd.Timestamp(y2, m2, min(sd.day, max_d2))
+                    return max((renewal - sd).days, min_contract)
+                df['duration'] = df.apply(round_to_renewal, axis=1)
+            else:
+                # 固定日数：contractの倍数に切り上げ
+                import numpy as _np
+                df['duration'] = (_np.ceil(df['duration'] / min_contract) * min_contract).astype(int)
+
         # 最低契約期間未満で解約した顧客 → 打ち切り扱い（event=0）にしてdurationを引き上げ
         short_mask = df['duration'] < min_contract
         df.loc[short_mask, 'event'] = 0
@@ -1061,6 +1099,7 @@ else:
     ltv_offset_days = 30.44
 
 # オフセット適用：durationからオフセットを引いてフィッティング
+km_df_raw = _compute_km_df(df)  # オフセット前のKM（グラフ・Excel表示用）
 if ltv_offset_days > 0:
     df_fit = df.copy()
     df_fit['duration'] = df_fit['duration'] - ltv_offset_days
@@ -1070,7 +1109,7 @@ if ltv_offset_days > 0:
     df_fit['duration'] = df_fit['duration'].clip(lower=1)
     km_df = _compute_km_df(df_fit)
 else:
-    km_df = _compute_km_df(df)
+    km_df = km_df_raw
 
 k, lam, r2, fit_df = _fit_weibull_df(km_df)
 
@@ -1207,12 +1246,12 @@ st.markdown(f"""
 st.markdown("<div class='section-title'>分析グラフ</div>", unsafe_allow_html=True)
 c1, c2 = st.columns(2)
 
-t_smooth = np.linspace(1, km_df['t'].max() * 1.3, 600)
+t_smooth = np.linspace(1, km_df_raw['t'].max() * 1.3, 600)
 S_wei    = weibull_s(t_smooth, k, lam)
 
 with c1:
     fig, ax = plt.subplots(figsize=(6, 3.8))
-    ax.step(km_df['t'], km_df['S'], where='post', color=ACCENT, lw=1.8, label='KM Curve (Observed)')
+    ax.step(km_df_raw['t'], km_df_raw['S'], where='post', color=ACCENT, lw=1.8, label='KM Curve (Observed)')
     ax.plot(t_smooth, S_wei, color=ACCENT2, lw=1.5, ls='--', label='Weibull Fit')
     ax.fill_between(t_smooth, S_wei, alpha=0.06, color=ACCENT2)
     ax.set(xlabel='Days', ylabel='Survival Rate S(t)', ylim=(0,1.05))
@@ -1248,7 +1287,7 @@ with c2:
 
 # Save chart images for export
 fig1, ax1 = plt.subplots(figsize=(7, 4))
-ax1.step(km_df['t'], km_df['S'], where='post', color=ACCENT, lw=2, label='KM Curve')
+ax1.step(km_df_raw['t'], km_df_raw['S'], where='post', color=ACCENT, lw=2, label='KM Curve')
 ax1.plot(t_smooth, S_wei, color=ACCENT2, lw=1.8, ls='--', label='Weibull Fit')
 ax1.fill_between(t_smooth, S_wei, alpha=0.07, color=ACCENT2)
 ax1.set(xlabel='Days', ylabel='Survival Rate S(t)', ylim=(0,1.05))
@@ -1717,9 +1756,9 @@ with exp1:
         # KM sheet
         ws2 = wb.create_sheet('KM_生存曲線')
         ws2.append(['t (days)', 'S(t) KM Observed', 'S(t) Weibull Fit'])
-        for _, row in km_df.iterrows():
+        for _, row in km_df_raw.iterrows():
             t = row['t']
-            ws2.append([int(t), round(row['S'], 6), round(float(weibull_s(t, k, lam)), 6)])
+            ws2.append([int(t + ltv_offset_days), round(row['S'], 6), round(float(weibull_s(t, k, lam)), 6)])
 
         # Horizon sheet
         ws3 = wb.create_sheet('暫定LTV')
