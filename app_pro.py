@@ -600,14 +600,14 @@ with st.sidebar:
             days_since = np.random.randint(1, 180)
             lp         = BASE_DATE - pd.Timedelta(days=int(days_since))
             lp         = max(lp, sd + pd.Timedelta(days=1))
-            purchases  = max(2, round((lp - sd).days / 90))
+            purchases  = min(max(2, round((lp - sd).days / 90)), 15)  # 上限15回
         else:
             # 離脱リピート：Weibull生存期間で自然に離脱
             surv_days = max(1, int(ff_surv[i]))
             lp        = sd + pd.Timedelta(days=surv_days)
             lp        = min(lp, BASE_DATE - pd.Timedelta(days=1))
             lp        = max(lp, sd + pd.Timedelta(days=1))
-            purchases = max(2, round((lp - sd).days / 90))
+            purchases = min(max(2, round((lp - sd).days / 90)), 15)  # 上限15回
         last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
         revenues_spot.append(price * purchases)
 
@@ -683,14 +683,14 @@ with st.sidebar:
             days_since = np.random.randint(1, 180)
             lp         = BASE_DATE - pd.Timedelta(days=int(days_since))
             lp         = max(lp, sd + pd.Timedelta(days=1))
-            purchases  = max(2, round((lp - sd).days / 45))
+            purchases  = min(max(2, round((lp - sd).days / 45)), 20)  # 上限20回
         else:
             # 離脱リピート：生存期間に従い自然に離脱
             surv_days = max(1, int(sp_surv[i]))
             lp        = sd + pd.Timedelta(days=surv_days)
-            lp        = min(lp, BASE_DATE - pd.Timedelta(days=1))  # 基準日を超えない
+            lp        = min(lp, BASE_DATE - pd.Timedelta(days=1))
             lp        = max(lp, sd + pd.Timedelta(days=1))
-            purchases = max(2, round((lp - sd).days / 45))
+            purchases = min(max(2, round((lp - sd).days / 45)), 20)  # 上限20回
         sp_last_purchase.append(lp.strftime('%Y-%m-%d'))
         sp_revenues.append(price * purchases)
 
@@ -916,7 +916,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v118</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v119</div>
 </div>
 """, unsafe_allow_html=True)
 
