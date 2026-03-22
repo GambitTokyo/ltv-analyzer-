@@ -900,7 +900,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v99</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v100</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1388,9 +1388,10 @@ if business_type == "都度購入型":
     # 初回購入後に1度も再購入せず離脱した顧客の割合
     churn_period = dormancy_days if dormancy_days else 365
     if 'last_purchase_date' in df.columns and df['last_purchase_date'].notna().any():
-        # first = last（単発購入）かつ離脱済みのみカウント
+        # first=last かつ 観測完結（基準日-last >= dormancy_days）= 単発購入・離脱確定
         _gap = (df['last_purchase_date'] - df['start_date']).dt.days.fillna(-1)
-        single_churn_rate = ((df['event'] == 1) & (_gap == 0)).sum() / len(df) * 100
+        _days_since = (today - df['last_purchase_date']).dt.days.fillna(0)
+        single_churn_rate = ((_gap == 0) & (_days_since >= churn_period)).sum() / len(df) * 100
     else:
         single_churn_rate = ((df['event'] == 1) & (df['duration'] <= churn_period)).sum() / len(df) * 100
     period_label = f"{churn_period}日"
