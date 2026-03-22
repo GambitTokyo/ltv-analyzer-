@@ -517,9 +517,13 @@ with st.sidebar:
     today_ts  = BASE_DATE
 
     # start_datesを観測期間内（2023-01-01〜2025-12-31）で均等に生成
+    # ※単発顧客の観測完結を保証するため全期間で均等生成
     _all_dates  = pd.date_range(OBS_START, BASE_DATE, periods=n_sample)
-    np.random.shuffle(_all_dates := list(_all_dates))
+    _all_dates  = list(_all_dates)
+    np.random.shuffle(_all_dates)
     start_dates = _all_dates[:n_sample]
+    # 単発顧客生成カットオフ（基準日-180日）：これ以前のstart_dateなら観測完結保証
+    _single_cutoff = BASE_DATE - pd.Timedelta(days=180)
 
     # ── サブスク：フィットネスジム ──────────────────────
     # k=0.921（初期離脱型）、λ=273日
@@ -582,7 +586,7 @@ with st.sidebar:
     np.random.seed(43)
     ff_unit   = np.random.choice([8000, 15000, 25000, 30000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
     ff_surv   = np.random.weibull(0.75, n_sample) * 300   # k<1：初期離脱型
-    ff_single = np.random.random(n_sample) < 0.65          # 単発65%
+    ff_single = np.random.random(n_sample) < 0.778         # 単発65%相当（カットオフ補正済）
     ff_active = np.random.random(n_sample) < 0.20          # リピートのうちアクティブ20%
 
     last_purchase_dates = []
@@ -590,11 +594,11 @@ with st.sidebar:
     for i in range(n_sample):
         sd    = start_dates[i]
         price = ff_unit[i]
-        if ff_single[i]:
-            # 単発：first=last、売上=単価1回
+        if ff_single[i] and sd <= _single_cutoff:
+            # 単発：first=last、売上=単価1回（観測完結保証）
             lp        = sd
             purchases = 1
-        elif ff_active[i]:
+        elif ff_active[i] or (ff_single[i] and sd > _single_cutoff):
             # アクティブリピート：基準日から180日以内に購入あり
             days_since = np.random.randint(1, 180)
             lp         = BASE_DATE - pd.Timedelta(days=int(days_since))
@@ -665,7 +669,7 @@ with st.sidebar:
     np.random.seed(99)
     sp_unit   = np.random.choice([3000, 5000, 8000, 12000], n_sample, p=[0.25, 0.40, 0.25, 0.10])
     sp_surv   = np.random.weibull(1.3, n_sample) * 400   # k>1：逓増離脱型
-    sp_single = np.random.random(n_sample) < 0.45         # 単発45%
+    sp_single = np.random.random(n_sample) < 0.539        # 単発45%相当（カットオフ補正済）
     sp_active = np.random.random(n_sample) < 0.25         # リピートのうちアクティブ25%
 
     sp_last_purchase = []
@@ -673,11 +677,11 @@ with st.sidebar:
     for i in range(n_sample):
         sd    = start_dates[i]
         price = sp_unit[i]
-        if sp_single[i]:
-            # 単発：first=last、売上=単価1回
+        if sp_single[i] and sd <= _single_cutoff:
+            # 単発：first=last、売上=単価1回（観測完結保証）
             lp        = sd
             purchases = 1
-        elif sp_active[i]:
+        elif sp_active[i] or (sp_single[i] and sd > _single_cutoff):
             # アクティブリピート：基準日から180日以内に購入あり
             days_since = np.random.randint(1, 180)
             lp         = BASE_DATE - pd.Timedelta(days=int(days_since))
@@ -915,7 +919,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v102</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v103</div>
 </div>
 """, unsafe_allow_html=True)
 
