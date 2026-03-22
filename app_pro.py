@@ -796,7 +796,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v80</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v81</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1176,25 +1176,21 @@ if r2 < 0.85:
 
 # 単発離脱率の計算
 if business_type == "都度購入型":
-    # 初回購入後、休眠判定期間内に再購入しなかった割合
+    # 初回購入後、休眠判定期間内に再購入しなかった割合（実データから直接計算）
     churn_period = dormancy_days if dormancy_days else 365
-    single_churn_rate = (1 - weibull_s(churn_period, k, lam)) * 100
+    single_churn_rate = ((df['event'] == 1) & (df['duration'] <= churn_period)).sum() / len(df) * 100
     period_label = f"{churn_period}日"
 else:
-    # 最初の契約期間のみで解約した割合
-    # 日割りONの場合はオフセットなしなので、min_contractを使う
-    if prorate_cancel:
-        if '365日固定' in billing_cycle:
-            _min_c = 365
-        elif custom_cycle_days and 'カスタム' in billing_cycle:
-            _min_c = custom_cycle_days
-        else:
-            _min_c = 30
-        churn_period = _min_c * 2
+    # 最初の契約期間のみで解約した割合（実データから直接計算）
+    if '365日固定' in billing_cycle:
+        _min_c = 365
+    elif custom_cycle_days and 'カスタム' in billing_cycle:
+        _min_c = custom_cycle_days
     else:
-        churn_period = ltv_offset_days * 2
-    single_churn_rate = (1 - weibull_s(churn_period, k, lam)) * 100
-    period_label = f"{int(churn_period // 2)}日（1契約期間）"
+        _min_c = 30
+    churn_period = _min_c
+    single_churn_rate = ((df['event'] == 1) & (df['duration'] <= churn_period)).sum() / len(df) * 100
+    period_label = f"{churn_period}日（1契約期間）"
 
 if business_type == "都度購入型":
     if k < 1.0:
