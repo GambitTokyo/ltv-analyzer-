@@ -888,7 +888,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v94</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v96</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1175,7 +1175,7 @@ try:
 
             # 単発顧客マスク（first=last かつ観測完結）
             _single_mask = (_gap_first_last == 0) & (_days_since_last >= _dorm)
-            # 長期顧客マスク（first≠last、基準日-last問わず）
+            # リピート顧客マスク（first≠last、基準日-last問わず）
             _long_mask   = _gap_first_last > 0
 
             # ARPU_short：単発顧客の総売上 ÷ 総顧客数 ÷ dormancy_days
@@ -1185,7 +1185,7 @@ try:
             else:
                 arpu_short = 0.0
 
-            # ARPU_long：長期顧客の総売上 ÷ 総duration（加重平均）
+            # ARPU_long：リピート顧客の総売上 ÷ 総duration（加重平均）
             _long_df = df[_long_mask]
             if len(_long_df) > 0:
                 arpu_long = _long_df['revenue_total'].sum() / _long_df['duration'].sum()
@@ -1863,15 +1863,16 @@ except Exception:
 cac_recover_days = cac_recover_rev if cac_recover_rev_str != "算出不可" else None
 cac_recover_str  = cac_recover_rev_str
 
-# λの解釈
-if lam < 180:
-    lam_desc = f"λ={lam:.0f}日は非常に短く、顧客の大半が半年以内に離脱するビジネスです。"
-elif lam < 365:
-    lam_desc = f"λ={lam:.0f}日は比較的短く、多くの顧客が1年以内に離脱するビジネスです。"
-elif lam < 730:
-    lam_desc = f"λ={lam:.0f}日（約{lam/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。"
+# λの解釈（都度購入型はlam+dormancy_daysで表示）
+lam_display = lam + ltv_offset_days if business_type == "都度購入型" else lam
+if lam_display < 180:
+    lam_desc = f"λ={lam_display:.0f}日は非常に短く、顧客の大半が半年以内に離脱するビジネスです。"
+elif lam_display < 365:
+    lam_desc = f"λ={lam_display:.0f}日は比較的短く、多くの顧客が1年以内に離脱するビジネスです。"
+elif lam_display < 730:
+    lam_desc = f"λ={lam_display:.0f}日（約{lam_display/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。"
 else:
-    lam_desc = f"λ={lam:.0f}日（約{lam/365:.1f}年）は長く、顧客が数年にわたって継続するビジネスです。"
+    lam_desc = f"λ={lam_display:.0f}日（約{lam_display/365:.1f}年）は長く、顧客が数年にわたって継続するビジネスです。"
 
 # k の解釈（投資回収の観点を含む）
 if k < 0.8:
@@ -1909,8 +1910,8 @@ insight_html = f"""
   <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 <b style='color:#a8dadc;'>{cac_recover_rev_str}</b> / 粗利ベース 約 <b style='color:#56b4d3;'>{cac_recover_gp_str}</b>（{acq_label}から）</div>
   <div style='margin-top:12px; padding-top:10px; border-top:1px solid #1a3a4a;'>
     <span style='color:#56b4d3; font-weight:600;'>CAC設計の目安</span>：回収期間に迷ったら、
-    <b style='color:#a8dadc;'>λ={int(lam):,}日（約{lam/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}</b>
-    を用いてCAC上限を算出してください。λは多くの顧客が離脱するまでの期間の目安をデータが示した答えです。
+    <b style='color:#a8dadc;'>λ={int(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}</b>
+    を用いてCAC上限を算出してください。λは{"リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == "都度購入型" else "多くの顧客が離脱するまでの期間の目安"}をデータが示した答えです。
   </div>
 </div>
 """
@@ -1961,8 +1962,8 @@ with tab2:
     p2 = prompt_base + f"""
 
 【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
-1. このビジネスのλ={lam:.0f}日（約{lam/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}をCAC上限の基準とした場合、LTV:CAC={cac_n:.1f}:1の設定でCACの目安はいくらですか？またこの設定は適切ですか？
-2. k={k:.4f}のビジネスにおいて、LTV∞をそのままCAC判断に使うリスクを説明してください。λ日基準・1年基準・2年基準それぞれのCAC上限（1年:¥{ltv_1y*gpm/cac_n:,.0f}、2年:¥{ltv_2y*gpm/cac_n:,.0f}、λ={int(lam)}日:¥{lam_gp/cac_n:,.0f})を比較して、最も実務的な基準はどれですか？
+1. このビジネスのλ={lam_display:.0f}日（約{lam_display/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}をCAC上限の基準とした場合、LTV:CAC={cac_n:.1f}:1の設定でCACの目安はいくらですか？またこの設定は適切ですか？
+2. k={k:.4f}のビジネスにおいて、LTV∞をそのままCAC判断に使うリスクを説明してください。λ日基準・1年基準・2年基準それぞれのCAC上限（1年:¥{ltv_1y*gpm/cac_n:,.0f}、2年:¥{ltv_2y*gpm/cac_n:,.0f}、λ={int(lam_display)}日:¥{lam_gp/cac_n:,.0f})を比較して、最も実務的な基準はどれですか？
 3. λ={lam:.0f}日を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
