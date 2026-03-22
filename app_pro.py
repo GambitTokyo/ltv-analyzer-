@@ -877,8 +877,8 @@ with st.sidebar:
 
     st.markdown("")
     st.markdown("### レポート情報")
-    client_name  = st.text_input("クライアント名", "", placeholder="社名・ブランド名・商品サービス名など")
-    analyst_name = st.text_input("作成者", "", placeholder="氏名・チーム・部署・会社名など")
+    client_name  = st.text_input("クライアント名", "", placeholder="会社・ブランド・商品/サービスなど")
+    analyst_name = st.text_input("作成者", "", placeholder="氏名・チーム・部署・組織など")
 
 # ══════════════════════════════════════════════════════════════
 # Header
