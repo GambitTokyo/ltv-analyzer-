@@ -833,7 +833,7 @@ with st.sidebar:
 
     st.markdown("### 粗利率 GPM")
     gpm = st.slider("Gross Profit Margin (%)", 0, 100, 54, 1) / 100
-    st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します")
+    st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します。")
 
     st.markdown("### CAC 上限")
     cac_n = st.slider("N（LTV:CAC = N:1）", 1.0, 10.0, 3.0, 0.5)
@@ -850,7 +850,7 @@ with st.sidebar:
     st.caption(
         "CSVの列名をカンマ区切りで入力してください。"
         "セグメント別のLTV∞を自動比較し、優先獲得セグメントを特定します。\n"
-        "1列あたり最大50種類・最大5列。代表的な軸：プラン・チャネル・年齢層・性別・地域。"
+        "1列あたり最大50種類・最大5列。代表的な軸：プラン・チャネル・年齢層・性別・地域など。"
     )
     st.markdown("### 表示件数")
     seg_display_limit = st.slider(
@@ -877,7 +877,7 @@ with st.sidebar:
 
     st.markdown("")
     st.markdown("### レポート情報")
-    client_name  = st.text_input("クライアント名", "")
+    client_name  = st.text_input("クライアント名", "", placeholder="社名・ブランド名・商品サービス名など")
     analyst_name = st.text_input("分析者名", "")
 
 # ══════════════════════════════════════════════════════════════
@@ -888,7 +888,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v88</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v89</div>
 </div>
 """, unsafe_allow_html=True)
 
