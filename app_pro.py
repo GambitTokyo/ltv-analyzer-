@@ -675,17 +675,15 @@ with st.sidebar:
         billing_cycle_display = st.radio(
             "契約期間",
             [
-                "カレンダーベース",
-                "30日固定",
-                "365日固定",
+                "月額（カレンダーベース）",
+                "年額（365日固定）",
                 "カスタム入力（日数固定）",
             ],
             index=0,
         )
         _billing_map = {
-            "カレンダーベース": "カレンダーベース（月またぎ）← 月額サブスク推奨",
-            "30日固定": "30日固定 ← 30日プラン",
-            "365日固定": "365日固定 ← 年額サブスク",
+            "月額（カレンダーベース）": "カレンダーベース（月またぎ）← 月額サブスク推奨",
+            "年額（365日固定）": "365日固定 ← 年額サブスク",
             "カスタム入力（日数固定）": "カスタム入力（日数固定）",
         }
         billing_cycle = _billing_map[billing_cycle_display]
@@ -694,7 +692,7 @@ with st.sidebar:
             custom_cycle_days = st.number_input("契約日数", min_value=1, max_value=365, value=30)
         else:
             custom_cycle_days = None
-        st.caption("カレンダーベース：実際の月の日数（28〜31日）で計算。30日固定：1ヶ月を常に30日として計算。365日固定：1年を365日として計算。")
+        st.caption("月額：毎月同じ日に更新（例：5/15契約 → 6/15・7/15…）。年額：365日固定。カスタム：隔月・四半期など任意の日数。")
 
         prorate_cancel = st.toggle("解約時の日割り計算あり", value=False)
         st.caption("OFFの場合、解約日を契約更新日に丸めます（一般的なサブスク）。ONの場合、実際の解約日をそのまま使用します。")
@@ -796,7 +794,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v81</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v83</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -935,7 +933,7 @@ try:
 
         if not prorate_cancel:
             # 日割りなし：durationを契約更新日に丸める
-            if billing_cycle_display == 'カレンダーベース':
+            if billing_cycle_display == '月額（カレンダーベース）':
                 # start_dateから月単位で次の更新日を計算
                 import calendar as _cal
                 def round_to_renewal(row):
@@ -1052,12 +1050,12 @@ try:
         df = df[(df['revenue_total'] >= lower_r) & (df['revenue_total'] <= upper_r)]
         n_outlier = before - len(df)
 
-    # ARPU計算：サブスクは算術平均（月額÷月日数で正規化済み）、都度購入は加重平均
-    if billing_cycle == "日次（都度購入）":
-        # 都度購入：継続日数で重み付け（短期高額顧客の影響を抑制）
+    # ARPU計算：サブスクは算術平均（月額÷月日数で正規化済み）、都度購入・日割りONは加重平均
+    if billing_cycle == "日次（都度購入）" or prorate_cancel:
+        # 都度購入・日割りON：継続日数で重み付け（短期高額顧客の影響を抑制）
         arpu_daily = df['revenue_total'].sum() / df['duration'].sum()
     else:
-        # サブスク：billing_cycleで月額÷月日数に正規化済みなので算術平均が正確
+        # サブスク日割りOFF：billing_cycleで月額÷月日数に正規化済みなので算術平均が正確
         arpu_daily = df['arpu_daily'].mean()
     gp_daily = arpu_daily * gpm
 
@@ -1093,11 +1091,9 @@ except Exception as e:
 # 日割りONの場合はオフセットなし（実際の解約日をそのまま使用）
 if business_type == "都度購入型" or prorate_cancel:
     ltv_offset_days = 0
-elif billing_cycle_display == "カレンダーベース":
+elif billing_cycle_display == "月額（カレンダーベース）":
     ltv_offset_days = 30.44
-elif billing_cycle_display == "30日固定":
-    ltv_offset_days = 30
-elif billing_cycle_display == "365日固定":
+elif billing_cycle_display == "年額（365日固定）":
     ltv_offset_days = 365
 elif billing_cycle_display == "カスタム入力（日数固定）":
     ltv_offset_days = custom_cycle_days or 30
