@@ -511,9 +511,15 @@ with st.sidebar:
     # 都度購入：ファストファッションEC（1回4,000〜15,000円、購入間隔90日）
     # ══════════════════════════════════════════════════════
     np.random.seed(42)
-    n_sample = 10000
-    today_ts = pd.Timestamp.today()
-    start_dates = pd.date_range('2022-01-01', '2024-06-30', periods=n_sample)
+    n_sample  = 10000
+    BASE_DATE = pd.Timestamp('2025-12-31')  # 基準日固定
+    OBS_START = pd.Timestamp('2023-01-01')  # 観測期間開始
+    today_ts  = BASE_DATE
+
+    # start_datesを観測期間内（2023-01-01〜2025-12-31）で均等に生成
+    _all_dates  = pd.date_range(OBS_START, BASE_DATE, periods=n_sample)
+    np.random.shuffle(_all_dates := list(_all_dates))
+    start_dates = _all_dates[:n_sample]
 
     # ── サブスク：フィットネスジム ──────────────────────
     # k=0.921（初期離脱型）、λ=273日
@@ -531,15 +537,15 @@ with st.sidebar:
         fee = ec_plans[i]
         if ec_churned[i]:
             ed = sd + pd.Timedelta(days=max(1, int(ec_survival[i])))
-            if ed < today_ts:
+            if ed <= BASE_DATE:
                 end_dates_sub.append(ed.strftime('%Y-%m-%d'))
                 months = max(1, int((ed - sd).days // 30) + 1)
             else:
                 end_dates_sub.append('')
-                months = max(1, int((today_ts - sd).days // 30) + 1)
+                months = max(1, int((BASE_DATE - sd).days // 30) + 1)
         else:
             end_dates_sub.append('')
-            months = max(1, int((today_ts - sd).days // 30) + 1)
+            months = max(1, int((BASE_DATE - sd).days // 30) + 1)
         revenues_sub.append(fee * months)
 
     ec_plan_label = np.where(ec_plans == 7000,  'レギュラー（¥7,000）',
@@ -570,10 +576,14 @@ with st.sidebar:
     # ── 都度購入：ファストファッションEC ────────────────
     # 推定後：k≈0.71、λ≈212日、99%到達約10年
     # LTV∞イメージ：約5万円、購入間隔90日、休眠判定：365日推奨
+    # ── 都度購入：ファストファッションEC ────────────────
+    # k≈0.7（初期離脱型）、購入間隔90日、休眠判定180日推奨
+    # 単発65%：1回買って離脱、リピート35%：継続購入
+    np.random.seed(43)
     ff_unit   = np.random.choice([8000, 15000, 25000, 30000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
-    ff_surv   = np.random.weibull(1.2, n_sample) * 120
-    ff_active = np.random.random(n_sample) < 0.15
-    ff_single = np.random.random(n_sample) < 0.60  # 単発購入者60%
+    ff_surv   = np.random.weibull(0.75, n_sample) * 300   # k<1：初期離脱型
+    ff_single = np.random.random(n_sample) < 0.65          # 単発65%
+    ff_active = np.random.random(n_sample) < 0.20          # リピートのうちアクティブ20%
 
     last_purchase_dates = []
     revenues_spot       = []
@@ -581,17 +591,22 @@ with st.sidebar:
         sd    = start_dates[i]
         price = ff_unit[i]
         if ff_single[i]:
-            # 単発購入：first=last、売上=単価1回分
-            lp = sd
+            # 単発：first=last、売上=単価1回
+            lp        = sd
             purchases = 1
         elif ff_active[i]:
-            days_since = np.random.randint(1, 365)
-            lp = today_ts - pd.Timedelta(days=int(days_since))
-            purchases = max(1, round((lp - sd).days / 90))
+            # アクティブリピート：基準日から180日以内に購入あり
+            days_since = np.random.randint(1, 180)
+            lp         = BASE_DATE - pd.Timedelta(days=int(days_since))
+            lp         = max(lp, sd + pd.Timedelta(days=1))
+            purchases  = max(2, round((lp - sd).days / 90))
         else:
-            lp = sd + pd.Timedelta(days=max(1, int(ff_surv[i])))
-            lp = min(lp, today_ts - pd.Timedelta(days=1))
-            purchases = max(1, round((lp - sd).days / 90))
+            # 離脱リピート：観測期間内に購入後180日超で休眠
+            surv_days = max(1, int(ff_surv[i]))
+            lp        = sd + pd.Timedelta(days=surv_days)
+            lp        = min(lp, BASE_DATE - pd.Timedelta(days=181))  # 必ず休眠判定される
+            lp        = max(lp, sd + pd.Timedelta(days=1))
+            purchases = max(2, round((lp - sd).days / 90))
         last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
         revenues_spot.append(price * purchases)
 
@@ -620,7 +635,6 @@ with st.sidebar:
 
     # ── サブスク：ジム（日割りON版）────────────────────
     # 既存データの累計売上を日割り計算に変換
-    ref_date_ts = today_ts  # 基準日
     revenues_sub_on = []
     for i in range(n_sample):
         sd  = start_dates[i]
@@ -630,7 +644,7 @@ with st.sidebar:
             ed = pd.Timestamp(ed_str)
             days = max(1, (ed - sd).days)
         else:
-            days = max(1, (ref_date_ts - sd).days)
+            days = max(1, (BASE_DATE - sd).days)
         revenues_sub_on.append(round(fee * days / 30, 0))  # 日割り：月額×日数/30
 
     sample_sub_on = pd.DataFrame({
@@ -646,13 +660,13 @@ with st.sidebar:
     })
 
     # ── 都度購入：サプリ・健康食品EC ──────────────────
-    # k>1（使い切りリピート型）、購入間隔45日、休眠判定90日推奨
-    # LTV∞イメージ：約6万円、99%到達5年
+    # k>1（逓増離脱型）、購入間隔45日、休眠判定180日推奨
+    # 単発45%：初回購入後リピートなし、リピート55%：定期的に購入
     np.random.seed(99)
     sp_unit   = np.random.choice([3000, 5000, 8000, 12000], n_sample, p=[0.25, 0.40, 0.25, 0.10])
-    sp_surv   = np.random.weibull(1.3, n_sample) * 180
-    sp_active = np.random.random(n_sample) < 0.25
-    sp_single = np.random.random(n_sample) < 0.45  # 単発購入者45%
+    sp_surv   = np.random.weibull(1.3, n_sample) * 400   # k>1：逓増離脱型
+    sp_single = np.random.random(n_sample) < 0.45         # 単発45%
+    sp_active = np.random.random(n_sample) < 0.25         # リピートのうちアクティブ25%
 
     sp_last_purchase = []
     sp_revenues      = []
@@ -660,17 +674,22 @@ with st.sidebar:
         sd    = start_dates[i]
         price = sp_unit[i]
         if sp_single[i]:
-            # 単発購入：first=last、売上=単価1回分
-            lp = sd
+            # 単発：first=last、売上=単価1回
+            lp        = sd
             purchases = 1
         elif sp_active[i]:
-            days_since = np.random.randint(1, 90)
-            lp = today_ts - pd.Timedelta(days=int(days_since))
-            purchases = max(1, round((lp - sd).days / 45))
+            # アクティブリピート：基準日から180日以内に購入あり
+            days_since = np.random.randint(1, 180)
+            lp         = BASE_DATE - pd.Timedelta(days=int(days_since))
+            lp         = max(lp, sd + pd.Timedelta(days=1))
+            purchases  = max(2, round((lp - sd).days / 45))
         else:
-            lp = sd + pd.Timedelta(days=max(1, int(sp_surv[i])))
-            lp = min(lp, today_ts - pd.Timedelta(days=1))
-            purchases = max(1, round((lp - sd).days / 45))
+            # 離脱リピート：観測期間内に購入後180日超で休眠
+            surv_days = max(1, int(sp_surv[i]))
+            lp        = sd + pd.Timedelta(days=surv_days)
+            lp        = min(lp, BASE_DATE - pd.Timedelta(days=181))
+            lp        = max(lp, sd + pd.Timedelta(days=1))
+            purchases = max(2, round((lp - sd).days / 45))
         sp_last_purchase.append(lp.strftime('%Y-%m-%d'))
         sp_revenues.append(price * purchases)
 
@@ -900,7 +919,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v100</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v101</div>
 </div>
 """, unsafe_allow_html=True)
 
