@@ -194,11 +194,11 @@ div[data-baseweb="radio"] [data-focused="true"] { box-shadow: 0 0 0 3px rgba(86,
 /* ── Radio & Slider accent color (override Streamlit red) ── */
 /* ── Radio label ── */
 [data-testid="stRadio"] > label {
-    color: #4a6a7a !important;
+    color: #56b4d3 !important;
     font-size: 0.78rem !important;
 }
 [data-testid="stRadio"] label div p {
-    color: #8aaabb !important;
+    color: #c8d0d8 !important;
     font-size: 0.82rem !important;
 }
 
@@ -220,17 +220,19 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
 /* ── Sidebar text colors ── */
 [data-testid="stSidebar"] label { color: #c8d0d8 !important; }
 [data-testid="stSidebar"] p { color: #c8d0d8 !important; }
-[data-testid="stSidebar"] .stCaption p { color: #8aaabb !important; }
+[data-testid="stSidebar"] .stCaption p { color: #3a6a7a !important; font-size: 0.78rem !important; }
 [data-testid="stSidebar"] .stRadio label p { color: #c8d0d8 !important; }
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 { color: #56b4d3 !important; }
 
 /* ── Toggle font size ── */
 [data-testid="stSidebar"] [data-testid="stToggle"] label p,
 [data-testid="stSidebar"] [data-testid="stToggle"] > label,
-[data-testid="stSidebar"] [data-testid="stToggle"] span,
-[data-testid="stSidebar"] .stToggle label,
-[data-testid="stSidebar"] p {
+[data-testid="stSidebar"] [data-testid="stToggle"] span:not([data-testid]),
+[data-testid="stSidebar"] .stToggle label {
     font-size: 0.82rem !important;
-    color: #8aaabb !important;
+    color: #c8d0d8 !important;
 }
 
 /* ── Main area background ── */
@@ -795,7 +797,8 @@ with st.sidebar:
             custom_cycle_days = None
         st.caption("月額：毎月同じ日に更新（例：5/15契約 → 6/15・7/15…）。年額：365日固定。カスタム：隔月・四半期など任意の日数。")
 
-        prorate_cancel = st.toggle("解約時の日割り計算あり", value=False)
+        st.markdown("<div style='font-size:0.82rem; color:#c8d0d8; margin-bottom:4px;'>解約時の日割り計算あり</div>", unsafe_allow_html=True)
+        prorate_cancel = st.toggle("解約時の日割り計算あり", value=False, label_visibility="collapsed")
         st.caption("OFFの場合、解約日を契約更新日に丸めます（一般的なサブスク）。ONの場合、実際の解約日をそのまま使用します。")
 
     else:  # 都度購入型
@@ -895,7 +898,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v87</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v88</div>
 </div>
 """, unsafe_allow_html=True)
 
