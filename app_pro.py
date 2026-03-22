@@ -1016,6 +1016,9 @@ try:
     df['event']        = result[1]
     df['duration']     = (df['end_resolved'] - df['start_date']).dt.days
 
+    # 丸め前のdurationを保存（single_churn_rate計算用）
+    df['duration_raw'] = df['duration']
+
     # サブスクの最低契約期間を保証（契約期間未満のdurationを引き上げる）
     if business_type != '都度購入型':
         if '365日固定' in billing_cycle:
@@ -1279,7 +1282,8 @@ else:
     else:
         _min_c = 30
     churn_period = _min_c
-    single_churn_rate = ((df['event'] == 1) & (df['duration'] <= churn_period)).sum() / len(df) * 100
+    _dur_col = "duration_raw" if "duration_raw" in df.columns else "duration"
+    single_churn_rate = ((df["event"] == 1) & (df[_dur_col] <= churn_period)).sum() / len(df) * 100
     period_label = f"{churn_period}日（1契約期間）"
 
 if business_type == "都度購入型":
