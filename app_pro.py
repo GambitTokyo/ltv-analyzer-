@@ -796,7 +796,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v78</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v79</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -942,7 +942,6 @@ try:
                     sd = row['start_date']
                     dur = row['duration']
                     ed = sd + pd.Timedelta(days=dur)
-                    # start_dateから何ヶ月後かを計算
                     months = 0
                     cur = sd
                     while True:
@@ -954,7 +953,6 @@ try:
                             break
                         months += 1
                         cur = nxt
-                    # 次の更新日までのduration
                     m2 = cur.month + 1 if cur.month < 12 else 1
                     y2 = cur.year if cur.month < 12 else cur.year + 1
                     max_d2 = _cal.monthrange(y2, m2)[1]
@@ -962,14 +960,13 @@ try:
                     return max((renewal - sd).days, min_contract)
                 df['duration'] = df.apply(round_to_renewal, axis=1)
             else:
-                # 固定日数：contractの倍数に切り上げ
                 import numpy as _np
                 df['duration'] = (_np.ceil(df['duration'] / min_contract) * min_contract).astype(int)
 
-        # 最低契約期間未満で解約した顧客 → 打ち切り扱い（event=0）にしてdurationを引き上げ
-        short_mask = df['duration'] < min_contract
-        df.loc[short_mask, 'event'] = 0
-        df.loc[short_mask, 'duration'] = min_contract
+            # 最低契約期間未満で解約した顧客 → 打ち切り扱い（event=0）にしてdurationを引き上げ
+            short_mask = df['duration'] < min_contract
+            df.loc[short_mask, 'event'] = 0
+            df.loc[short_mask, 'duration'] = min_contract
 
     # duration=0 を1日に自動補正
     n_corrected = (df['duration'] == 0).sum()
