@@ -888,7 +888,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v90</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v92</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -982,7 +982,7 @@ try:
         dates_for_today.append(df['last_purchase_date'].max())
     if df['end_date'].notna().any():
         dates_for_today.append(df['end_date'].max())
-    ref_date = max(dates_for_today)
+    ref_date = max(d for d in dates_for_today if pd.notna(d))
     if ref_date <= today:
         today = ref_date
 
@@ -1269,9 +1269,14 @@ if r2 < 0.85:
 
 # 単発離脱率の計算
 if business_type == "都度購入型":
-    # 初回購入後、休眠判定期間内に再購入しなかった割合（実データから直接計算）
+    # 初回購入後に1度も再購入せず離脱した顧客の割合
     churn_period = dormancy_days if dormancy_days else 365
-    single_churn_rate = ((df['event'] == 1) & (df['duration'] <= churn_period)).sum() / len(df) * 100
+    if 'last_purchase_date' in df.columns and df['last_purchase_date'].notna().any():
+        # last_purchase_date - start_date < churn_period かつ離脱済み → 実質的に再購入なし or 1期内のみ購入
+        _gap = (df['last_purchase_date'] - df['start_date']).dt.days.fillna(0)
+        single_churn_rate = ((df['event'] == 1) & (_gap < churn_period)).sum() / len(df) * 100
+    else:
+        single_churn_rate = ((df['event'] == 1) & (df['duration'] <= churn_period)).sum() / len(df) * 100
     period_label = f"{churn_period}日"
 else:
     # 最初の契約期間のみで解約した割合（実データから直接計算）
