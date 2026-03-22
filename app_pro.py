@@ -888,7 +888,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v92</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v93</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1014,7 +1014,22 @@ try:
     result = df.apply(get_end, axis=1, result_type='expand')
     df['end_resolved'] = result[0]
     df['event']        = result[1]
-    df['duration']     = (df['end_resolved'] - df['start_date']).dt.days
+
+    if business_type == '都度購入型' and 'last_purchase_date' in df.columns:
+        # 都度購入型：duration = last_purchase_date - start_date（dormancy_days除外）
+        # アクティブ顧客（event=0）：基準日 - start_date
+        # 休眠離脱顧客（event=1）：last_purchase_date - start_date + dormancy_days
+        def calc_duration_spot(row):
+            if row['event'] == 0:
+                return (today - row['start_date']).days
+            else:
+                if pd.notna(row['last_purchase_date']):
+                    return (row['last_purchase_date'] - row['start_date']).days + (dormancy_days or 0)
+                else:
+                    return (row['end_resolved'] - row['start_date']).days
+        df['duration'] = df.apply(calc_duration_spot, axis=1)
+    else:
+        df['duration'] = (df['end_resolved'] - df['start_date']).dt.days
 
     # 丸め前のdurationを保存（single_churn_rate計算用）
     df['duration_raw'] = df['duration']
@@ -1147,13 +1162,71 @@ try:
         df = df[(df['revenue_total'] >= lower_r) & (df['revenue_total'] <= upper_r)]
         n_outlier = before - len(df)
 
-    # ARPU計算：サブスクは算術平均（月額÷月日数で正規化済み）、都度購入・日割りONは加重平均
-    if billing_cycle == "日次（都度購入）" or prorate_cancel:
-        # 都度購入・日割りON：継続日数で重み付け（短期高額顧客の影響を抑制）
-        arpu_daily = df['revenue_total'].sum() / df['duration'].sum()
+    # ARPU計算
+    if billing_cycle == "日次（都度購入）":
+        # ── 都度購入型：ARPU_short / ARPU_long / ARPU_0-dormancy の3段階計算 ──
+        _dorm = dormancy_days or 180
+
+        # 基準日（today）
+        # 単発顧客：first == last かつ 基準日-last >= dormancy_days（観測完結）
+        if 'last_purchase_date' in df.columns:
+            _gap_first_last = (df['last_purchase_date'] - df['start_date']).dt.days.fillna(-1)
+            _days_since_last = (today - df['last_purchase_date']).dt.days.fillna(0)
+
+            # 単発顧客マスク（first=last かつ観測完結）
+            _single_mask = (_gap_first_last == 0) & (_days_since_last >= _dorm)
+            # 長期顧客マスク（first≠last、基準日-last問わず）
+            _long_mask   = _gap_first_last > 0
+
+            # ARPU_short：単発顧客の総売上 ÷ 総顧客数 ÷ dormancy_days
+            _single_df = df[_single_mask]
+            if len(_single_df) > 0:
+                arpu_short = _single_df['revenue_total'].sum() / len(_single_df) / _dorm
+            else:
+                arpu_short = 0.0
+
+            # ARPU_long：長期顧客の総売上 ÷ 総duration（加重平均）
+            _long_df = df[_long_mask]
+            if len(_long_df) > 0:
+                arpu_long = _long_df['revenue_total'].sum() / _long_df['duration'].sum()
+            else:
+                arpu_long = df['revenue_total'].sum() / df['duration'].sum()
+
+            # 比率計算
+            _n_single = len(_single_df)
+            _n_long   = len(_long_df)
+            _n_total  = _n_single + _n_long
+            if _n_total > 0:
+                _w_short = _n_single / _n_total
+                _w_long  = _n_long  / _n_total
+            else:
+                _w_short, _w_long = 0.5, 0.5
+
+            # ARPU_0-dormancy：単発とロングの加重平均
+            arpu_0_dorm = arpu_short * _w_short + arpu_long * _w_long
+
+            # 全体arpu_dailyはARPU_longを採用（t=180以降の積分用）
+            arpu_daily  = arpu_long
+        else:
+            # last_purchase_dateがない場合はフォールバック
+            arpu_short  = df['revenue_total'].sum() / df['duration'].sum()
+            arpu_long   = arpu_short
+            arpu_0_dorm = arpu_short
+            arpu_daily  = arpu_short
+            _dorm       = dormancy_days or 180
+
+    elif prorate_cancel:
+        # 日割りON：継続日数で重み付け
+        arpu_daily  = df['revenue_total'].sum() / df['duration'].sum()
+        arpu_short  = arpu_daily
+        arpu_long   = arpu_daily
+        arpu_0_dorm = arpu_daily
     else:
         # サブスク日割りOFF：billing_cycleで月額÷月日数に正規化済みなので算術平均が正確
-        arpu_daily = df['arpu_daily'].mean()
+        arpu_daily  = df['arpu_daily'].mean()
+        arpu_short  = arpu_daily
+        arpu_long   = arpu_daily
+        arpu_0_dorm = arpu_daily
     gp_daily = arpu_daily * gpm
 
     # ビジネスタイプ依存ラベル（データ読み込みブロック内で使用）
@@ -1184,9 +1257,12 @@ except Exception as e:
 # Run analysis
 # ══════════════════════════════════════════════════════════════
 
-# ── サブスクの最低継続期間オフセット ──
-# 日割りONの場合はオフセットなし（実際の解約日をそのまま使用）
-if business_type == "都度購入型" or prorate_cancel:
+# ── オフセット設定 ──
+if business_type == "都度購入型":
+    # 都度購入型：dormancy_daysをオフセットとして使用
+    # t=0〜dormancy_daysはS(t)=1.0で確定なのでWeibullフィットから切り離す
+    ltv_offset_days = dormancy_days or 180
+elif prorate_cancel:
     ltv_offset_days = 0
 elif billing_cycle_display == "月額（カレンダーベース）":
     ltv_offset_days = 30.44
@@ -1228,8 +1304,21 @@ def ltv_horizon_offset(k, lam, arpu, h, offset_days):
     x = (h_adj / lam) ** k
     return (lam * gamma(1 + 1/k) * gammainc(1 + 1/k, x) + offset_days) * arpu
 
-ltv_rev, surv_int = ltv_inf_offset(k, lam, arpu_daily, ltv_offset_days)  # 売上ベース
-ltv_val, _        = ltv_inf_offset(k, lam, gp_daily,   ltv_offset_days)  # 粗利ベース
+if business_type == "都度購入型":
+    # LTV = LTV_short（固定部分）+ LTV_long（Weibull積分部分）
+    _dorm_off = dormancy_days or 180
+    _ltv_short_rev = _dorm_off * arpu_0_dorm   # t=0〜dormancy_daysの固定積分
+    _ltv_long_rev, _surv_long = ltv_inf_offset(k, lam, arpu_long, 0)  # t=180以降
+    ltv_rev  = _ltv_short_rev + _ltv_long_rev
+    surv_int = _dorm_off + _surv_long
+else:
+    ltv_rev, surv_int = ltv_inf_offset(k, lam, arpu_daily, ltv_offset_days)  # 売上ベース
+if business_type == "都度購入型":
+    _gp_short  = _dorm_off * (arpu_0_dorm * gpm)
+    _gp_long_v, _ = ltv_inf_offset(k, lam, arpu_long * gpm, 0)
+    ltv_val = _gp_short + _gp_long_v
+else:
+    ltv_val, _ = ltv_inf_offset(k, lam, gp_daily, ltv_offset_days)  # 粗利ベース
 cac_upper = ltv_val / cac_n
 
 # ══════════════════════════════════════════════════════════════
@@ -1247,7 +1336,7 @@ metrics = [
     (f"¥{ltv_rev:,.0f}", "LTV∞",       "売上ベース"),
     (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
     (f"{k:.3f}",           "Weibull k", f"{k_desc}"),
-    (f"{lam:.1f}日",       "Weibull λ", "値が大きいほどLTV∞到達が長期化"),
+    (f"{lam + ltv_offset_days:.1f}日" if business_type == "都度購入型" else f"{lam:.1f}日", "Weibull λ", "値が大きいほどLTV∞到達が長期化"),
     (f"{r2:.3f}",          "R²",        "0.9以上が理想 / 1.0が最高精度"),
 ]
 for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
@@ -1296,7 +1385,7 @@ if business_type == "都度購入型":
         k_summary = (
             f"k={k:.3f}の初期離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
             f"{single_churn_rate:.0f}%です。"
-            f"リピートした顧客の多くはλ={lam:.0f}日（約{lam/365:.1f}年）以上購買を継続する傾向があります。"
+            f"リピートした顧客の多くは初回購入からλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上購買を継続する傾向があります。"
             f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}ですが、"
             f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
         )
@@ -1304,7 +1393,7 @@ if business_type == "都度購入型":
         k_summary = (
             f"k={k:.3f}の逓増離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
             f"{single_churn_rate:.0f}%です。"
-            f"リピートした顧客の多くはλ={lam:.0f}日（約{lam/365:.1f}年）以上購買を継続する傾向があります。"
+            f"リピートした顧客の多くは初回購入からλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上購買を継続する傾向があります。"
             f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}、比較的短期での投資回収が見込めます。"
         )
 else:  # サブスク
