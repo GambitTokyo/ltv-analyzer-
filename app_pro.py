@@ -919,7 +919,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v112</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v114</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1494,25 +1494,25 @@ st.markdown("<div class='section-title'>分析グラフ</div>", unsafe_allow_htm
 c1, c2 = st.columns(2)
 
 # ── グラフ描画用データ準備 ──
+# ── グラフ描画用データ準備 ──────────────────────────────────
 if business_type == "都度購入型":
-    # 都度購入型：km_df_rawをそのままグラフ表示（全顧客ベース）
-    # KM曲線は打ち切り顧客の最大durationまで水平延長
+    # KM曲線：km_df_rawをそのまま（全顧客ベース）、打ち切り最大値まで水平延長
+    _km_t_end = df['duration'].max()
     km_t_plot = np.concatenate([[0], km_df_raw['t'].values])
     km_s_plot = np.concatenate([[1.0], km_df_raw['S'].values])
-
-    # 打ち切り顧客の最大durationまで水平延長
-    _km_t_end = df['duration'].max()
     if _km_t_end > km_t_plot[-1]:
         km_t_plot = np.append(km_t_plot, _km_t_end)
         km_s_plot = np.append(km_s_plot, km_s_plot[-1])
-
-    # Weibullはオフセット後のlam/kで計算し、t軸をオフセット分戻す
-    _t_max   = max(km_df_raw['t'].max() * 1.5, (lam + ltv_offset_days) * 3, 1825)
-    t_smooth = np.linspace(1, _t_max - ltv_offset_days, 600)
-    S_wei    = weibull_s(t_smooth, k, lam)
-    t_smooth_plot = t_smooth + ltv_offset_days
-    S_wei_plot    = S_wei
+    # Weibull破線：S(t) = exp(-((t-offset)/lam)^k)、t≤offsetはS=1.0
+    _t_plot_max = max(_km_t_end * 1.3, (lam + ltv_offset_days) * 2)
+    t_smooth_plot = np.linspace(0, _t_plot_max, 600)
+    S_wei_plot = np.where(
+        t_smooth_plot <= ltv_offset_days,
+        1.0,
+        weibull_s(t_smooth_plot - ltv_offset_days, k, lam)
+    )
 else:
+    # サブスク：既存ロジック（オフセット分シフト）
     t_smooth = np.linspace(1, km_df_raw['t'].max() * 1.3, 600)
     S_wei    = weibull_s(t_smooth, k, lam)
     km_t_plot = np.concatenate([[0], km_df_raw['t'].values + ltv_offset_days])
