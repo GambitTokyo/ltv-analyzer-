@@ -919,7 +919,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v106</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v107</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1507,7 +1507,7 @@ if business_type == "都度購入型":
     km_s_plot = np.concatenate([_s_flat, km_df['S'].values])
     # Weibullはオフセット後のlam/kで計算し、t軸を元に戻す
     # t_smoothはWeibullのλを基準に十分長い範囲を確保
-    _t_max   = max(km_df['t'].max() * 1.3, lam * 3)
+    _t_max   = max(km_df['t'].max() * 1.5, lam * 5, 1825)  # 最低5年分確保
     t_smooth = np.linspace(1, _t_max, 600)
     S_wei    = weibull_s(t_smooth, k, lam)
     t_smooth_plot = t_smooth + ltv_offset_days
@@ -1979,7 +1979,7 @@ prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル
 ・LTV∞（売上ベース）: ¥{ltv_rev:,.0f} / LTV∞（粗利ベース）: ¥{ltv_val:,.0f}
 ・CAC上限（{cac_label}）: ¥{cac_upper:,.0f}
 ・Weibull k（形状）: {k:.4f} → {k_pattern}
-・Weibull λ（尺度）: {lam:.1f}日 / R²（フィット精度）: {r2:.4f}
+・Weibull λ（尺度）: {lam+ltv_offset_days if business_type=="都度購入型" else lam:.1f}日 / R²（フィット精度）: {r2:.4f}
 ・分析手法: Kaplan-Meier法 + Weibullモデルによる生存分析"""
 
 with tab1:
@@ -2058,7 +2058,7 @@ with exp1:
             ('', ''),
             ('【Weibullパラメータ】', ''),
             ('k（形状パラメータ）', round(k, 4)),
-            ('λ（尺度パラメータ・日）', round(lam, 2)),
+            ('λ（尺度パラメータ・日）', round(lam + ltv_offset_days if business_type == '都度購入型' else lam, 2)),
             ('R²', round(r2, 4)),
         ]
         for i, (label, val) in enumerate(summary_data, start=5):
@@ -2349,7 +2349,8 @@ with exp2:
         txbox(s3, k_text, 0.55, 5.4, 6.1, 1.6, size=8, color=WHITE)
 
         # λ と R² の詳細解釈
-        lam_yr = lam / 365
+        lam_disp_pp = lam + ltv_offset_days if business_type == '都度購入型' else lam
+        lam_yr = lam_disp_pp / 365
         if r2 >= 0.95:
             r2_comment = f"R²={r2:.3f}: 非常に高精度。LTV∞推定値の信頼性は高い。"
         elif r2 >= 0.85:
@@ -2358,7 +2359,7 @@ with exp2:
             r2_comment = f"R²={r2:.3f}: やや低め。データ件数不足または複数の離脱パターンが混在している可能性あり。セグメント分割を推奨。"
 
         lam_text = (
-            f"λ（尺度パラメータ） = {lam:.1f}日（約{lam_yr:.1f}年）\n"
+            f"λ（尺度パラメータ） = {lam_disp_pp:.1f}日（約{lam_yr:.1f}年）\n"
             f"→ 大きいほどLTV∞到達が長期化する。λ日時点での暫定LTV到達率はk値により異なる（k=1のとき63.2%）\n"
             f"→ {r2_comment}"
         )
@@ -2726,7 +2727,7 @@ with exp3:
             ['LTV∞（粗利ベース・CAC算出用）', f'¥{ltv_val:,.0f}'],
             [f'CAC上限（粗利ベース・{cac_label}）', f'¥{cac_upper:,.0f}'],
             ['Weibull k（形状パラメータ）', f'{k:.4f}  →  {"k<1: 初期離脱型" if k < 1 else "k>1: 逓増離脱型"}'],
-            ['Weibull λ（尺度パラメータ）', f'{lam:.1f}日（約{lam/365:.1f}年）'],
+            ['Weibull λ（尺度パラメータ）', f'{lam + ltv_offset_days if business_type == "都度購入型" else lam:.1f}日（約{(lam + ltv_offset_days if business_type == "都度購入型" else lam)/365:.1f}年）'],
             ['R²（フィット精度）', f'{r2:.4f}  →  {" 良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
             ['顧客数', f'{len(df):,}件'],
             ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
