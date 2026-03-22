@@ -607,32 +607,130 @@ with st.sidebar:
         'prefecture':         prefs_ff,
     })
 
+    # ── サブスク：ジム（日割りON版）────────────────────
+    # 既存データの累計売上を日割り計算に変換
+    ref_date_ts = today_ts  # 基準日
+    revenues_sub_on = []
+    for i in range(n_sample):
+        sd  = start_dates[i]
+        fee = ec_plans[i]
+        ed_str = end_dates_sub[i]
+        if ed_str:
+            ed = pd.Timestamp(ed_str)
+            days = max(1, (ed - sd).days)
+        else:
+            days = max(1, (ref_date_ts - sd).days)
+        revenues_sub_on.append(round(fee * days / 30, 0))  # 日割り：月額×日数/30
+
+    sample_sub_on = pd.DataFrame({
+        'customer_id':   [f'GY{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates],
+        'end_date':      end_dates_sub,
+        'revenue_total': revenues_sub_on,
+        'plan':          ec_plan_label,
+        'channel':       channels_sub,
+        'age_group':     ages_sub,
+        'region':        regions_sub,
+        'prefecture':    prefs_sub,
+    })
+
+    # ── 都度購入：サプリ・健康食品EC ──────────────────
+    # k>1（使い切りリピート型）、購入間隔45日、休眠判定90日推奨
+    # LTV∞イメージ：約6万円、99%到達5年
+    np.random.seed(99)
+    sp_unit   = np.random.choice([3000, 5000, 8000, 12000], n_sample, p=[0.25, 0.40, 0.25, 0.10])
+    sp_surv   = np.random.weibull(1.3, n_sample) * 180
+    sp_active = np.random.random(n_sample) < 0.25
+
+    sp_last_purchase = []
+    sp_revenues      = []
+    for i in range(n_sample):
+        sd    = start_dates[i]
+        price = sp_unit[i]
+        if sp_active[i]:
+            days_since = np.random.randint(1, 90)
+            lp = today_ts - pd.Timedelta(days=int(days_since))
+        else:
+            lp = sd + pd.Timedelta(days=max(1, int(sp_surv[i])))
+            lp = min(lp, today_ts - pd.Timedelta(days=1))
+        sp_last_purchase.append(lp.strftime('%Y-%m-%d'))
+        purchases = max(1, round((lp - sd).days / 45))
+        sp_revenues.append(price * purchases)
+
+    sp_gender   = np.random.choice(['男性', '女性', '未回答'], n_sample, p=[0.35, 0.58, 0.07])
+    sp_channels = np.random.choice(['SNS広告', '検索広告', 'アプリ通知', 'メルマガ', '口コミ'],
+                      n_sample, p=[0.30, 0.25, 0.15, 0.20, 0.10])
+    sp_ages     = np.random.choice(['20代', '30代', '40代', '50代以上', '60代以上'],
+                      n_sample, p=[0.15, 0.30, 0.30, 0.18, 0.07])
+    sp_regions  = np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
+                      n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09])
+    prefs_sp    = np.random.choice(prefs, n_sample)
+
+    sample_supp = pd.DataFrame({
+        'customer_id':        [f'SP{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':         [d.strftime('%Y-%m-%d') for d in start_dates],
+        'end_date':           '',
+        'last_purchase_date': sp_last_purchase,
+        'revenue_total':      sp_revenues,
+        'gender':             sp_gender,
+        'channel':            sp_channels,
+        'age_group':          sp_ages,
+        'region':             sp_regions,
+        'prefecture':         prefs_sp,
+    })
+
     import base64
-    sub_csv  = sample_sub.to_csv(index=False).encode('utf-8-sig')
-    spot_csv = sample_spot.to_csv(index=False).encode('utf-8-sig')
-    sub_b64  = base64.b64encode(sub_csv).decode()
-    spot_b64 = base64.b64encode(spot_csv).decode()
+    sub_csv     = sample_sub.to_csv(index=False).encode('utf-8-sig')
+    sub_on_csv  = sample_sub_on.to_csv(index=False).encode('utf-8-sig')
+    spot_csv    = sample_spot.to_csv(index=False).encode('utf-8-sig')
+    supp_csv    = sample_supp.to_csv(index=False).encode('utf-8-sig')
+    sub_b64     = base64.b64encode(sub_csv).decode()
+    sub_on_b64  = base64.b64encode(sub_on_csv).decode()
+    spot_b64    = base64.b64encode(spot_csv).decode()
+    supp_b64    = base64.b64encode(supp_csv).decode()
 
     st.caption("サンプルCSVをダウンロードしてフォーマットを確認できます。")
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
         st.markdown(f"""
-<a href="data:text/csv;base64,{sub_b64}" download="sample_gym_subscription.csv" style="
+<a href="data:text/csv;base64,{sub_b64}" download="sample_gym_subscription_off.csv" style="
     display:block; text-align:center; text-decoration:none;
     background:#0d1a28; color:#a8c8d8;
     border:1px solid #1c3a4a; border-radius:8px;
     padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">サブスク型：<br>ジム</a>
+">サブスク型：<br>ジム（日割りOFF）</a>
 """, unsafe_allow_html=True)
         st.caption("`end_date`: 解約日（継続中は空欄）")
     with col_dl2:
         st.markdown(f"""
-<a href="data:text/csv;base64,{spot_b64}" download="sample_FEC_spot_purchase.csv" style="
+<a href="data:text/csv;base64,{sub_on_b64}" download="sample_gym_subscription_on.csv" style="
+    display:block; text-align:center; text-decoration:none;
+    background:#0d1a28; color:#a8c8d8;
+    border:1px solid #1c3a4a; border-radius:8px;
+    padding:8px 6px; font-size:0.75rem; line-height:1.5;
+">サブスク型：<br>ジム（日割りON）</a>
+""", unsafe_allow_html=True)
+        st.caption("`end_date`: 解約日（継続中は空欄）")
+
+    col_dl3, col_dl4 = st.columns(2)
+    with col_dl3:
+        st.markdown(f"""
+<a href="data:text/csv;base64,{spot_b64}" download="sample_FEC_spot.csv" style="
     display:block; text-align:center; text-decoration:none;
     background:#0d1a28; color:#a8c8d8;
     border:1px solid #1c3a4a; border-radius:8px;
     padding:8px 6px; font-size:0.75rem; line-height:1.5;
 ">都度購入型：<br>ファッションEC</a>
+""", unsafe_allow_html=True)
+        st.caption("`last_purchase_date`: 最終購買日")
+    with col_dl4:
+        st.markdown(f"""
+<a href="data:text/csv;base64,{supp_b64}" download="sample_supplement_spot.csv" style="
+    display:block; text-align:center; text-decoration:none;
+    background:#0d1a28; color:#a8c8d8;
+    border:1px solid #1c3a4a; border-radius:8px;
+    padding:8px 6px; font-size:0.75rem; line-height:1.5;
+">都度購入型：<br>サプリEC</a>
 """, unsafe_allow_html=True)
         st.caption("`last_purchase_date`: 最終購買日")
 
@@ -794,7 +892,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v83</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v85</div>
 </div>
 """, unsafe_allow_html=True)
 
