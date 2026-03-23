@@ -964,7 +964,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v162</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v164</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1578,11 +1578,12 @@ if business_type == "都度購入型":
     t_smooth_plot = np.linspace(ltv_offset_days, km_df_raw['t'].max() * 1.3, 600)
     S_wei_plot    = weibull_s(t_smooth_plot - ltv_offset_days, k, lam)
 else:
-    # サブスク：KM・Weibullともにオフセット分右にシフト（既存ロジック）
-    t_smooth      = np.linspace(1, km_df_raw['t'].max() * 1.3, 600)
+    # サブスク：km_df（オフセット後）のt軸を+ltv_offset_daysで元スケールに戻す
+    # これによりt=ltv_offset_days未満のデータが除外され、正しくt=30から落ちる
+    t_smooth      = np.linspace(1, km_df['t'].max() * 1.3, 600)
     S_wei         = weibull_s(t_smooth, k, lam)
-    km_t_plot     = np.concatenate([[0], km_df_raw['t'].values + ltv_offset_days])
-    km_s_plot     = np.concatenate([[1.0], km_df_raw['S'].values])
+    km_t_plot     = np.concatenate([[0, ltv_offset_days], km_df['t'].values + ltv_offset_days])
+    km_s_plot     = np.concatenate([[1.0, 1.0], km_df['S'].values])
     t_smooth_plot = t_smooth + ltv_offset_days
     S_wei_plot    = S_wei
 
@@ -2174,12 +2175,14 @@ if True:
                 t_orig = int(row['t'] + ltv_offset_days)
                 ws2.append([t_orig, round(row['S'], 6), round(float(weibull_s(row['t'], k, lam)), 6)])
         else:
-            # サブスク：従来通りkm_df_rawを使用
+            # サブスク：km_df（オフセット後）のt軸を+ltv_offset_daysで元スケールに戻す
+            ws2.append([0, 1.0, 1.0])
             if ltv_offset_days > 0:
                 ws2.append([int(ltv_offset_days), 1.0, round(float(weibull_s(0, k, lam)), 6)])
-            for _, row in km_df_raw.iterrows():
-                t = row['t']
-                ws2.append([int(t + ltv_offset_days), round(row['S'], 6), round(float(weibull_s(t, k, lam)), 6)])
+            for _, row in km_df.iterrows():
+                t      = row['t']
+                t_plot = int(t + ltv_offset_days)
+                ws2.append([t_plot, round(row['S'], 6), round(float(weibull_s(t, k, lam)), 6)])
 
         # Horizon sheet
         ws3 = wb.create_sheet('暫定LTV')
@@ -3539,17 +3542,23 @@ if segment_cols_input.strip():
                         col_g1, col_g2 = st.columns(2)
 
                         with col_g1:
+                            # KM曲線：km_sv_fit（オフセット後）のt軸を+ltv_offset_daysで元スケールに戻す
+                            # t=0〜ltv_offset_daysはS=1.0フラット
+                            _km_sv_t = [0, ltv_offset_days] + [t + ltv_offset_days for t in km_sv_fit['t'].tolist()]
+                            _km_sv_s = [1.0, 1.0] + km_sv_fit['S'].tolist()
                             fig_sv1 = go.Figure()
                             fig_sv1.add_trace(go.Scatter(
-                                x=km_sv['t'].tolist(), y=km_sv['S'].tolist(),
+                                x=_km_sv_t, y=_km_sv_s,
                                 mode='lines', name='KM Curve (Observed)',
                                 line=dict(color=ACCENT, width=2, shape='hv')
                             ))
-                            t_max_s = int(km_sv['t'].max())
-                            t_range_s = list(range(0, t_max_s + 30, max(1, t_max_s // 200)))
+                            # Weibull：t=ltv_offset_daysスタート（日割りONはt=0）
+                            t_max_s = int(km_sv_fit['t'].max() + ltv_offset_days)
+                            _wei_start = int(ltv_offset_days)
+                            t_range_s = list(range(_wei_start, t_max_s + 30, max(1, t_max_s // 200)))
                             fig_sv1.add_trace(go.Scatter(
                                 x=t_range_s,
-                                y=[float(weibull_s(t, k_s, lam_s)) for t in t_range_s],
+                                y=[float(weibull_s(max(t - ltv_offset_days, 0), k_s, lam_s)) for t in t_range_s],
                                 mode='lines', name=f'Weibull Fit',
                                 line=dict(color=ACCENT2, width=1.5, dash='dash')
                             ))
