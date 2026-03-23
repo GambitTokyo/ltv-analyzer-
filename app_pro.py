@@ -1771,10 +1771,10 @@ for arpu_val, color in [
 
 fig_ltv.update_layout(
     paper_bgcolor='#111820', plot_bgcolor='#111820',
-    height=340, margin=dict(t=30, b=50, l=70, r=120),
+    height=340, margin=dict(t=8, b=50, l=70, r=120),
     font=dict(color='#ccc', size=10),
     legend=dict(
-        orientation='h', y=1.08, x=0,
+        orientation='h', y=1.0, x=0, yanchor='bottom',
         font=dict(size=10), bgcolor='rgba(0,0,0,0)'
     ),
     xaxis=dict(
