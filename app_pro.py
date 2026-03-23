@@ -741,7 +741,7 @@ with st.sidebar:
     background:#0d1a28; color:#a8c8d8;
     border:1px solid #1c3a4a; border-radius:8px;
     padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">サブスク型：<br>月額SaaS（日割りOFF）</a>
+">サブスク型：<br>月額ジム（日割りOFF）</a>
 """, unsafe_allow_html=True)
     with col_dl2:
         st.markdown(f"""
@@ -750,7 +750,7 @@ with st.sidebar:
     background:#0d1a28; color:#a8c8d8;
     border:1px solid #1c3a4a; border-radius:8px;
     padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">サブスク型：<br>月額SaaS（日割りON）</a>
+">サブスク型：<br>月額ジム（日割りON）</a>
 """, unsafe_allow_html=True)
 
     col_dl3, col_dl4 = st.columns(2)
@@ -874,12 +874,12 @@ with st.sidebar:
         if 'saas' in _fn or 'subscription' in _fn:
             _gpm_default = 75
         elif 'gym' in _fn:
-            _gpm_default = 40
+            _gpm_default = 50
         elif 'supplement' in _fn or 'supp' in _fn:
             _gpm_default = 60
         elif 'fec' in _fn or 'fashion' in _fn or 'spot' in _fn:
             _gpm_default = 40
-    gpm = st.slider("粗利率：売上に占める（売上－原価・変動費）の割合", 0, 100, _gpm_default, 1) / 100
+    gpm = st.slider("粗利率：売上に占める（売上－変動費）の割合", 0, 100, _gpm_default, 1) / 100
     st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します。")
 
     st.markdown("### CAC 上限")
@@ -935,7 +935,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v139</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v141</div>
 </div>
 """, unsafe_allow_html=True)
 
