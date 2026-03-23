@@ -964,7 +964,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v164</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v165</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -3223,8 +3223,15 @@ if segment_cols_input.strip():
     if valid_seg_cols:
         st.markdown("<div class='section-title'>セグメント別 LTV 分析</div>", unsafe_allow_html=True)
 
+        # セグメント一覧リンク
+        _seg_links = " &nbsp;|&nbsp; ".join(
+            f"<a href='#{c}' style='color:#56b4d3; font-size:0.78rem; text-decoration:none;'>{c}</a>"
+            for c in valid_seg_cols
+        )
+        st.markdown(f"<div style='margin-bottom:12px; font-size:0.78rem; color:#888;'>セグメント：{_seg_links}</div>", unsafe_allow_html=True)
+
         for seg_col in valid_seg_cols:
-            st.markdown(f"#### セグメント：`{seg_col}`")
+            st.markdown(f"<div id='{seg_col}' style='font-size:0.82rem; font-weight:600; color:#a8dadc; margin:16px 0 4px 0; letter-spacing:0.05em;'>{seg_col}</div>", unsafe_allow_html=True)
 
             seg_values = df[seg_col].dropna().unique()
             if len(seg_values) > 50:
@@ -3497,7 +3504,7 @@ if segment_cols_input.strip():
             # ── 全セグメントの詳細分析（上位N件のみブラウザ表示）──
             seg_results_display = seg_results[:seg_display_limit]
             remaining = len(seg_results) - len(seg_results_display)
-            st.markdown(f"#### セグメント別 詳細分析 — 上位 {seg_display_limit} 件 / 全 {len(seg_results)} 件")
+            st.markdown(f"<div style='font-size:0.78rem; color:#888; margin:12px 0 4px 0;'>詳細表示 — 上位 {seg_display_limit} 件（全 {len(seg_results)} 件）</div>", unsafe_allow_html=True)
             if remaining > 0:
                 st.caption(f"残り{remaining}件はパワポ・PDFに出力されます。サイドバーの「ブラウザ表示件数」を増やすと追加表示できます。")
             for sr in seg_results_display:
