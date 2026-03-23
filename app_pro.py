@@ -769,18 +769,25 @@ with st.sidebar:
     if 'sample_label' not in st.session_state:
         st.session_state.sample_label = None
 
-    _s = "display:block; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5;"
-    col_dl1, col_dl2 = st.columns(2)
-    with col_dl1:
-        st.markdown(f'<a href="?sample=sub" style="{_s}">サブスク型：<br>月額ジム（日割りOFF）</a>', unsafe_allow_html=True)
-    with col_dl2:
-        st.markdown(f'<a href="?sample=sub_on" style="{_s}">サブスク型：<br>月額ジム（日割りON）</a>', unsafe_allow_html=True)
-
-    col_dl3, col_dl4 = st.columns(2)
-    with col_dl3:
-        st.markdown(f'<a href="?sample=spot" style="{_s}">都度購入型：<br>ファッションEC</a>', unsafe_allow_html=True)
-    with col_dl4:
-        st.markdown(f'<a href="?sample=supp" style="{_s}">都度購入型：<br>サプリEC</a>', unsafe_allow_html=True)
+    _sample_options = {
+        'サブスク型：月額ジム（日割りOFF）': ('sub', sample_sub),
+        'サブスク型：月額ジム（日割りON）':  ('sub_on', sample_sub_on),
+        '都度購入型：ファッションEC':        ('spot', sample_spot),
+        '都度購入型：サプリEC':              ('supp', sample_supp),
+    }
+    _btn_s = "display:block; width:100%; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5; box-sizing:border-box;"
+    _selected_sample = st.selectbox(
+        'サンプルデータを選択',
+        ['（選択してください）'] + list(_sample_options.keys()),
+        key='sample_select',
+        label_visibility='collapsed'
+    )
+    if _selected_sample != '（選択してください）' and st.session_state.get('_prev_sample') != _selected_sample:
+        st.session_state._prev_sample = _selected_sample
+        _key, _df = _sample_options[_selected_sample]
+        st.session_state.sample_df = _df
+        st.session_state.sample_label = _selected_sample
+        st.rerun()
 
     st.caption("ビジネスタイプと各種設定をデータに合わせて正しく選択してください。")
 
@@ -943,7 +950,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v156</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v158</div>
 </div>
 """, unsafe_allow_html=True)
 
