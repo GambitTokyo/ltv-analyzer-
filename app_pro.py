@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v186</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v188</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1672,7 +1672,7 @@ plt.close()
 # Horizon table
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title' style='margin-bottom:-1rem;'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
 
 horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 
@@ -1694,31 +1694,32 @@ cac_line = [v / cac_n for v in gp_line]
 
 lam_int = round(lam_actual)
 
-# ── UI表示：セグメント側と同じPlotly方式 ──
-fig_ltv = go.Figure()
-fig_ltv.add_trace(go.Scatter(x=t_range, y=rev_line, name='LTV（売上）', mode='lines', line=dict(color='#56b4d3', width=2)))
-fig_ltv.add_trace(go.Scatter(x=t_range, y=gp_line,  name='LTV（粗利）', mode='lines', line=dict(color='#a8dadc', width=2, dash='dash')))
-fig_ltv.add_trace(go.Scatter(x=t_range, y=cac_line, name='CAC上限',    mode='lines', line=dict(color='#4a7a8a', width=1.5, dash='dot')))
-fig_ltv.add_hline(y=ltv_rev, line_dash='dot', line_color='#56b4d3', line_width=1, opacity=0.4,
-    annotation_text=f'LTV∞ ¥{ltv_rev:,.0f}', annotation_position='right',
-    annotation_font=dict(color='#56b4d3', size=10))
-fig_ltv.add_shape(type='line', x0=lam_actual, x1=lam_actual, y0=0, y1=1, yref='paper',
-    line=dict(color='#a8dadc', width=1.5, dash='dash'), layer='above')
-fig_ltv.add_annotation(x=lam_actual, y=0.85 if k < 1.0 else 0.35, yref='paper',
-    text=f'λ＝{lam_int}日', showarrow=False,
-    font=dict(color='#a8dadc', size=10), xanchor='center', yanchor='middle',
-    bgcolor='#111820', borderpad=2)
-tick_vals = [180, 365, 730, 1095, 1460, 1825]
-tick_text = ['180日', '1年', '2年', '3年', '4年', '5年']
-fig_ltv.update_layout(
-    paper_bgcolor='#111820', plot_bgcolor='#111820',
-    height=280, margin=dict(t=30, b=50, l=70, r=120),
-    font=dict(color='#ccc', size=10),
-    legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
-    xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals, ticktext=tick_text, tickfont=dict(color='#888'), range=[0, x_max + 50]),
-    yaxis=dict(title='金額（円）', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat='¥,.0f'),
-)
-st.plotly_chart(fig_ltv, use_container_width=True)
+_col_ltv, = st.columns([1])
+with _col_ltv:
+    fig_ltv = go.Figure()
+    fig_ltv.add_trace(go.Scatter(x=t_range, y=rev_line, name='LTV（売上）', mode='lines', line=dict(color='#56b4d3', width=2)))
+    fig_ltv.add_trace(go.Scatter(x=t_range, y=gp_line,  name='LTV（粗利）', mode='lines', line=dict(color='#a8dadc', width=2, dash='dash')))
+    fig_ltv.add_trace(go.Scatter(x=t_range, y=cac_line, name='CAC上限',    mode='lines', line=dict(color='#4a7a8a', width=1.5, dash='dot')))
+    fig_ltv.add_hline(y=ltv_rev, line_dash='dot', line_color='#56b4d3', line_width=1, opacity=0.4,
+        annotation_text=f'LTV∞ ¥{ltv_rev:,.0f}', annotation_position='right',
+        annotation_font=dict(color='#56b4d3', size=10))
+    fig_ltv.add_shape(type='line', x0=lam_actual, x1=lam_actual, y0=0, y1=1, yref='paper',
+        line=dict(color='#a8dadc', width=1.5, dash='dash'), layer='above')
+    fig_ltv.add_annotation(x=lam_actual, y=0.85 if k < 1.0 else 0.35, yref='paper',
+        text=f'λ＝{lam_int}日', showarrow=False,
+        font=dict(color='#a8dadc', size=10), xanchor='center', yanchor='middle',
+        bgcolor='#111820', borderpad=2)
+    tick_vals = [180, 365, 730, 1095, 1460, 1825]
+    tick_text = ['180日', '1年', '2年', '3年', '4年', '5年']
+    fig_ltv.update_layout(
+        paper_bgcolor='#111820', plot_bgcolor='#111820',
+        height=280, margin=dict(t=30, b=50, l=70, r=120),
+        font=dict(color='#ccc', size=10),
+        legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
+        xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals, ticktext=tick_text, tickfont=dict(color='#888'), range=[0, x_max + 50]),
+        yaxis=dict(title='金額（円）', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat='¥,.0f'),
+    )
+    st.plotly_chart(fig_ltv, use_container_width=True)
 
 # ── PPTX用バッファ：matplotlib で別途生成 ──
 try:
