@@ -759,49 +759,42 @@ with st.sidebar:
     spot_b64    = base64.b64encode(spot_csv).decode()
     supp_b64    = base64.b64encode(supp_csv).decode()
 
-    st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>サンプルCSVをダウンロードしてフォーマットを確認できます。</span>", unsafe_allow_html=True)
+    st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>サンプルデータをそのまま読み込んで試せます。</span>", unsafe_allow_html=True)
+
+    # サンプルデータをセッションステートで管理
+    if 'sample_df' not in st.session_state:
+        st.session_state.sample_df = None
+    if 'sample_label' not in st.session_state:
+        st.session_state.sample_label = None
+
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
-        st.markdown(f"""
-<a href="data:text/csv;base64,{sub_b64}" download="sample_gym_subscription_off.csv" style="
-    display:block; text-align:center; text-decoration:none;
-    background:#0d1a28; color:#a8c8d8;
-    border:1px solid #1c3a4a; border-radius:8px;
-    padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">サブスク型：<br>月額ジム（日割りOFF）</a>
-""", unsafe_allow_html=True)
+        if st.button('サブスク型：\n月額ジム（日割りOFF）', use_container_width=True, key='btn_sub'):
+            st.session_state.sample_df = sample_sub
+            st.session_state.sample_label = 'サブスク型：月額ジム（日割りOFF）'
     with col_dl2:
-        st.markdown(f"""
-<a href="data:text/csv;base64,{sub_on_b64}" download="sample_gym_subscription_on.csv" style="
-    display:block; text-align:center; text-decoration:none;
-    background:#0d1a28; color:#a8c8d8;
-    border:1px solid #1c3a4a; border-radius:8px;
-    padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">サブスク型：<br>月額ジム（日割りON）</a>
-""", unsafe_allow_html=True)
+        if st.button('サブスク型：\n月額ジム（日割りON）', use_container_width=True, key='btn_sub_on'):
+            st.session_state.sample_df = sample_sub_on
+            st.session_state.sample_label = 'サブスク型：月額ジム（日割りON）'
 
     col_dl3, col_dl4 = st.columns(2)
     with col_dl3:
-        st.markdown(f"""
-<a href="data:text/csv;base64,{spot_b64}" download="sample_FEC_spot.csv" style="
-    display:block; text-align:center; text-decoration:none;
-    background:#0d1a28; color:#a8c8d8;
-    border:1px solid #1c3a4a; border-radius:8px;
-    padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">都度購入型：<br>ファッションEC</a>
-""", unsafe_allow_html=True)
+        if st.button('都度購入型：\nファッションEC', use_container_width=True, key='btn_spot'):
+            st.session_state.sample_df = sample_spot
+            st.session_state.sample_label = '都度購入型：ファッションEC'
     with col_dl4:
-        st.markdown(f"""
-<a href="data:text/csv;base64,{supp_b64}" download="sample_supplement_spot.csv" style="
-    display:block; text-align:center; text-decoration:none;
-    background:#0d1a28; color:#a8c8d8;
-    border:1px solid #1c3a4a; border-radius:8px;
-    padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">都度購入型：<br>サプリEC</a>
-""", unsafe_allow_html=True)
+        if st.button('都度購入型：\nサプリEC', use_container_width=True, key='btn_supp'):
+            st.session_state.sample_df = sample_supp
+            st.session_state.sample_label = '都度購入型：サプリEC'
+
     st.caption("ビジネスタイプと各種設定をデータに合わせて正しく選択してください。")
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
+
+    # サンプルボタン or アップロードでデータを確定
+    if uploaded is not None:
+        st.session_state.sample_df = None  # アップロード優先
+        st.session_state.sample_label = None
 
     st.markdown("### 異常値処理")
     iqr_multiplier = st.select_slider(
@@ -896,8 +889,9 @@ with st.sidebar:
     st.markdown("### Gross Profit Margin (%)")
     # サンプルCSVのファイル名からデフォルトGPMを設定
     _gpm_default = 50
-    if uploaded is not None:
-        _fn = uploaded.name.lower()
+    _sample_label = st.session_state.get('sample_label', '') or ''
+    _fn = (uploaded.name.lower() if uploaded is not None else '') + _sample_label.lower()
+    if uploaded is not None or _sample_label:
         if 'saas' in _fn or 'subscription' in _fn:
             _gpm_default = 75
         elif 'gym' in _fn:
@@ -954,7 +948,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v148</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v150</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -962,8 +956,8 @@ st.markdown("""
 # No file → instructions
 # ══════════════════════════════════════════════════════════════
 
-if uploaded is None:
-    st.info("サイドバーから CSV をアップロードしてください。サンプルデータでお試しいただけます。")
+if uploaded is None and st.session_state.get('sample_df') is None:
+    st.info("サイドバーからCSVをアップロードするか、サンプルデータを選択してください。")
 
     st.markdown("<div class='section-title'>CSV フォーマット</div>", unsafe_allow_html=True)
     st.markdown("""
@@ -1003,9 +997,18 @@ if uploaded is None:
 arpu_daily = None
 gp_daily   = None
 
+# sample_df優先、なければuploadedから読み込み
+_active_df = st.session_state.get('sample_df', None)
+if _active_df is not None:
+    if st.session_state.get('sample_label'):
+        st.sidebar.caption(f"📊 {st.session_state.sample_label}")
 try:
-    df_raw = pd.read_csv(uploaded)
-    df_raw.columns = df_raw.columns.str.strip().str.lower()
+    if _active_df is not None:
+        df_raw = _active_df.copy()
+        df_raw.columns = df_raw.columns.str.strip().str.lower()
+    else:
+        df_raw = pd.read_csv(uploaded)
+        df_raw.columns = df_raw.columns.str.strip().str.lower()
 
     col_map = {}
     for c in df_raw.columns:
@@ -2865,7 +2868,7 @@ if True:
     except ImportError:
         _pp_html = '<span class="dl-btn-err">.pptx 未対応</span>'
     except Exception as e:
-        _pp_html = f'<span class="dl-btn-err">.pptx エラー</span>'
+        _pp_html = f'<span class="dl-btn-err">.pptx エラー: {str(e)[:80]}</span>'
 
 # ── PDF export ────────────────────────────────────────────────
 if True:
