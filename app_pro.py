@@ -769,30 +769,18 @@ with st.sidebar:
     if 'sample_label' not in st.session_state:
         st.session_state.sample_label = None
 
-    _btn_css = "display:block; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5;"
+    _s = "display:block; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5;"
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
-        if st.button('サブスク型：月額ジム\n（日割りOFF）', key='btn_sub', use_container_width=True):
-            st.session_state.sample_df = sample_sub
-            st.session_state.sample_label = 'サブスク型：月額ジム（日割りOFF）'
-            st.rerun()
+        st.markdown(f'<a href="?sample=sub" style="{_s}">サブスク型：<br>月額ジム（日割りOFF）</a>', unsafe_allow_html=True)
     with col_dl2:
-        if st.button('サブスク型：月額ジム\n（日割りON）', key='btn_sub_on', use_container_width=True):
-            st.session_state.sample_df = sample_sub_on
-            st.session_state.sample_label = 'サブスク型：月額ジム（日割りON）'
-            st.rerun()
+        st.markdown(f'<a href="?sample=sub_on" style="{_s}">サブスク型：<br>月額ジム（日割りON）</a>', unsafe_allow_html=True)
 
     col_dl3, col_dl4 = st.columns(2)
     with col_dl3:
-        if st.button('都度購入型：\nファッションEC', key='btn_spot', use_container_width=True):
-            st.session_state.sample_df = sample_spot
-            st.session_state.sample_label = '都度購入型：ファッションEC'
-            st.rerun()
+        st.markdown(f'<a href="?sample=spot" style="{_s}">都度購入型：<br>ファッションEC</a>', unsafe_allow_html=True)
     with col_dl4:
-        if st.button('都度購入型：\nサプリEC', key='btn_supp', use_container_width=True):
-            st.session_state.sample_df = sample_supp
-            st.session_state.sample_label = '都度購入型：サプリEC'
-            st.rerun()
+        st.markdown(f'<a href="?sample=supp" style="{_s}">都度購入型：<br>サプリEC</a>', unsafe_allow_html=True)
 
     st.caption("ビジネスタイプと各種設定をデータに合わせて正しく選択してください。")
 
@@ -955,7 +943,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v155</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v156</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -995,6 +983,24 @@ if uploaded is None and st.session_state.get('sample_df') is None:
         with col:
             st.markdown(f"<div class='metric-card'><div class='metric-value' style='font-size:1.1rem'>{title}</div><div class='metric-label' style='font-size:0.75rem; color:#666; margin-top:8px;'>{desc}</div></div>", unsafe_allow_html=True)
     st.stop()
+
+# query_paramsからサンプル選択を処理
+_qp = st.query_params
+if 'sample' in _qp and st.session_state.get('sample_df') is None:
+    _s = _qp['sample']
+    if _s == 'sub':
+        st.session_state.sample_df    = sample_sub
+        st.session_state.sample_label = 'サブスク型：月額ジム（日割りOFF）'
+    elif _s == 'sub_on':
+        st.session_state.sample_df    = sample_sub_on
+        st.session_state.sample_label = 'サブスク型：月額ジム（日割りON）'
+    elif _s == 'spot':
+        st.session_state.sample_df    = sample_spot
+        st.session_state.sample_label = '都度購入型：ファッションEC'
+    elif _s == 'supp':
+        st.session_state.sample_df    = sample_supp
+        st.session_state.sample_label = '都度購入型：サプリEC'
+    st.query_params.clear()
 
 # ══════════════════════════════════════════════════════════════
 # Load & validate data
