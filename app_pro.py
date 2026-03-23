@@ -193,16 +193,16 @@ div[data-baseweb="radio"] [data-focused="true"] { box-shadow: 0 0 0 3px rgba(86,
 
 /* ── Download buttons ── */
 div.stDownloadButton > button {
-    width: 120px !important;
-    height: 44px !important;
+    width: 72px !important;
+    height: 30px !important;
     padding: 0 !important;
     background: #0d1f2d !important;
     color: #a8dadc !important;
     border: 1.5px solid #56b4d3 !important;
-    border-radius: 8px !important;
-    font-size: 0.95rem !important;
+    border-radius: 6px !important;
+    font-size: 0.78rem !important;
     font-weight: 600 !important;
-    letter-spacing: 0.05em !important;
+    letter-spacing: 0.04em !important;
     text-align: center !important;
     display: flex !important;
     align-items: center !important;
@@ -215,7 +215,7 @@ div.stDownloadButton > button:hover {
 }
 div.stDownloadButton {
     display: inline-block !important;
-    margin-right: 0.5rem !important;
+    margin-right: 0.2rem !important;
 }
 
 /* ── Radio & Slider accent color (override Streamlit red) ── */
@@ -954,7 +954,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v145</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v146</div>
 </div>
 """, unsafe_allow_html=True)
 
