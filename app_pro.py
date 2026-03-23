@@ -192,18 +192,22 @@ div[data-baseweb="radio"] input:checked ~ * { border-color: #56b4d3 !important; 
 div[data-baseweb="radio"] [data-focused="true"] { box-shadow: 0 0 0 3px rgba(86,180,211,0.3) !important; }
 
 /* ── Sample buttons ── */
-[data-testid="stSidebar"] [data-testid="stButton"] button {
+[data-testid="stSidebar"] div.stButton > button,
+div[data-testid="stSidebar"] div.stButton > button {
     background: #0d1a28 !important;
     color: #a8c8d8 !important;
     border: 1px solid #1c3a4a !important;
     border-radius: 8px !important;
     font-size: 0.75rem !important;
     font-weight: 400 !important;
+    font-family: inherit !important;
     padding: 8px 6px !important;
     line-height: 1.5 !important;
     width: 100% !important;
+    white-space: pre-line !important;
 }
-[data-testid="stSidebar"] [data-testid="stButton"] button:hover {
+[data-testid="stSidebar"] div.stButton > button:hover,
+div[data-testid="stSidebar"] div.stButton > button:hover {
     background: #1c3a4a !important;
     color: #c8e0e8 !important;
     border-color: #56b4d3 !important;
@@ -785,25 +789,40 @@ with st.sidebar:
     if 'sample_label' not in st.session_state:
         st.session_state.sample_label = None
 
+    _btn_style = """
+        display:block; width:100%; text-align:center; text-decoration:none;
+        background:#0d1a28; color:#a8c8d8;
+        border:1px solid #1c3a4a; border-radius:8px;
+        padding:8px 6px; font-size:0.75rem; line-height:1.6;
+        cursor:pointer; box-sizing:border-box;
+    """
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
-        if st.button('サブスク型：\n月額ジム（日割りOFF）', use_container_width=True, key='btn_sub'):
+        st.markdown(f'<div style="{_btn_style}">サブスク型：<br>月額ジム（日割りOFF）</div>', unsafe_allow_html=True)
+        if st.button('選択', key='btn_sub', use_container_width=True):
             st.session_state.sample_df = sample_sub
             st.session_state.sample_label = 'サブスク型：月額ジム（日割りOFF）'
+            st.rerun()
     with col_dl2:
-        if st.button('サブスク型：\n月額ジム（日割りON）', use_container_width=True, key='btn_sub_on'):
+        st.markdown(f'<div style="{_btn_style}">サブスク型：<br>月額ジム（日割りON）</div>', unsafe_allow_html=True)
+        if st.button('選択', key='btn_sub_on', use_container_width=True):
             st.session_state.sample_df = sample_sub_on
             st.session_state.sample_label = 'サブスク型：月額ジム（日割りON）'
+            st.rerun()
 
     col_dl3, col_dl4 = st.columns(2)
     with col_dl3:
-        if st.button('都度購入型：\nファッションEC', use_container_width=True, key='btn_spot'):
+        st.markdown(f'<div style="{_btn_style}">都度購入型：<br>ファッションEC</div>', unsafe_allow_html=True)
+        if st.button('選択', key='btn_spot', use_container_width=True):
             st.session_state.sample_df = sample_spot
             st.session_state.sample_label = '都度購入型：ファッションEC'
+            st.rerun()
     with col_dl4:
-        if st.button('都度購入型：\nサプリEC', use_container_width=True, key='btn_supp'):
+        st.markdown(f'<div style="{_btn_style}">都度購入型：<br>サプリEC</div>', unsafe_allow_html=True)
+        if st.button('選択', key='btn_supp', use_container_width=True):
             st.session_state.sample_df = sample_supp
             st.session_state.sample_label = '都度購入型：サプリEC'
+            st.rerun()
 
     st.caption("ビジネスタイプと各種設定をデータに合わせて正しく選択してください。")
 
@@ -966,7 +985,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v151</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v153</div>
 </div>
 """, unsafe_allow_html=True)
 
