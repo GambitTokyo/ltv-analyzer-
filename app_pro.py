@@ -525,10 +525,10 @@ with st.sidebar:
     # 単発顧客生成カットオフ（基準日-180日）：これ以前のstart_dateなら観測完結保証
     _single_cutoff = BASE_DATE - pd.Timedelta(days=180)
 
-    # ── サブスク：フィットネスジム ──────────────────────
+    # ── サブスク：SaaS（月額）──────────────────────────
     # k=0.921（初期離脱型）、λ=273日
     # 6ヶ月：50%生存、1年：28%、2年：8%、3年：3%
-    # 月額プラン：7,000 / 9,800 / 12,000円
+    # 月額プラン：5,000 / 9,800 / 19,800円
     # LTV∞イメージ：約8万円、99%到達6年
     # サブスクは3年観測期間で独自のstart_datesを使用
     SUB_START = pd.Timestamp('2023-01-01')
@@ -536,7 +536,7 @@ with st.sidebar:
     np.random.shuffle(_sub_dates)
     start_dates_sub = _sub_dates[:n_sample]
 
-    ec_plans    = np.random.choice([7000, 9800, 12000], n_sample, p=[0.50, 0.35, 0.15])
+    ec_plans    = np.random.choice([5000, 9800, 19800], n_sample, p=[0.50, 0.35, 0.15])
     ec_survival = np.random.weibull(0.921, n_sample) * 273
     ec_churned  = np.random.random(n_sample) < 0.85
 
@@ -741,7 +741,7 @@ with st.sidebar:
     background:#0d1a28; color:#a8c8d8;
     border:1px solid #1c3a4a; border-radius:8px;
     padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">サブスク型：<br>月額ジム（日割りOFF）</a>
+">サブスク型：<br>月額SaaS（日割りOFF）</a>
 """, unsafe_allow_html=True)
     with col_dl2:
         st.markdown(f"""
@@ -750,7 +750,7 @@ with st.sidebar:
     background:#0d1a28; color:#a8c8d8;
     border:1px solid #1c3a4a; border-radius:8px;
     padding:8px 6px; font-size:0.75rem; line-height:1.5;
-">サブスク型：<br>月額ジム（日割りON）</a>
+">サブスク型：<br>月額SaaS（日割りON）</a>
 """, unsafe_allow_html=True)
 
     st.caption("※日割りON/OFFを正しく設定してください。")
@@ -867,8 +867,20 @@ with st.sidebar:
 
     horizon_days = 730  # 内部計算用デフォルト
 
-    st.markdown("### 粗利率 GPM")
-    gpm = st.slider("Gross Profit Margin (%)", 0, 100, 54, 1) / 100
+    st.markdown("### Gross Profit Margin (%)")
+    # サンプルCSVのファイル名からデフォルトGPMを設定
+    _gpm_default = 50
+    if uploaded is not None:
+        _fn = uploaded.name.lower()
+        if 'saas' in _fn or 'subscription' in _fn:
+            _gpm_default = 75
+        elif 'gym' in _fn:
+            _gpm_default = 40
+        elif 'supplement' in _fn or 'supp' in _fn:
+            _gpm_default = 60
+        elif 'fec' in _fn or 'fashion' in _fn or 'spot' in _fn:
+            _gpm_default = 40
+    gpm = st.slider("粗利率：売上に占める（売上－原価・変動費）の割合", 0, 100, _gpm_default, 1) / 100
     st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します。")
 
     st.markdown("### CAC 上限")
@@ -924,7 +936,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v129</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v130</div>
 </div>
 """, unsafe_allow_html=True)
 
