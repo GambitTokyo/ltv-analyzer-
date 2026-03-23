@@ -964,7 +964,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v172</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v174</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -3225,13 +3225,13 @@ if segment_cols_input.strip():
 
         # セグメント一覧リンク
         _seg_links = " &nbsp;|&nbsp; ".join(
-            f"<a href='#{c}' style='color:#56b4d3; font-size:0.78rem; text-decoration:none;'>{c}</a>"
+            f"<a href='#{c}_anchor' style='color:#56b4d3; font-size:0.78rem; text-decoration:none;'>{c}</a>"
             for c in valid_seg_cols
         )
         st.markdown(f"<div style='margin-bottom:12px; font-size:0.78rem; color:#888;'>{_seg_links}</div>", unsafe_allow_html=True)
 
         for seg_col in valid_seg_cols:
-            st.markdown(f"<div id='{seg_col}' style='font-size:0.82rem; font-weight:600; color:#a8dadc; margin:16px 0 4px 0; letter-spacing:0.05em;'>{seg_col}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div id='{seg_col}_anchor' style='position:relative; top:-120px; visibility:hidden;'></div><div style='font-size:0.82rem; font-weight:600; color:#a8dadc; margin:16px 0 4px 0; letter-spacing:0.05em;'>{seg_col}</div>", unsafe_allow_html=True)
 
             seg_values = df[seg_col].dropna().unique()
             if len(seg_values) > 50:
@@ -3621,7 +3621,7 @@ if segment_cols_input.strip():
                             st.caption(f"Weibull直線化プロット：R²={r2_s:.3f}（1.0に近いほど精度高い）")
 
                         # ── 暫定LTVテーブル（全体と同仕様）──
-                        st.markdown("<div class='section-title' style='font-size:0.75rem; margin-top:16px;'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
+                        st.markdown("<div class='section-title' style='font-size:0.75rem; margin-top:16px; border-bottom:none;'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
 
                         # グラフ
                         lam_s_actual = lam_s_disp  # 表示用λ（オフセット込み済み）
