@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v179</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v180</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1673,7 +1673,7 @@ plt.close()
 # Horizon table
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title-tight'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
 
 horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 
@@ -1730,6 +1730,7 @@ ax_ltv_pp.legend(fontsize=8, framealpha=0.2, labelcolor='white', loc='upper left
 ax_ltv_pp.grid(True, alpha=0.2, color='#1a3040')
 for spine in ax_ltv_pp.spines.values(): spine.set_color('#1a3040')
 fig_ltv_pp.tight_layout()
+fig_ltv_pp.subplots_adjust(top=0.97)
 
 # UI表示
 st.pyplot(fig_ltv_pp)
