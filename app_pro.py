@@ -936,7 +936,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v136</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v137</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1737,6 +1737,10 @@ st.plotly_chart(fig_ltv, use_container_width=True)
 
 # 暫定LTVグラフをPPTX用にmatplotlibで保存
 try:
+    import matplotlib.font_manager as fm
+    _jp_font = fm.FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')
+    _jp_name = _jp_font.get_name()
+    plt.rcParams['font.family'] = _jp_name
     fig_ltv_pp, ax_ltv_pp = plt.subplots(figsize=(7, 3.5))
     fig_ltv_pp.patch.set_facecolor('#111820')
     ax_ltv_pp.set_facecolor('#111820')
@@ -1756,8 +1760,10 @@ try:
     fig_ltv_pp.savefig(buf_ltv, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
     buf_ltv.seek(0)
     plt.close(fig_ltv_pp)
+    plt.rcParams['font.family'] = 'DejaVu Sans'
 except Exception:
     buf_ltv = None
+    plt.rcParams['font.family'] = 'DejaVu Sans'
 
 # λ時点と99%到達日数を逆算
 try:
