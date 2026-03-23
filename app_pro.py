@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v181</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v182</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1051,8 +1051,7 @@ gp_daily   = None
 # sample_df優先、なければuploadedから読み込み
 _active_df = st.session_state.get('sample_df', None)
 if _active_df is not None:
-    if st.session_state.get('sample_label'):
-        st.sidebar.caption(f"📊 {st.session_state.sample_label}")
+    pass
 try:
     if _active_df is not None:
         df_raw = _active_df.copy()
