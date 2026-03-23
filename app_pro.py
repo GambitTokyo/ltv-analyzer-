@@ -936,7 +936,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v135</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v136</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1735,6 +1735,30 @@ fig_ltv.update_layout(
 )
 st.plotly_chart(fig_ltv, use_container_width=True)
 
+# 暫定LTVグラフをPPTX用にmatplotlibで保存
+try:
+    fig_ltv_pp, ax_ltv_pp = plt.subplots(figsize=(7, 3.5))
+    fig_ltv_pp.patch.set_facecolor('#111820')
+    ax_ltv_pp.set_facecolor('#111820')
+    ax_ltv_pp.plot(t_range, rev_line, color='#56b4d3', lw=2, label='LTV（売上）')
+    ax_ltv_pp.plot(t_range, gp_line,  color='#a8dadc', lw=2, ls='--', label='LTV（粗利）')
+    ax_ltv_pp.plot(t_range, cac_line, color='#4a7a8a', lw=1.5, ls=':', label='CAC上限')
+    ax_ltv_pp.axhline(ltv_rev, color='#56b4d3', lw=0.8, ls=':', alpha=0.5)
+    ax_ltv_pp.axvline(lam_actual, color='#a8dadc', lw=1.2, ls='--', alpha=0.7)
+    ax_ltv_pp.set_xlabel('継続期間', color='#888', fontsize=9)
+    ax_ltv_pp.set_ylabel('金額（円）', color='#888', fontsize=9)
+    ax_ltv_pp.tick_params(colors='#888')
+    ax_ltv_pp.legend(fontsize=8, framealpha=0.2, labelcolor='white')
+    ax_ltv_pp.grid(True, alpha=0.2, color='#1a3040')
+    for spine in ax_ltv_pp.spines.values(): spine.set_color('#1a3040')
+    fig_ltv_pp.tight_layout()
+    buf_ltv = io.BytesIO()
+    fig_ltv_pp.savefig(buf_ltv, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
+    buf_ltv.seek(0)
+    plt.close(fig_ltv_pp)
+except Exception:
+    buf_ltv = None
+
 # λ時点と99%到達日数を逆算
 try:
     if business_type == "都度購入型":
@@ -2246,88 +2270,161 @@ with exp2:
         if analyst_name:
             txbox(s1, analyst_name, 1.0, 5.4, 6, 0.4, size=11, color=GRAY)
 
-        # ── Slide 2: Metrics ──
+        # ── データ期間計算 ──
+        _date_cols = [df['start_date']]
+        if 'last_purchase_date' in df.columns and df['last_purchase_date'].notna().any():
+            _date_cols.append(df['last_purchase_date'])
+        if 'end_date' in df.columns and df['end_date'].notna().any():
+            _date_cols.append(df['end_date'])
+        _all_dates_flat = pd.concat(_date_cols).dropna()
+        _data_start = _all_dates_flat.min().strftime('%Y/%m/%d')
+        _data_end   = _all_dates_flat.max().strftime('%Y/%m/%d')
+
+        # ── Slide 2: 分析結果サマリー（リデザイン）──
         s2 = prs.slides.add_slide(blank)
         add_bg(s2, prs)
-        txbox(s2, '分析結果サマリー', 0.5, 0.3, 10, 0.6, size=22, bold=True, color=WHITE)
 
-        cards = [
-            ('LTV∞（売上）', f'¥{ltv_rev:,.0f}', 0.5),
-            (f'CAC上限\n({cac_label})', f'¥{cac_upper:,.0f}', 3.6),
-            ('Weibull k', f'{k:.3f}', 6.7),
-            ('R²', f'{r2:.3f}', 9.8),
-        ]
-        for label, val, x in cards:
-            card = s2.shapes.add_shape(1, Inches(x), Inches(1.3), Inches(2.9), Inches(1.8))
-            card.fill.solid(); card.fill.fore_color.rgb = RGBColor(0x16,0x16,0x16)
-            card.line.color.rgb = GRAY
-            txbox(s2, val, x+0.15, 1.45, 2.6, 0.8, size=24, bold=True, color=GOLD, align=PP_ALIGN.CENTER)
-            txbox(s2, label, x+0.15, 2.2, 2.6, 0.5, size=10, color=GRAY, align=PP_ALIGN.CENTER)
+        # タイトル
+        txbox(s2, '分析結果サマリー', 0.5, 0.22, 10, 0.55, size=22, bold=True, color=WHITE)
 
-        # Data stats
-        stats_text = (
-            f"顧客数: {len(df):,}件  ／  解約済み: {df['event'].sum():,}件  ／  "
-            f"継続中: {(df['event']==0).sum():,}件  ／  "
-            f"平均日次ARPU: ¥{arpu_daily:,.2f}  ／  GPM: {gpm:.0%}  ／  LTV∞(売上): ¥{ltv_rev:,.0f}  ／  LTV∞(粗利): ¥{ltv_val:,.0f}  ／  λ: {lam:.1f}日"
+        # データ期間・基本情報バー
+        info_bar = s2.shapes.add_shape(1, Inches(0.5), Inches(0.85), Inches(12.3), Inches(0.45))
+        info_bar.fill.solid(); info_bar.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+        info_bar.line.fill.background()
+        info_text = (
+            f"データ期間: {_data_start} – {_data_end}　|　"
+            f"顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　"
+            f"継続中: {(df['event']==0).sum():,}件　|　"
+            f"平均日次ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
         )
-        txbox(s2, stats_text, 0.5, 3.3, 12.3, 0.5, size=10, color=GRAY)
+        txbox(s2, info_text, 0.6, 0.88, 12.1, 0.38, size=8.5, color=RGBColor(0x88,0xaa,0xbb))
 
-        # Horizon table header
-        txbox(s2, '観測期間別 暫定LTV', 0.5, 3.9, 12, 0.4, size=13, bold=True, color=WHITE)
-        cols_h = ['ホライズン', '暫定LTV', 'LTV∞比', 'CAC上限']
-        col_x  = [0.5, 3.3, 6.5, 9.3]
-        for cx, ch in zip(col_x, cols_h):
-            txbox(s2, ch, cx, 4.4, 2.6, 0.35, size=9, bold=True, color=GOLD)
-        row_y = 4.8
-        for h in horizons[:5]:
-            lh = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
-            row_vals = [
-                f'{h}日' if h<365 else f'{h//365}年',
-                f'¥{lh:,.0f}', f'{lh/ltv_val*100:.1f}%', f'¥{lh/cac_n:,.0f}'
-            ]
-            for cx, rv in zip(col_x, row_vals):
-                txbox(s2, rv, cx, row_y, 2.6, 0.32, size=9, color=WHITE)
-            row_y += 0.34
+        # 5指標カード
+        cards5 = [
+            ('LTV∞（売上）', f'¥{ltv_rev:,.0f}', 'Weibull積分'),
+            (f'CAC上限（{cac_label}）', f'¥{cac_upper:,.0f}', '粗利ベース'),
+            ('Weibull k', f'{k:.3f}', 'k<1:初期離脱型  k>1:逓増型'),
+            (f'Weibull λ', f'{lam_actual:.0f}日', '値が大きいほど長期継続'),
+            ('R²', f'{r2:.3f}', '0.9以上が理想'),
+        ]
+        card_w = 2.4
+        card_gap = 0.18
+        card_start_x = 0.5
+        for i, (label, val, sub) in enumerate(cards5):
+            cx = card_start_x + i * (card_w + card_gap)
+            card = s2.shapes.add_shape(1, Inches(cx), Inches(1.42), Inches(card_w), Inches(1.7))
+            card.fill.solid(); card.fill.fore_color.rgb = RGBColor(0x10,0x20,0x30)
+            card.line.color.rgb = RGBColor(0x2a,0x4a,0x5a)
+            txbox(s2, val,   cx+0.1, 1.52, card_w-0.2, 0.75, size=22, bold=True, color=GOLD, align=PP_ALIGN.CENTER)
+            txbox(s2, label, cx+0.1, 2.28, card_w-0.2, 0.38, size=9,  bold=True, color=WHITE, align=PP_ALIGN.CENTER)
+            txbox(s2, sub,   cx+0.1, 2.65, card_w-0.2, 0.35, size=7.5, color=GRAY, align=PP_ALIGN.CENTER)
 
-        # ── Slide 2: 示唆ボックス（CAC健全性 & 回収見込み）──
-        ltv_1y = ltv_horizon(k, lam, arpu_daily, 365)
-        ltv_2y = ltv_horizon(k, lam, arpu_daily, 730)
-        pct_1y_pp = ltv_1y / ltv_rev * 100
-        pct_2y_pp = ltv_2y / ltv_rev * 100
+        # 結論ボックス（k_summary）
+        concl_box = s2.shapes.add_shape(1, Inches(0.5), Inches(3.25), Inches(12.3), Inches(2.6))
+        concl_box.fill.solid(); concl_box.fill.fore_color.rgb = RGBColor(0x08,0x18,0x28)
+        concl_box.line.color.rgb = GOLD
+        txbox(s2, '結論', 0.65, 3.3, 2, 0.3, size=9, bold=True, color=GOLD)
+        txbox(s2, k_summary + r2_summary, 0.65, 3.6, 12.0, 2.1, size=9.5, color=WHITE)
 
-        # CACヘルス診断（既知CACがある場合）
+        # 示唆ボックス
+        ltv_1y_pp = ltv_1y / ltv_rev * 100
+        ltv_2y_pp = ltv_2y / ltv_rev * 100
+        ltv_3y_pp = ltv_3y / ltv_rev * 100
         if cac_known:
             cac_ratio = ltv_val / cac_input
             if cac_ratio >= 3.0:
-                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1  健全（3:1以上）。現在の顧客獲得コストは収益性の観点で適切な水準です。"
+                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1 ✓ 健全（3:1以上）"
             elif cac_ratio >= 1.5:
-                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1  要注意（3:1未満）。CAC削減またはLTV向上施策が急務です。"
+                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1 △ 要注意（3:1未満）"
             else:
-                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1  危険水域（1.5:1未満）。現状では顧客獲得コストが粗利を圧迫しています。即時改善が必要です。"
+                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1 ✗ 危険水域（1.5:1未満）"
         else:
-            cac_health = f"CAC上限（粗利ベース）は ¥{cac_upper:,.0f}。この金額以内に顧客獲得コストを抑えることでユニットエコノミクスが成立します。"
+            cac_health = f"CAC上限（粗利）: ¥{cac_upper:,.0f}"
 
-        # 離脱パターン別示唆
-        if k < 0.8:
-            action_hint = "k<0.8: 初回〜30日以内の離脱が集中。オンボーディング・初期体験の改善が最優先施策です。"
-        elif k < 1.0:
-            action_hint = f"k={k:.3f}: 離脱率がほぼ一定（指数分布）。継続的なエンゲージメント施策が有効です。"
-        else:
-            action_hint = f"k={k:.3f}: 時間とともに離脱が増加。長期継続顧客（1年超）の特別フォローが重要です。"
+        hint_box = s2.shapes.add_shape(1, Inches(0.5), Inches(5.98), Inches(12.3), Inches(1.3))
+        hint_box.fill.solid(); hint_box.fill.fore_color.rgb = RGBColor(0x05,0x15,0x22)
+        hint_box.line.color.rgb = RGBColor(0x2a,0x4a,0x5a)
+        hint_text = (
+            f"1年時点でLTV∞の{ltv_1y_pp:.1f}%（¥{ltv_1y:,.0f}）、"
+            f"2年で{ltv_2y_pp:.1f}%（¥{ltv_2y:,.0f}）、"
+            f"3年で{ltv_3y_pp:.1f}%（¥{ltv_3y:,.0f}）に到達します。\n"
+            f"{cac_health}　|　CAC回収: 売上ベース {cac_recover_rev_str} / 粗利ベース {cac_recover_gp_str}"
+        )
+        txbox(s2, hint_text, 0.65, 6.05, 12.0, 1.15, size=9, color=RGBColor(0xc8,0xd8,0xe8))
 
-        # 回収スピード
-        if pct_1y_pp >= 80:
-            recovery_hint = f"1年でLTV∞の{pct_1y_pp:.0f}%を回収できる高速回収ビジネス。比較的積極的なCAC投資が可能です。"
-        elif pct_1y_pp >= 50:
-            recovery_hint = f"1年時点でLTV∞の{pct_1y_pp:.0f}%、2年で{pct_2y_pp:.0f}%。中期での回収を前提にCAC設計が必要です。"
-        else:
-            recovery_hint = f"1年時点でのLTV回収率が{pct_1y_pp:.0f}%と低め。長期キャッシュフローを考慮した資金計画が重要です。"
+        # ── Slide 3: 暫定 LTV — 観測期間別（新規）──
+        s3_ltv = prs.slides.add_slide(blank)
+        add_bg(s3_ltv, prs)
+        txbox(s3_ltv, '暫定 LTV — 観測期間別', 0.5, 0.22, 12, 0.55, size=22, bold=True, color=WHITE)
 
-        insight_box = s2.shapes.add_shape(1, Inches(0.5), Inches(6.35), Inches(12.3), Inches(0.95))
-        insight_box.fill.solid(); insight_box.fill.fore_color.rgb = RGBColor(0x05,0x18,0x28)
-        insight_box.line.color.rgb = GOLD
-        insight_text = f"示唆  {cac_health}  |  {action_hint}  |  {recovery_hint}"
-        txbox(s2, insight_text, 0.6, 6.38, 12.1, 0.88, size=8, color=RGBColor(0xc8,0xd8,0xe8))
+        # 1段目：テーブルの読み方（箇条書き）
+        reading_box = s3_ltv.shapes.add_shape(1, Inches(0.5), Inches(0.88), Inches(12.3), Inches(1.1))
+        reading_box.fill.solid(); reading_box.fill.fore_color.rgb = RGBColor(0x0a,0x1a,0x28)
+        reading_box.line.color.rgb = RGBColor(0x2a,0x4a,0x5a)
+        reading_text = (
+            f"・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値。実際には時間をかけてこの値に漸近します。\n"
+            f"・LTV∞到達率：各時点でLTV∞の何%を回収できるかを示します。\n"
+            f"・CAC上限：LTV（粗利）÷{cac_n:.0f}で算出。この金額以内に顧客獲得コストを抑えると収益性が成立します。"
+        )
+        txbox(s3_ltv, reading_text, 0.65, 0.92, 12.0, 1.02, size=8.5, color=RGBColor(0xaa,0xcc,0xdd))
+
+        # 2段目：左グラフ＋右テーブル
+        if buf_ltv is not None:
+            buf_ltv.seek(0)
+            s3_ltv.shapes.add_picture(buf_ltv, Inches(0.4), Inches(2.1), Inches(6.2), Inches(3.5))
+
+        # 右側テーブル
+        t_cols = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率']
+        t_cx   = [6.75, 8.3, 9.75, 11.0, 12.1]
+        t_cw   = [1.45, 1.35, 1.35, 1.35, 1.2]
+        # ヘッダー
+        for cx, cw, ch in zip(t_cx, t_cw, t_cols):
+            hdr = s3_ltv.shapes.add_shape(1, Inches(cx), Inches(2.1), Inches(cw), Inches(0.35))
+            hdr.fill.solid(); hdr.fill.fore_color.rgb = RGBColor(0x0d,0x2a,0x3a)
+            hdr.line.fill.background()
+            txbox(s3_ltv, ch, cx+0.02, 2.12, cw-0.04, 0.3, size=7.5, bold=True, color=GOLD, align=PP_ALIGN.CENTER)
+
+        # データ行（horizons + λ + 99%）
+        all_rows_pp = []
+        for h in horizons:
+            if business_type == '都度購入型':
+                _dorm_pp = dormancy_days or 180
+                lh_r = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_pp)
+                lh_g = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, _dorm_pp)
+            else:
+                lh_r = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
+                lh_g = ltv_horizon_offset(k, lam, gp_daily,   h, ltv_offset_days)
+            label = f'{h}日' if h < 365 else f'{h//365}年（{h}日）'
+            all_rows_pp.append((label, lh_r, lh_g, lh_g/cac_n, lh_r/ltv_rev*100, False))
+        # λ行
+        all_rows_pp.append((f'λ {round(lam_actual):,}日', lam_rev, lam_gp, lam_gp/cac_n, lam_rev/ltv_rev*100, True))
+        # 99%行
+        all_rows_pp.append((f'99%到達（{int(days_99):,}日）', rev_99, gp_99, gp_99/cac_n, 99.0, True))
+
+        row_y2 = 2.48
+        for i, (hl, lr, lg, lc, pct, is_special) in enumerate(all_rows_pp):
+            bg_color = RGBColor(0x0d,0x2a,0x3a) if is_special else (RGBColor(0x0d,0x1a,0x22) if i%2==0 else RGBColor(0x0a,0x14,0x1c))
+            txt_color = GOLD if is_special else WHITE
+            vals = [hl, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%']
+            for cx, cw, v in zip(t_cx, t_cw, vals):
+                cell = s3_ltv.shapes.add_shape(1, Inches(cx), Inches(row_y2), Inches(cw), Inches(0.3))
+                cell.fill.solid(); cell.fill.fore_color.rgb = bg_color
+                cell.line.fill.background()
+                align = PP_ALIGN.LEFT if cx == t_cx[0] else PP_ALIGN.RIGHT
+                txbox(s3_ltv, v, cx+0.03, row_y2+0.02, cw-0.05, 0.26, size=7.5, color=txt_color, align=align)
+            row_y2 += 0.31
+
+        # 3段目：CAC設計の目安
+        cac_box = s3_ltv.shapes.add_shape(1, Inches(0.5), Inches(6.05), Inches(12.3), Inches(1.25))
+        cac_box.fill.solid(); cac_box.fill.fore_color.rgb = RGBColor(0x05,0x15,0x22)
+        cac_box.line.color.rgb = GOLD
+        txbox(s3_ltv, 'CAC設計の目安', 0.65, 6.08, 3, 0.3, size=9, bold=True, color=GOLD)
+        cac_guide = (
+            f"回収期間に迷ったら、λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f} を用いてCAC上限を算出してください。\n"
+            f"λはリピート顧客の63.2%が離脱するまでの期間（初回購入起点）をデータが示した答えです。\n"
+            f"CAC上限（{cac_label}）= ¥{cac_upper:,.0f}　|　CAC回収: 売上ベース 約 {cac_recover_rev_str} / 粗利ベース 約 {cac_recover_gp_str}"
+        )
+        txbox(s3_ltv, cac_guide, 0.65, 6.4, 12.0, 0.85, size=8.5, color=WHITE)
 
         # ── Slide 3: Charts ──
         s3 = prs.slides.add_slide(blank)
