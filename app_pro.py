@@ -3456,20 +3456,19 @@ if segment_cols_input.strip():
                 'CAC上限（粗利）': f'¥{weighted_cac:,.0f}',
                 'k': '—', 'λ（日）': '—', 'R²': '—',
             }
-            avg_row_html = "<tr style='background:#0d2030; border-bottom:1px solid #1a3a4a;'>"
+            avg_row_html = "<tr style='background:#0d1f2d; border-top:1px solid #1a3a4a;'>"
             for col in cols:
                 align = 'left' if col == 'セグメント' else 'right'
                 w = f'{seg_col_w}%' if col == 'セグメント' else f'{num_col_w}%'
                 val = avg_row_vals.get(col, '—')
-                color = '#56b4d3' if col == 'セグメント' else '#a8dadc'
-                avg_row_html += f"<td style='text-align:{align}; padding:8px 14px; color:{color}; font-size:0.82rem; font-weight:600; font-variant-numeric:tabular-nums; width:{w};'>{val}</td>"
+                avg_row_html += f"<td style='text-align:{align}; padding:8px 14px; color:#a8dadc; font-size:0.82rem; font-variant-numeric:tabular-nums; width:{w};'>{val}</td>"
             avg_row_html += '</tr>'
 
             seg_tbl_html = f"""
 <table style='width:100%; border-collapse:collapse; margin-top:4px; table-layout:fixed;'>
   <colgroup>{''.join([f'<col style="width:{seg_col_w}%;">' if c == 'セグメント' else f'<col style="width:{num_col_w}%;">' for c in cols])}</colgroup>
   <thead><tr style='background:{BG_HEAD};'>{header_html}</tr></thead>
-  <tbody>{avg_row_html}{seg_html_rows}</tbody>
+  <tbody>{seg_html_rows}{avg_row_html}</tbody>
 </table>"""
             st.markdown(seg_tbl_html, unsafe_allow_html=True)
 
@@ -3493,7 +3492,7 @@ if segment_cols_input.strip():
             # NOTEのみ（加重平均はテーブル内に移動）
             st.markdown(f"""
 <div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:10px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
-  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。全体LTV∞（¥{ltv_rev:,.0f}）との差は統計的に正常な現象です。広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。
+  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。全体LTV∞（¥{ltv_rev:,.0f}）との差は<span style='color:{diff_color};'>{diff_str}</span>で、統計的に正常な現象です。広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。
 </div>""", unsafe_allow_html=True)
 
 
