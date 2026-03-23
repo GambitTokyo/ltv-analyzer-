@@ -964,7 +964,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v171</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v172</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -3342,6 +3342,24 @@ if segment_cols_input.strip():
 
             progress_bar.empty()
 
+            # Top Pick（タイトルとグラフの間）
+            if seg_results:
+                best_seg    = seg_df.iloc[0]
+                avg_ltv     = seg_df['LTV∞（売上）'].mean()
+                premium     = (best_seg['LTV∞（売上）'] - avg_ltv) / avg_ltv * 100
+                cac_best    = best_seg['CAC上限（粗利）']
+                cac_avg_seg = seg_df['CAC上限（粗利）'].mean()
+                cac_diff    = cac_best - cac_avg_seg
+                cac_str     = f"許容CAC上限 ¥{cac_best:,.0f}（全セグメント平均より¥{abs(cac_diff):,.0f}{'高く' if cac_diff >= 0 else '低く'}設定可能）"
+                st.markdown(f"""
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-left:3px solid #56b4d3; border-radius:8px; padding:10px 16px; margin-bottom:8px; font-size:0.82rem; color:#ccc;'>
+  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4;'>Top Pick</span>　<b style='color:#a8dadc;'>{best_seg['セグメント']}</b>　
+  <span style='color:#888; margin:0 6px;'>|</span>
+  LTV∞(売上): <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 +{premium:.1f}%）
+  <span style='color:#888; margin:0 6px;'>|</span>
+  {cac_str}
+</div>""", unsafe_allow_html=True)
+
             # Plotlyで棒グラフ（日本語フォント問題を完全回避）
             n_seg = len(seg_df)
             bar_colors = [ACCENT if i == 0 else ACCENT2 for i in range(n_seg)]
@@ -3449,7 +3467,7 @@ if segment_cols_input.strip():
 
             # 加重平均行
             avg_row_vals = {
-                'セグメント': f'加重平均　<span style="font-size:0.72rem; color:{diff_color};">{diff_str}</span>',
+                'セグメント': '加重平均',
                 '顧客数':      f'{total_n:,}',
                 'LTV∞（売上）': f'¥{weighted_ltv_rev:,.0f}',
                 'LTV∞（粗利）': f'¥{weighted_ltv_gp:,.0f}',
@@ -3472,27 +3490,10 @@ if segment_cols_input.strip():
 </table>"""
             st.markdown(seg_tbl_html, unsafe_allow_html=True)
 
-            # Top Pick（テーブル直後）
-            if seg_results:
-                best_seg = seg_df.iloc[0]
-                avg_ltv  = seg_df['LTV∞（売上）'].mean()
-                premium  = (best_seg['LTV∞（売上）'] - avg_ltv) / avg_ltv * 100
-                cac_best = best_seg['CAC上限（粗利）']
-                cac_avg  = ltv_val / cac_n
-                cac_str  = f"許容CAC上限 ¥{cac_best:,.0f}（平均より¥{cac_best - cac_avg:,.0f}高く設定可能）"
-                st.markdown(f"""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-left:3px solid #56b4d3; border-radius:8px; padding:10px 16px; margin-top:8px; font-size:0.82rem; color:#ccc;'>
-  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4;'>Top Pick</span>　<b style='color:#a8dadc;'>{best_seg['セグメント']}</b>　
-  <span style='color:#888; margin:0 6px;'>|</span>
-  LTV∞(売上): <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 +{premium:.1f}%）
-  <span style='color:#888; margin:0 6px;'>|</span>
-  {cac_str}
-</div>""", unsafe_allow_html=True)
-
             # NOTEのみ（加重平均はテーブル内に移動）
             st.markdown(f"""
 <div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:10px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
-  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。全体LTV∞（¥{ltv_rev:,.0f}）との差は<span style='color:{diff_color};'>{diff_str}</span>で、統計的に正常な現象です。広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。
+  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。全体LTV∞（¥{ltv_rev:,.0f}）との差（{diff_str}）は統計的に正常な現象です。広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。
 </div>""", unsafe_allow_html=True)
 
 
