@@ -191,27 +191,7 @@ div[data-baseweb="radio"] input:checked ~ * { border-color: #56b4d3 !important; 
 /* フォーカスリング */
 div[data-baseweb="radio"] [data-focused="true"] { box-shadow: 0 0 0 3px rgba(86,180,211,0.3) !important; }
 
-/* ── Sample buttons ── */
-[data-testid="stSidebar"] div.stButton > button,
-div[data-testid="stSidebar"] div.stButton > button {
-    background: #0d1a28 !important;
-    color: #a8c8d8 !important;
-    border: 1px solid #1c3a4a !important;
-    border-radius: 8px !important;
-    font-size: 0.75rem !important;
-    font-weight: 400 !important;
-    font-family: inherit !important;
-    padding: 8px 6px !important;
-    line-height: 1.5 !important;
-    width: 100% !important;
-    white-space: pre-line !important;
-}
-[data-testid="stSidebar"] div.stButton > button:hover,
-div[data-testid="stSidebar"] div.stButton > button:hover {
-    background: #1c3a4a !important;
-    color: #c8e0e8 !important;
-    border-color: #56b4d3 !important;
-}
+
 
 /* ── Download buttons ── */
 div.stDownloadButton > button {
@@ -789,21 +769,15 @@ with st.sidebar:
     if 'sample_label' not in st.session_state:
         st.session_state.sample_label = None
 
-    _btn_style = """
-        display:block; width:100%; text-align:center; text-decoration:none;
-        background:#0d1a28; color:#a8c8d8;
-        border:1px solid #1c3a4a; border-radius:8px;
-        padding:8px 6px; font-size:0.75rem; line-height:1.6;
-        cursor:pointer; box-sizing:border-box;
-    """
+    _btn_css = "display:block; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5;"
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
-        if st.button('サブスク型：\n月額ジム（日割りOFF）', key='btn_sub', use_container_width=True):
+        if st.button('サブスク型：月額ジム\n（日割りOFF）', key='btn_sub', use_container_width=True):
             st.session_state.sample_df = sample_sub
             st.session_state.sample_label = 'サブスク型：月額ジム（日割りOFF）'
             st.rerun()
     with col_dl2:
-        if st.button('サブスク型：\n月額ジム（日割りON）', key='btn_sub_on', use_container_width=True):
+        if st.button('サブスク型：月額ジム\n（日割りON）', key='btn_sub_on', use_container_width=True):
             st.session_state.sample_df = sample_sub_on
             st.session_state.sample_label = 'サブスク型：月額ジム（日割りON）'
             st.rerun()
@@ -981,7 +955,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v154</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v155</div>
 </div>
 """, unsafe_allow_html=True)
 
