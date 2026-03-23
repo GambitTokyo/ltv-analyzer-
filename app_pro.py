@@ -530,6 +530,12 @@ with st.sidebar:
     # 6ヶ月：50%生存、1年：28%、2年：8%、3年：3%
     # 月額プラン：7,000 / 9,800 / 12,000円
     # LTV∞イメージ：約8万円、99%到達6年
+    # サブスクは3年観測期間で独自のstart_datesを使用
+    SUB_START = pd.Timestamp('2023-01-01')
+    _sub_dates = list(pd.date_range(SUB_START, BASE_DATE, periods=n_sample))
+    np.random.shuffle(_sub_dates)
+    start_dates_sub = _sub_dates[:n_sample]
+
     ec_plans    = np.random.choice([7000, 9800, 12000], n_sample, p=[0.50, 0.35, 0.15])
     ec_survival = np.random.weibull(0.921, n_sample) * 273
     ec_churned  = np.random.random(n_sample) < 0.85
@@ -537,7 +543,7 @@ with st.sidebar:
     end_dates_sub = []
     revenues_sub  = []
     for i in range(n_sample):
-        sd  = start_dates[i]
+        sd  = start_dates_sub[i]
         fee = ec_plans[i]
         if ec_churned[i]:
             ed = sd + pd.Timedelta(days=max(1, int(ec_survival[i])))
@@ -567,7 +573,7 @@ with st.sidebar:
 
     sample_sub = pd.DataFrame({
         'customer_id':   [f'GY{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates],
+        'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates_sub],
         'end_date':      end_dates_sub,
         'revenue_total': revenues_sub,
         'plan':          ec_plan_label,
@@ -638,7 +644,7 @@ with st.sidebar:
     # 既存データの累計売上を日割り計算に変換
     revenues_sub_on = []
     for i in range(n_sample):
-        sd  = start_dates[i]
+        sd  = start_dates_sub[i]
         fee = ec_plans[i]
         ed_str = end_dates_sub[i]
         if ed_str:
@@ -650,7 +656,7 @@ with st.sidebar:
 
     sample_sub_on = pd.DataFrame({
         'customer_id':   [f'GY{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates],
+        'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates_sub],
         'end_date':      end_dates_sub,
         'revenue_total': revenues_sub_on,
         'plan':          ec_plan_label,
@@ -916,7 +922,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v121</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v122</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1379,7 +1385,7 @@ metrics = [
     (f"¥{ltv_rev:,.0f}", "LTV∞",       "売上ベース"),
     (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
     (f"{k:.3f}",           "Weibull k", f"{k_desc}"),
-    (f"{lam + ltv_offset_days:.1f}日" if business_type == "都度購入型" else f"{lam:.1f}日", "Weibull λ", "値が大きいほどLTV∞到達が長期化"),
+    (f"{lam + ltv_offset_days:.1f}日", "Weibull λ", "値が大きいほどLTV∞到達が長期化"),
     (f"{r2:.3f}",          "R²",        "0.9以上が理想 / 1.0が最高精度"),
 ]
 for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
