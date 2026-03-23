@@ -781,7 +781,7 @@ with st.sidebar:
     spot_b64    = base64.b64encode(spot_csv).decode()
     supp_b64    = base64.b64encode(supp_csv).decode()
 
-    st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>サンプルデータをそのまま読み込んで試せます。</span>", unsafe_allow_html=True)
+    st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>クリックして読み込んで試せます。</span>", unsafe_allow_html=True)
 
     # サンプルデータをセッションステートで管理
     if 'sample_df' not in st.session_state:
@@ -798,28 +798,24 @@ with st.sidebar:
     """
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
-        st.markdown(f'<div style="{_btn_style}">サブスク型：<br>月額ジム（日割りOFF）</div>', unsafe_allow_html=True)
-        if st.button('選択', key='btn_sub', use_container_width=True):
+        if st.button('サブスク型：\n月額ジム（日割りOFF）', key='btn_sub', use_container_width=True):
             st.session_state.sample_df = sample_sub
             st.session_state.sample_label = 'サブスク型：月額ジム（日割りOFF）'
             st.rerun()
     with col_dl2:
-        st.markdown(f'<div style="{_btn_style}">サブスク型：<br>月額ジム（日割りON）</div>', unsafe_allow_html=True)
-        if st.button('選択', key='btn_sub_on', use_container_width=True):
+        if st.button('サブスク型：\n月額ジム（日割りON）', key='btn_sub_on', use_container_width=True):
             st.session_state.sample_df = sample_sub_on
             st.session_state.sample_label = 'サブスク型：月額ジム（日割りON）'
             st.rerun()
 
     col_dl3, col_dl4 = st.columns(2)
     with col_dl3:
-        st.markdown(f'<div style="{_btn_style}">都度購入型：<br>ファッションEC</div>', unsafe_allow_html=True)
-        if st.button('選択', key='btn_spot', use_container_width=True):
+        if st.button('都度購入型：\nファッションEC', key='btn_spot', use_container_width=True):
             st.session_state.sample_df = sample_spot
             st.session_state.sample_label = '都度購入型：ファッションEC'
             st.rerun()
     with col_dl4:
-        st.markdown(f'<div style="{_btn_style}">都度購入型：<br>サプリEC</div>', unsafe_allow_html=True)
-        if st.button('選択', key='btn_supp', use_container_width=True):
+        if st.button('都度購入型：\nサプリEC', key='btn_supp', use_container_width=True):
             st.session_state.sample_df = sample_supp
             st.session_state.sample_label = '都度購入型：サプリEC'
             st.rerun()
@@ -985,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v153</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v154</div>
 </div>
 """, unsafe_allow_html=True)
 
