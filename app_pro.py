@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v182</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v183</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2269,15 +2269,16 @@ if True:
             run.font.name  = 'メイリオ'
             return tb
 
-        def slide_title(slide, title, subtitle=None):
+        def slide_title(slide, title, subtitle=None, left=0.25, top=0.18, width=12.8, height=0.55, size=18, bold=True, color=None, **kwargs):
             """コンテンツスライド共通タイトルブロック"""
+            _color = color if color is not None else G_NAVY
             # タイトル
-            txbox(slide, title, 0.25, 0.18, 12.8, 0.55, size=18, bold=True, color=G_NAVY)
+            txbox(slide, title, left, top, width, height, size=size, bold=bold, color=_color)
             # 水色下線
             uline = slide.shapes.add_shape(1, Inches(0.25), Inches(0.78), Inches(12.8), Pt(2))
             uline.fill.solid(); uline.fill.fore_color.rgb = G_BLUE
             uline.line.fill.background()
-            if subtitle:
+            if subtitle and isinstance(subtitle, str):
                 txbox(slide, subtitle, 0.25, 0.82, 12.8, 0.38, size=9, color=G_GRAY)
 
         from datetime import date
