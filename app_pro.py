@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v180</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v181</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1615,7 +1615,10 @@ with c1:
     ax.grid(True, alpha=0.25)
     ax.set_title('Survival Curve', color='#ccc', fontsize=10, pad=8)
     fig.tight_layout()
-    st.pyplot(fig)
+    buf_c1 = io.BytesIO()
+    fig.savefig(buf_c1, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
+    buf_c1.seek(0)
+    st.image(buf_c1, use_container_width=True)
     plt.close()
 
 with c1:
@@ -1635,7 +1638,10 @@ with c2:
     ax.grid(True, alpha=0.25)
     ax.set_title('Weibull Linearization Plot', color='#ccc', fontsize=10, pad=8)
     fig.tight_layout()
-    st.pyplot(fig)
+    buf_c2 = io.BytesIO()
+    fig.savefig(buf_c2, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
+    buf_c2.seek(0)
+    st.image(buf_c2, use_container_width=True)
     plt.close()
 
 with c2:
@@ -1730,10 +1736,12 @@ ax_ltv_pp.legend(fontsize=8, framealpha=0.2, labelcolor='white', loc='upper left
 ax_ltv_pp.grid(True, alpha=0.2, color='#1a3040')
 for spine in ax_ltv_pp.spines.values(): spine.set_color('#1a3040')
 fig_ltv_pp.tight_layout()
-fig_ltv_pp.subplots_adjust(top=0.97)
 
-# UI表示
-st.pyplot(fig_ltv_pp)
+# UI表示（tight描画でlegend余白をカット）
+buf_ui = io.BytesIO()
+fig_ltv_pp.savefig(buf_ui, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
+buf_ui.seek(0)
+st.image(buf_ui, use_container_width=True)
 
 # PPTX用バッファに保存
 buf_ltv = io.BytesIO()
