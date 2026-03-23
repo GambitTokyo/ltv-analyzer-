@@ -964,7 +964,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v165</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v166</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -3228,7 +3228,7 @@ if segment_cols_input.strip():
             f"<a href='#{c}' style='color:#56b4d3; font-size:0.78rem; text-decoration:none;'>{c}</a>"
             for c in valid_seg_cols
         )
-        st.markdown(f"<div style='margin-bottom:12px; font-size:0.78rem; color:#888;'>セグメント：{_seg_links}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='margin-bottom:12px; font-size:0.78rem; color:#888;'>{_seg_links}</div>", unsafe_allow_html=True)
 
         for seg_col in valid_seg_cols:
             st.markdown(f"<div id='{seg_col}' style='font-size:0.82rem; font-weight:600; color:#a8dadc; margin:16px 0 4px 0; letter-spacing:0.05em;'>{seg_col}</div>", unsafe_allow_html=True)
@@ -3395,14 +3395,6 @@ if segment_cols_input.strip():
             diff_str = f"+{diff_pct:.1f}%" if diff_pct >= 0 else f"{diff_pct:.1f}%"
             diff_color = "#a8dadc" if diff_pct >= 0 else "#e8a0a0"
 
-            st.markdown(f"""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:8px; padding:12px 18px; margin-bottom:8px; font-size:0.85rem; color:#ccc;'>
-  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a;'>セグメント加重平均 LTV∞</span>　
-  <span style='font-size:1.1rem; color:#a8dadc; font-weight:700;'>¥{weighted_ltv_rev:,.0f}</span>（売上）　
-  <span style='color:#888;'>¥{weighted_ltv_gp:,.0f}（粗利）</span>　
-  <span style='color:{diff_color}; font-size:0.8rem;'>全体値（¥{ltv_rev:,.0f}）との差：{diff_str}</span>
-</div>""", unsafe_allow_html=True)
-
             # HTMLテーブルで描画（数字右寄せ・列幅均等）
             ACCENT   = '#56b4d3'
             BG_HEAD  = '#0d1f2d'
@@ -3462,44 +3454,39 @@ if segment_cols_input.strip():
 </table>"""
             st.markdown(seg_tbl_html, unsafe_allow_html=True)
 
-            # テーブル下の説明
+            # Top Pick（テーブル直後）
+            if seg_results:
+                best_seg = seg_df.iloc[0]
+                avg_ltv  = seg_df['LTV∞（売上）'].mean()
+                premium  = (best_seg['LTV∞（売上）'] - avg_ltv) / avg_ltv * 100
+                cac_best = best_seg['CAC上限（粗利）']
+                cac_avg  = ltv_val / cac_n
+                cac_str  = f"許容CAC上限 ¥{cac_best:,.0f}（平均より¥{cac_best - cac_avg:,.0f}高く設定可能）"
+                st.markdown(f"""
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-left:3px solid #56b4d3; border-radius:8px; padding:10px 16px; margin-top:8px; font-size:0.82rem; color:#ccc;'>
+  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4;'>Top Pick</span>　<b style='color:#a8dadc;'>{best_seg['セグメント']}</b>　
+  <span style='color:#888; margin:0 6px;'>|</span>
+  LTV∞(売上): <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 +{premium:.1f}%）
+  <span style='color:#888; margin:0 6px;'>|</span>
+  {cac_str}
+</div>""", unsafe_allow_html=True)
+
+            # テーブル下：加重平均＋NOTEを1つのボックスに統合
             st.markdown(f"""
 <div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:12px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
+  <div style='margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #1a3040; font-size:0.85rem; color:#ccc;'>
+    <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a;'>セグメント加重平均 LTV∞</span>　
+    <span style='font-size:1.1rem; color:#a8dadc; font-weight:700;'>¥{weighted_ltv_rev:,.0f}</span>（売上）　
+    <span style='color:#888;'>¥{weighted_ltv_gp:,.0f}（粗利）</span>　
+    <span style='color:{diff_color}; font-size:0.8rem;'>全体値（¥{ltv_rev:,.0f}）との差：{diff_str}</span>
+  </div>
   <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — セグメント加重平均と全体LTV∞が異なる理由<br>
   全体LTV∞（¥{ltv_rev:,.0f}）はすべての顧客を1つのWeibullモデルでフィットした値です。セグメント加重平均（¥{weighted_ltv_rev:,.0f}）は各セグメントを個別にフィットした後、顧客数で重み付け平均した値です。<br>
   セグメントを切ることで顧客の<b>異質性（heterogeneity）が分離</b>されるため、切り口によって値が変わります。これはモデルの誤りではなく統計的に正しい現象です。<br>
   <b>意思決定の基準：</b>広告投資・予算配分にはセグメント別LTV∞を、ビジネス全体の健全性評価には全体LTV∞を参照することを推奨します。
 </div>""", unsafe_allow_html=True)
 
-            # 優先獲得推奨
-            best = seg_results[0] if seg_results else None
-            if best:
-                best_seg = seg_df.iloc[0]
-                avg_ltv  = seg_df['LTV∞（売上）'].mean()
-                premium  = (best_seg['LTV∞（売上）'] - avg_ltv) / avg_ltv * 100
-                cac_best = best_seg['CAC上限（粗利）']
-                cac_avg  = ltv_val / cac_n
 
-                if cac_known:
-                    ltv_cac_ratio = best_seg['LTV∞（粗利）'] / cac_input
-                    ratio_judge = " 健全" if ltv_cac_ratio >= 3.0 else " 要改善（推奨3:1以上）"
-                    efficiency_str = f"LTV:CAC比率（粗利ベース）= {ltv_cac_ratio:.1f}:1　{ratio_judge}"
-                    cac_uplift = ((cac_best - cac_avg) / cac_avg * 100)
-                    cac_str = f"許容CAC上限 ¥{cac_best:,.0f}（平均より{cac_uplift:+.1f}%高く設定可能）"
-                else:
-                    efficiency_str = None
-                    cac_str = f"許容CAC上限 ¥{cac_best:,.0f}（平均より¥{cac_best - cac_avg:,.0f}高く設定可能）"
-
-                insight_pro = f"""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-left:3px solid #56b4d3; border-radius:10px; padding:18px 20px; margin-top:8px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
-  <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4; margin-bottom:10px;'>優先獲得推奨　<span style='font-size:0.95rem; font-weight:600; text-transform:none; letter-spacing:normal; color:#c8d0d8;'><b style='color:#a8dadc;'>{best_seg['セグメント']}</b></span></div>
-  <div>・LTV∞（売上）: <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 <b style='color:#a8dadc;'>+{premium:.1f}%</b>）</div>
-  <div>・{cac_str}</div>
-  {"<div>・" + efficiency_str + "</div>" if efficiency_str else ""}
-  <div style='margin-top:10px; font-size:0.8rem; color:#4a8aa8;'>このセグメントに顧客獲得投資を集中させることで、CAC上限¥{cac_best:,.0f}の範囲内で収益性を維持しながら積極的な顧客獲得が可能です。</div>
-</div>
-"""
-                st.markdown(insight_pro, unsafe_allow_html=True)
 
             # ── 全セグメントの詳細分析（上位N件のみブラウザ表示）──
             seg_results_display = seg_results[:seg_display_limit]
