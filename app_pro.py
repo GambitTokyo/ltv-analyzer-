@@ -954,7 +954,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v147</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v148</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2079,10 +2079,8 @@ with tab3:
 
 st.markdown("<div class='section-title'>Export</div>", unsafe_allow_html=True)
 
-exp1, exp2, exp3, _exp_pad = st.columns([1, 1, 1, 5])
-
 # ── Excel export ─────────────────────────────────────────────
-with exp1:
+if True:
     try:
         import openpyxl
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -2239,32 +2237,60 @@ with exp1:
         xl_buf = io.BytesIO()
         wb.save(xl_buf)
         xl_buf.seek(0)
-        st.download_button(".xlsx", xl_buf,
-                           file_name=f"LTV分析_{client_name or 'report'}.xlsx",
-                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        import base64 as _b64
+        _xl_b64 = _b64.b64encode(xl_buf.read()).decode()
+        _fn_xl = f"LTV分析_{client_name or 'report'}.xlsx"
+        _xl_href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{_xl_b64}" download="{_fn_xl}" class="dl-btn">.xlsx</a>'
+        _xl_html = _xl_href
     except Exception as e:
-        st.caption(f"Excel出力エラー: {e}")
+        _xl_html = f'<span class="dl-btn-err">.xlsx エラー</span>'
 
 # ── PowerPoint export ─────────────────────────────────────────
-with exp2:
+if True:
     try:
         from pptx import Presentation
         from pptx.util import Inches, Pt, Emu
         from pptx.dml.color import RGBColor
         from pptx.enum.text import PP_ALIGN
 
-        BG    = RGBColor(0x0d, 0x0d, 0x0d)
-        GOLD  = RGBColor(0x56, 0xb4, 0xd3)
-        TEAL  = RGBColor(0xa8, 0xda, 0xdc)
-        WHITE = RGBColor(0xe8, 0xe4, 0xdc)
-        GRAY  = RGBColor(0xaa, 0xaa, 0xaa)
+        # ── Gambit テンプレートカラー ──
+        G_NAVY  = RGBColor(0x0A, 0x14, 0x35)   # 濃紺
+        G_BLUE  = RGBColor(0x00, 0x96, 0xD6)   # 水色メイン
+        G_LBLUE = RGBColor(0x4D, 0xC9, 0xFE)   # 水色明
+        G_WHITE = RGBColor(0xFF, 0xFF, 0xFF)   # 白
+        G_GRAY  = RGBColor(0x88, 0x88, 0x88)   # グレー
+        G_LGRAY = RGBColor(0xE9, 0xE9, 0xE9)   # 薄グレー
 
-        def add_bg(slide, prs):
+        # 後方互換エイリアス
+        BG    = G_NAVY
+        GOLD  = G_BLUE
+        TEAL  = G_LBLUE
+        WHITE = G_WHITE
+        GRAY  = G_GRAY
+
+        def add_bg(slide, prs, dark=False):
+            """白背景（デフォルト）または濃紺背景"""
             bg = slide.shapes.add_shape(1, 0, 0, prs.slide_width, prs.slide_height)
-            bg.fill.solid(); bg.fill.fore_color.rgb = BG
-            bg.line.fill.background(); bg.zorder = 0
+            bg.fill.solid()
+            bg.fill.fore_color.rgb = G_NAVY if dark else G_WHITE
+            bg.line.fill.background()
 
-        def txbox(slide, text, l, t, w, h, size=12, bold=False, color=WHITE, align=PP_ALIGN.LEFT):
+        def add_content_chrome(slide, prs):
+            """コンテンツスライド共通装飾：左側細帯＋下部フッター"""
+            # 左側水色帯
+            bar = slide.shapes.add_shape(1, 0, 0, Inches(0.12), prs.slide_height)
+            bar.fill.solid(); bar.fill.fore_color.rgb = G_BLUE
+            bar.line.fill.background()
+            # 下部フッターライン
+            line = slide.shapes.add_shape(1, Inches(0.2), Inches(7.15), Inches(12.93), Pt(1.5))
+            line.fill.solid(); line.fill.fore_color.rgb = G_LGRAY
+            line.line.fill.background()
+            # フッターテキスト
+            txbox(slide, f'Copyright {date.today().year} Gambit Inc. All rights reserved.',
+                  0.2, 7.18, 9, 0.28, size=7, color=G_GRAY)
+
+        def txbox(slide, text, l, t, w, h, size=12, bold=False, color=None, align=PP_ALIGN.LEFT):
+            if color is None: color = G_NAVY
             tb = slide.shapes.add_textbox(Inches(l), Inches(t), Inches(w), Inches(h))
             tf = tb.text_frame; tf.word_wrap = True
             p  = tf.paragraphs[0]; p.alignment = align
@@ -2272,27 +2298,49 @@ with exp2:
             run.font.size  = Pt(size)
             run.font.bold  = bold
             run.font.color.rgb = color
+            run.font.name  = 'メイリオ'
             return tb
+
+        def slide_title(slide, title, subtitle=None):
+            """コンテンツスライド共通タイトルブロック"""
+            # タイトル
+            txbox(slide, title, 0.25, 0.18, 12.8, 0.55, size=18, bold=True, color=G_NAVY)
+            # 水色下線
+            uline = slide.shapes.add_shape(1, Inches(0.25), Inches(0.78), Inches(12.8), Pt(2))
+            uline.fill.solid(); uline.fill.fore_color.rgb = G_BLUE
+            uline.line.fill.background()
+            if subtitle:
+                txbox(slide, subtitle, 0.25, 0.82, 12.8, 0.38, size=9, color=G_GRAY)
+
+        from datetime import date
 
         prs = Presentation()
         prs.slide_width  = Inches(13.33)
         prs.slide_height = Inches(7.5)
         blank = prs.slide_layouts[6]
 
-        # ── Slide 1: Title ──
+        # ── Slide 1: Title（Gambitスタイル：濃紺背景）──
         s1 = prs.slides.add_slide(blank)
-        add_bg(s1, prs)
-        # Accent line
-        line = s1.shapes.add_shape(1, Inches(0.8), Inches(3.2), Inches(0.04), Inches(1.4))
-        line.fill.solid(); line.fill.fore_color.rgb = GOLD; line.line.fill.background()
-        txbox(s1, 'LTV Analysis Report', 1.0, 2.8, 8, 0.8, size=36, bold=True, color=WHITE)
-        txbox(s1, 'Kaplan–Meier × Weibull Model', 1.0, 3.7, 8, 0.5, size=14, color=GOLD)
+        add_bg(s1, prs, dark=True)
+        # 左側水色帯
+        bar1 = s1.shapes.add_shape(1, 0, 0, Inches(0.12), prs.slide_height)
+        bar1.fill.solid(); bar1.fill.fore_color.rgb = G_BLUE; bar1.line.fill.background()
+        # 下部水色帯
+        bar2 = s1.shapes.add_shape(1, 0, Inches(6.8), prs.slide_width, Inches(0.7))
+        bar2.fill.solid(); bar2.fill.fore_color.rgb = G_BLUE; bar2.line.fill.background()
+        # メインタイトル
+        txbox(s1, 'LTV Analysis Report', 0.4, 2.5, 10, 1.0, size=36, bold=True, color=G_WHITE)
+        txbox(s1, 'Kaplan-Meier x Weibull Survival Model', 0.4, 3.55, 10, 0.5, size=14, color=G_LBLUE)
+        # クライアント・日付・作成者
+        info_y = 4.3
         if client_name:
-            txbox(s1, client_name, 1.0, 4.4, 8, 0.4, size=13, color=RGBColor(0x88,0x88,0x88))
-        from datetime import date
-        txbox(s1, date.today().strftime('%Y年%m月%d日'), 1.0, 5.0, 6, 0.4, size=11, color=GRAY)
+            txbox(s1, client_name, 0.4, info_y, 10, 0.4, size=13, bold=True, color=G_WHITE)
+            info_y += 0.45
+        txbox(s1, date.today().strftime('%Y年%m月%d日'), 0.4, info_y, 6, 0.35, size=11, color=G_GRAY)
         if analyst_name:
-            txbox(s1, analyst_name, 1.0, 5.4, 6, 0.4, size=11, color=GRAY)
+            txbox(s1, analyst_name, 0.4, info_y + 0.38, 6, 0.35, size=11, color=G_GRAY)
+        # 下部帯テキスト
+        txbox(s1, 'Gambit Inc.', 0.4, 6.88, 5, 0.35, size=10, bold=True, color=G_WHITE)
 
         # ── データ期間計算 ──
         _date_cols = [df['start_date']]
@@ -2304,16 +2352,15 @@ with exp2:
         _data_start = _all_dates_flat.min().strftime('%Y/%m/%d')
         _data_end   = _all_dates_flat.max().strftime('%Y/%m/%d')
 
-        # ── Slide 2: 分析結果サマリー（リデザイン）──
+        # ── Slide 2: 分析結果サマリー（Gambitスタイル）──
         s2 = prs.slides.add_slide(blank)
-        add_bg(s2, prs)
-
-        # タイトル
-        txbox(s2, '分析結果サマリー', 0.5, 0.22, 10, 0.55, size=22, bold=True, color=WHITE)
+        add_bg(s2, prs, dark=False)
+        add_content_chrome(s2, prs)
+        slide_title(s2, '分析結果サマリー', f'LTV Analysis  |  {business_type}')
 
         # データ期間・基本情報バー
-        info_bar = s2.shapes.add_shape(1, Inches(0.5), Inches(0.85), Inches(12.3), Inches(0.45))
-        info_bar.fill.solid(); info_bar.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
+        info_bar = s2.shapes.add_shape(1, Inches(0.25), Inches(1.05), Inches(12.85), Inches(0.4))
+        info_bar.fill.solid(); info_bar.fill.fore_color.rgb = G_LGRAY
         info_bar.line.fill.background()
         info_text = (
             f"データ期間: {_data_start} – {_data_end}　|　"
@@ -2321,92 +2368,85 @@ with exp2:
             f"継続中: {(df['event']==0).sum():,}件　|　"
             f"平均日次ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
         )
-        txbox(s2, info_text, 0.6, 0.88, 12.1, 0.38, size=8.5, color=RGBColor(0x88,0xaa,0xbb))
+        txbox(s2, info_text, 0.3, 1.08, 12.7, 0.35, size=8, color=G_NAVY)
 
-        # 5指標カード
+        # 5指標カード（Gambitスタイル：白地・水色ボーダー・濃紺テキスト）
         cards5 = [
-            ('LTV∞（売上）', f'¥{ltv_rev:,.0f}', 'Weibull積分'),
+            ('LTV∞（売上）',        f'¥{ltv_rev:,.0f}',   'Weibull積分'),
             (f'CAC上限（{cac_label}）', f'¥{cac_upper:,.0f}', '粗利ベース'),
-            ('Weibull k', f'{k:.3f}', 'k<1:初期離脱型  k>1:逓増型'),
-            (f'Weibull λ', f'{lam_actual:.0f}日', '値が大きいほど長期継続'),
-            ('R²', f'{r2:.3f}', '0.9以上が理想'),
+            ('Weibull k',           f'{k:.3f}',            'k<1:初期離脱  k>1:逓増'),
+            ('Weibull λ',           f'{lam_actual:.0f}日',  '長期継続の目安'),
+            ('R²',                  f'{r2:.3f}',            '0.9以上が理想'),
         ]
-        card_w = 2.4
-        card_gap = 0.18
-        card_start_x = 0.5
+        card_w, card_gap, card_x0 = 2.42, 0.12, 0.25
         for i, (label, val, sub) in enumerate(cards5):
-            cx = card_start_x + i * (card_w + card_gap)
-            card = s2.shapes.add_shape(1, Inches(cx), Inches(1.42), Inches(card_w), Inches(1.7))
-            card.fill.solid(); card.fill.fore_color.rgb = RGBColor(0x10,0x20,0x30)
-            card.line.color.rgb = RGBColor(0x2a,0x4a,0x5a)
-            txbox(s2, val,   cx+0.1, 1.52, card_w-0.2, 0.75, size=22, bold=True, color=GOLD, align=PP_ALIGN.CENTER)
-            txbox(s2, label, cx+0.1, 2.28, card_w-0.2, 0.38, size=9,  bold=True, color=WHITE, align=PP_ALIGN.CENTER)
-            txbox(s2, sub,   cx+0.1, 2.65, card_w-0.2, 0.35, size=7.5, color=GRAY, align=PP_ALIGN.CENTER)
+            cx = card_x0 + i * (card_w + card_gap)
+            card = s2.shapes.add_shape(1, Inches(cx), Inches(1.55), Inches(card_w), Inches(1.55))
+            card.fill.solid(); card.fill.fore_color.rgb = G_WHITE
+            card.line.color.rgb = G_BLUE
+            # 上部水色帯
+            top = s2.shapes.add_shape(1, Inches(cx), Inches(1.55), Inches(card_w), Inches(0.08))
+            top.fill.solid(); top.fill.fore_color.rgb = G_BLUE; top.line.fill.background()
+            txbox(s2, val,   cx+0.08, 1.68, card_w-0.16, 0.62, size=20, bold=True, color=G_NAVY, align=PP_ALIGN.CENTER)
+            txbox(s2, label, cx+0.08, 2.32, card_w-0.16, 0.36, size=8.5, bold=True, color=G_NAVY, align=PP_ALIGN.CENTER)
+            txbox(s2, sub,   cx+0.08, 2.68, card_w-0.16, 0.3,  size=7.5, color=G_GRAY, align=PP_ALIGN.CENTER)
 
-        # 結論ボックス（k_summary）
-        concl_box = s2.shapes.add_shape(1, Inches(0.5), Inches(3.25), Inches(12.3), Inches(2.6))
-        concl_box.fill.solid(); concl_box.fill.fore_color.rgb = RGBColor(0x08,0x18,0x28)
-        concl_box.line.color.rgb = GOLD
-        txbox(s2, '結論', 0.65, 3.3, 2, 0.3, size=9, bold=True, color=GOLD)
-        txbox(s2, k_summary + r2_summary, 0.65, 3.6, 12.0, 2.1, size=9.5, color=WHITE)
+        # 結論ボックス
+        concl_box = s2.shapes.add_shape(1, Inches(0.25), Inches(3.2), Inches(12.85), Inches(2.55))
+        concl_box.fill.solid(); concl_box.fill.fore_color.rgb = RGBColor(0xF0, 0xF7, 0xFF)
+        concl_box.line.color.rgb = G_BLUE
+        txbox(s2, '結論', 0.35, 3.23, 1.5, 0.3, size=9, bold=True, color=G_BLUE)
+        txbox(s2, k_summary + r2_summary, 0.35, 3.52, 12.6, 2.1, size=9, color=G_NAVY)
 
         # 示唆ボックス
         ltv_1y_pp = ltv_1y / ltv_rev * 100
         ltv_2y_pp = ltv_2y / ltv_rev * 100
         ltv_3y_pp = ltv_3y / ltv_rev * 100
-        if cac_known:
-            cac_ratio = ltv_val / cac_input
-            if cac_ratio >= 3.0:
-                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1 ✓ 健全（3:1以上）"
-            elif cac_ratio >= 1.5:
-                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1 △ 要注意（3:1未満）"
-            else:
-                cac_health = f"LTV:CAC = {cac_ratio:.1f}:1 ✗ 危険水域（1.5:1未満）"
-        else:
-            cac_health = f"CAC上限（粗利）: ¥{cac_upper:,.0f}"
+        cac_health = f"CAC上限（粗利）: ¥{cac_upper:,.0f}"
 
-        hint_box = s2.shapes.add_shape(1, Inches(0.5), Inches(5.98), Inches(12.3), Inches(1.3))
-        hint_box.fill.solid(); hint_box.fill.fore_color.rgb = RGBColor(0x05,0x15,0x22)
-        hint_box.line.color.rgb = RGBColor(0x2a,0x4a,0x5a)
+        hint_box = s2.shapes.add_shape(1, Inches(0.25), Inches(5.88), Inches(12.85), Inches(1.05))
+        hint_box.fill.solid(); hint_box.fill.fore_color.rgb = G_NAVY
+        hint_box.line.fill.background()
         hint_text = (
             f"1年時点でLTV∞の{ltv_1y_pp:.1f}%（¥{ltv_1y:,.0f}）、"
             f"2年で{ltv_2y_pp:.1f}%（¥{ltv_2y:,.0f}）、"
             f"3年で{ltv_3y_pp:.1f}%（¥{ltv_3y:,.0f}）に到達します。\n"
             f"{cac_health}　|　CAC回収: 売上ベース {cac_recover_rev_str} / 粗利ベース {cac_recover_gp_str}"
         )
-        txbox(s2, hint_text, 0.65, 6.05, 12.0, 1.15, size=9, color=RGBColor(0xc8,0xd8,0xe8))
+        txbox(s2, hint_text, 0.35, 5.93, 12.6, 0.95, size=8.5, color=G_WHITE)
 
-        # ── Slide 3: 暫定 LTV — 観測期間別（新規）──
+        # ── Slide 3: 暫定 LTV — 観測期間別（Gambitスタイル）──
         s3_ltv = prs.slides.add_slide(blank)
-        add_bg(s3_ltv, prs)
-        txbox(s3_ltv, '暫定 LTV — 観測期間別', 0.5, 0.22, 12, 0.55, size=22, bold=True, color=WHITE)
+        add_bg(s3_ltv, prs, dark=False)
+        add_content_chrome(s3_ltv, prs)
+        slide_title(s3_ltv, '暫定 LTV — 観測期間別', 'Provisional LTV by Time Horizon')
 
-        # 1段目：テーブルの読み方（箇条書き）
-        reading_box = s3_ltv.shapes.add_shape(1, Inches(0.5), Inches(0.88), Inches(12.3), Inches(1.1))
-        reading_box.fill.solid(); reading_box.fill.fore_color.rgb = RGBColor(0x0a,0x1a,0x28)
-        reading_box.line.color.rgb = RGBColor(0x2a,0x4a,0x5a)
+        # 1段目：読み方（薄グレー背景）
+        reading_box = s3_ltv.shapes.add_shape(1, Inches(0.25), Inches(1.05), Inches(12.85), Inches(0.85))
+        reading_box.fill.solid(); reading_box.fill.fore_color.rgb = G_LGRAY
+        reading_box.line.fill.background()
         reading_text = (
-            f"・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値。実際には時間をかけてこの値に漸近します。\n"
-            f"・LTV∞到達率：各時点でLTV∞の何%を回収できるかを示します。\n"
-            f"・CAC上限：LTV（粗利）÷{cac_n:.0f}で算出。この金額以内に顧客獲得コストを抑えると収益性が成立します。"
+            f"・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値。実際には時間をかけてこの値に漸近します。"
+            f"  ・LTV∞到達率：各時点でLTV∞の何%に到達できるかを示します。"
+            f"  ・CAC上限：LTV（粗利）÷{cac_n:.0f}で算出。この金額以内に顧客獲得コストを抑えると収益性が成立します。"
         )
-        txbox(s3_ltv, reading_text, 0.65, 0.92, 12.0, 1.02, size=8.5, color=RGBColor(0xaa,0xcc,0xdd))
+        txbox(s3_ltv, reading_text, 0.35, 1.1, 12.6, 0.75, size=8.5, color=G_NAVY)
 
         # 2段目：左グラフ＋右テーブル
         if buf_ltv is not None:
             buf_ltv.seek(0)
             s3_ltv.shapes.add_picture(buf_ltv, Inches(0.4), Inches(2.1), Inches(6.2), Inches(3.5))
 
-        # 右側テーブル
+        # 右側テーブル（Gambitスタイル）
         t_cols = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率']
         t_cx   = [6.75, 8.3, 9.75, 11.0, 12.1]
         t_cw   = [1.45, 1.35, 1.35, 1.35, 1.2]
         # ヘッダー
         for cx, cw, ch in zip(t_cx, t_cw, t_cols):
-            hdr = s3_ltv.shapes.add_shape(1, Inches(cx), Inches(2.1), Inches(cw), Inches(0.35))
-            hdr.fill.solid(); hdr.fill.fore_color.rgb = RGBColor(0x0d,0x2a,0x3a)
+            hdr = s3_ltv.shapes.add_shape(1, Inches(cx), Inches(2.0), Inches(cw), Inches(0.35))
+            hdr.fill.solid(); hdr.fill.fore_color.rgb = G_NAVY
             hdr.line.fill.background()
-            txbox(s3_ltv, ch, cx+0.02, 2.12, cw-0.04, 0.3, size=7.5, bold=True, color=GOLD, align=PP_ALIGN.CENTER)
+            txbox(s3_ltv, ch, cx+0.02, 2.02, cw-0.04, 0.3, size=7.5, bold=True, color=G_WHITE, align=PP_ALIGN.CENTER)
 
         # データ行（horizons + λ + 99%）
         all_rows_pp = []
@@ -2425,10 +2465,10 @@ with exp2:
         # 99%行
         all_rows_pp.append((f'99%到達（{int(days_99):,}日）', rev_99, gp_99, gp_99/cac_n, 99.0, True))
 
-        row_y2 = 2.48
+        row_y2 = 2.38
         for i, (hl, lr, lg, lc, pct, is_special) in enumerate(all_rows_pp):
-            bg_color = RGBColor(0x0d,0x2a,0x3a) if is_special else (RGBColor(0x0d,0x1a,0x22) if i%2==0 else RGBColor(0x0a,0x14,0x1c))
-            txt_color = GOLD if is_special else WHITE
+            bg_color = G_NAVY if is_special else (G_LGRAY if i%2==0 else G_WHITE)
+            txt_color = G_WHITE if is_special else G_NAVY
             vals = [hl, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%']
             for cx, cw, v in zip(t_cx, t_cw, vals):
                 cell = s3_ltv.shapes.add_shape(1, Inches(cx), Inches(row_y2), Inches(cw), Inches(0.3))
@@ -2439,30 +2479,31 @@ with exp2:
             row_y2 += 0.31
 
         # 3段目：CAC設計の目安
-        cac_box = s3_ltv.shapes.add_shape(1, Inches(0.5), Inches(6.05), Inches(12.3), Inches(1.25))
-        cac_box.fill.solid(); cac_box.fill.fore_color.rgb = RGBColor(0x05,0x15,0x22)
-        cac_box.line.color.rgb = GOLD
-        txbox(s3_ltv, 'CAC設計の目安', 0.65, 6.08, 3, 0.3, size=9, bold=True, color=GOLD)
+        cac_box = s3_ltv.shapes.add_shape(1, Inches(0.25), Inches(5.9), Inches(12.85), Inches(1.05))
+        cac_box.fill.solid(); cac_box.fill.fore_color.rgb = G_NAVY
+        cac_box.line.fill.background()
+        txbox(s3_ltv, 'CAC設計の目安', 0.35, 5.93, 3, 0.3, size=9, bold=True, color=G_LBLUE)
         cac_guide = (
             f"回収期間に迷ったら、λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f} を用いてCAC上限を算出してください。\n"
             f"λはリピート顧客の63.2%が離脱するまでの期間（初回購入起点）をデータが示した答えです。\n"
             f"CAC上限（{cac_label}）= ¥{cac_upper:,.0f}　|　CAC回収: 売上ベース 約 {cac_recover_rev_str} / 粗利ベース 約 {cac_recover_gp_str}"
         )
-        txbox(s3_ltv, cac_guide, 0.65, 6.4, 12.0, 0.85, size=8.5, color=WHITE)
+        txbox(s3_ltv, cac_guide, 0.35, 6.22, 12.6, 0.65, size=8.5, color=G_WHITE)
 
-        # ── Slide 3: Charts ──
+        # ── Slide 4: Charts（Gambitスタイル）──
         s3 = prs.slides.add_slide(blank)
-        add_bg(s3, prs)
-        txbox(s3, 'Survival Curve  /  Weibull Linearization Plot', 0.5, 0.3, 12, 0.6, size=22, bold=True, color=WHITE)
-        buf1.seek(0); s3.shapes.add_picture(buf1, Inches(0.4), Inches(1.1), Inches(6.1), Inches(3.8))
-        buf2.seek(0); s3.shapes.add_picture(buf2, Inches(6.8), Inches(1.1), Inches(6.1), Inches(3.8))
+        add_bg(s3, prs, dark=False)
+        add_content_chrome(s3, prs)
+        slide_title(s3, 'Survival Curve  /  Weibull Linearization Plot', '生存曲線とWeibull直線化プロット')
+        buf1.seek(0); s3.shapes.add_picture(buf1, Inches(0.25), Inches(1.1), Inches(6.3), Inches(3.7))
+        buf2.seek(0); s3.shapes.add_picture(buf2, Inches(6.78), Inches(1.1), Inches(6.3), Inches(3.7))
 
         # Weibull parameter explanation box
-        param_box = s3.shapes.add_shape(1, Inches(0.4), Inches(5.0), Inches(12.5), Inches(2.1))
-        param_box.fill.solid(); param_box.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
-        param_box.line.color.rgb = GOLD
+        param_box = s3.shapes.add_shape(1, Inches(0.25), Inches(4.9), Inches(12.85), Inches(2.0))
+        param_box.fill.solid(); param_box.fill.fore_color.rgb = G_NAVY
+        param_box.line.fill.background()
 
-        txbox(s3, 'Weibullパラメータの読み方と示唆', 0.55, 5.05, 12, 0.3, size=9, bold=True, color=GOLD)
+        txbox(s3, 'Weibullパラメータの読み方と示唆', 0.35, 4.93, 12, 0.3, size=9, bold=True, color=G_LBLUE)
 
         # k の詳細解釈
         if k < 0.7:
@@ -2479,7 +2520,7 @@ with exp2:
             f"→ 左グラフ（Survival Curve）の曲線の急峻さを決める値。k=1で指数分布（一定離脱率）\n"
             f"→ {k_insight}"
         )
-        txbox(s3, k_text, 0.55, 5.4, 6.1, 1.6, size=8, color=WHITE)
+        txbox(s3, k_text, 0.35, 5.25, 6.3, 1.6, size=8, color=G_WHITE)
 
         # λ と R² の詳細解釈
         lam_disp_pp = lam + ltv_offset_days if business_type == '都度購入型' else lam
@@ -2496,7 +2537,7 @@ with exp2:
             f"→ 大きいほどLTV∞到達が長期化する。λ日時点での暫定LTV到達率はk値により異なる（k=1のとき63.2%）\n"
             f"→ {r2_comment}"
         )
-        txbox(s3, lam_text, 6.75, 5.4, 6.1, 1.6, size=8, color=WHITE)
+        txbox(s3, lam_text, 6.78, 5.25, 6.3, 1.6, size=8, color=G_WHITE)
 
         # 共通データ部分
         pdata = (
@@ -2511,9 +2552,9 @@ with exp2:
 
         # ── Slide 4: AI Prompt 1 - 結果の読み方 ──
         s4 = prs.slides.add_slide(blank)
-        add_bg(s4, prs)
-        txbox(s4, 'AIプロンプト ①  結果の読み方', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
-        txbox(s4, 'Claude / ChatGPT / Gemini にコピペしてください', 0.5, 0.8, 12, 0.3, size=9, color=GRAY)
+        add_bg(s4, prs, dark=False)
+        add_content_chrome(s4, prs)
+        slide_title(s4, 'AIプロンプト ①  結果の読み方', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
         p1_text = (
             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
             f"1. Weibullのkとλの値は何を意味していますか？顧客離脱パターンはどう解釈すればよいですか？\n"
@@ -2522,15 +2563,15 @@ with exp2:
             f"4. この結果で特に注意すべき点があれば教えてください。"
         )
         pb1 = s4.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
-        pb1.fill.solid(); pb1.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
-        pb1.line.color.rgb = GOLD
-        txbox(s4, p1_text, 0.65, 1.35, 12.0, 5.6, size=9, color=WHITE)
+        pb1.fill.solid(); pb1.fill.fore_color.rgb = G_NAVY
+        pb1.line.color.rgb = G_BLUE
+        txbox(s4, p1_text, 0.65, 1.35, 12.0, 5.6, size=9, color=G_WHITE)
 
         # ── Slide 5: AI Prompt 2 - マーケ戦略 ──
         s5 = prs.slides.add_slide(blank)
-        add_bg(s5, prs)
-        txbox(s5, 'AIプロンプト ②  マーケ戦略への活用', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
-        txbox(s5, 'Claude / ChatGPT / Gemini にコピペしてください', 0.5, 0.8, 12, 0.3, size=9, color=GRAY)
+        add_bg(s5, prs, dark=False)
+        add_content_chrome(s5, prs)
+        slide_title(s5, 'AIプロンプト ②  マーケ戦略への活用', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
         p2_text = (
             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
             f"1. このLTV∞とCAC上限をもとに、広告予算の上限をどう設定すべきですか？\n"
@@ -2539,15 +2580,15 @@ with exp2:
             f"4. このビジネスに最適なLTV:CAC比率の目安を教えてください。"
         )
         pb2 = s5.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
-        pb2.fill.solid(); pb2.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
-        pb2.line.color.rgb = GOLD
-        txbox(s5, p2_text, 0.65, 1.35, 12.0, 5.6, size=9, color=WHITE)
+        pb2.fill.solid(); pb2.fill.fore_color.rgb = G_NAVY
+        pb2.line.color.rgb = G_BLUE
+        txbox(s5, p2_text, 0.65, 1.35, 12.0, 5.6, size=9, color=G_WHITE)
 
         # ── Slide 6: AI Prompt 3 - 精度の検証 ──
         s6 = prs.slides.add_slide(blank)
-        add_bg(s6, prs)
-        txbox(s6, 'AIプロンプト ③  精度の検証', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
-        txbox(s6, 'Claude / ChatGPT / Gemini にコピペしてください', 0.5, 0.8, 12, 0.3, size=9, color=GRAY)
+        add_bg(s6, prs, dark=False)
+        add_content_chrome(s6, prs)
+        slide_title(s6, 'AIプロンプト ③  精度の検証', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
         dormancy_q = "4. 解約日ベースで分析していますが、解約データの欠損や遅延がある場合にLTV推定にどんな影響が出ますか？" if dormancy_days is None else f"4. 休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"
         p3_text = (
             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
@@ -2557,9 +2598,9 @@ with exp2:
             f"{dormancy_q}"
         )
         pb3 = s6.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
-        pb3.fill.solid(); pb3.fill.fore_color.rgb = RGBColor(0x0d,0x1f,0x2d)
-        pb3.line.color.rgb = GOLD
-        txbox(s6, p3_text, 0.65, 1.35, 12.0, 5.6, size=9, color=WHITE)
+        pb3.fill.solid(); pb3.fill.fore_color.rgb = G_NAVY
+        pb3.line.color.rgb = G_BLUE
+        txbox(s6, p3_text, 0.65, 1.35, 12.0, 5.6, size=9, color=G_WHITE)
 
         # ── セグメント別スライド追加 ──
         if segment_cols_input.strip():
@@ -2816,16 +2857,18 @@ with exp2:
         pptx_buf = io.BytesIO()
         prs.save(pptx_buf)
         pptx_buf.seek(0)
-        st.download_button(".pptx", pptx_buf,
-                           file_name=f"LTV分析_{client_name or 'report'}.pptx",
-                           mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+        import base64 as _b64
+        _pp_b64 = _b64.b64encode(pptx_buf.read()).decode()
+        _fn_pp = f"LTV分析_{client_name or 'report'}.pptx"
+        _pp_href = f'<a href="data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,{_pp_b64}" download="{_fn_pp}" class="dl-btn">.pptx</a>'
+        _pp_html = _pp_href
     except ImportError:
-        st.caption("PowerPoint出力には `pip install python-pptx` が必要です")
+        _pp_html = '<span class="dl-btn-err">.pptx 未対応</span>'
     except Exception as e:
-        st.caption(f"PowerPoint出力エラー: {e}")
+        _pp_html = f'<span class="dl-btn-err">.pptx エラー</span>'
 
 # ── PDF export ────────────────────────────────────────────────
-with exp3:
+if True:
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.lib import colors
@@ -3080,13 +3123,38 @@ with exp3:
 
         doc.build(story)
         pdf_buf.seek(0)
-        st.download_button(".pdf", pdf_buf,
-                           file_name=f"LTV分析_{client_name or 'report'}.pdf",
-                           mime="application/pdf")
+        import base64 as _b64
+        _pdf_b64 = _b64.b64encode(pdf_buf.read()).decode()
+        _fn_pdf = f"LTV分析_{client_name or 'report'}.pdf"
+        _pdf_href = f'<a href="data:application/pdf;base64,{_pdf_b64}" download="{_fn_pdf}" class="dl-btn">.pdf</a>'
+        _pdf_html = _pdf_href
     except ImportError:
-        st.caption("PDF出力には `pip install reportlab` が必要です")
+        _pdf_html = '<span class="dl-btn-err">.pdf 未対応</span>'
     except Exception as e:
-        st.caption(f"PDF出力エラー: {e}")
+        _pdf_html = f'<span class="dl-btn-err">.pdf エラー</span>'
+
+# ── 3ボタンまとめて表示 ───────────────────────────────────────
+st.markdown(f"""
+<style>
+.dl-row {{ display:flex; gap:8px; align-items:center; margin-top:4px; }}
+a.dl-btn {{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:72px; height:30px;
+    background:#0d1f2d; color:#a8dadc;
+    border:1.5px solid #56b4d3; border-radius:6px;
+    font-size:0.78rem; font-weight:600; letter-spacing:0.04em;
+    text-decoration:none;
+    transition:background 0.2s, color 0.2s;
+}}
+a.dl-btn:hover {{ background:#56b4d3; color:#0d1f2d; }}
+.dl-btn-err {{ font-size:0.75rem; color:#888; }}
+</style>
+<div class="dl-row">
+  {_xl_html if '_xl_html' in dir() else ''}
+  {_pp_html if '_pp_html' in dir() else ''}
+  {_pdf_html if '_pdf_html' in dir() else ''}
+</div>
+""", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
 # Segment Analysis (Advanced)
