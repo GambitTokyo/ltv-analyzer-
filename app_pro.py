@@ -191,6 +191,24 @@ div[data-baseweb="radio"] input:checked ~ * { border-color: #56b4d3 !important; 
 /* フォーカスリング */
 div[data-baseweb="radio"] [data-focused="true"] { box-shadow: 0 0 0 3px rgba(86,180,211,0.3) !important; }
 
+/* ── Download buttons ── */
+div.stDownloadButton > button {
+    width: 100% !important;
+    padding: 0.65rem 1rem !important;
+    background: #0d1f2d !important;
+    color: #a8dadc !important;
+    border: 1.5px solid #56b4d3 !important;
+    border-radius: 8px !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.05em !important;
+    transition: background 0.2s, color 0.2s !important;
+}
+div.stDownloadButton > button:hover {
+    background: #56b4d3 !important;
+    color: #0d1f2d !important;
+}
+
 /* ── Radio & Slider accent color (override Streamlit red) ── */
 /* ── Radio label ── */
 [data-testid="stRadio"] > label {
@@ -911,16 +929,8 @@ with st.sidebar:
         "まず上位5項目で傾向を確認し、必要に応じて増やすことをお勧めします。"
     )
 
-    st.markdown("### CAC — 顧客獲得コスト")
-    cac_input = st.number_input(
-        "平均CAC/1人当たり（任意・円）",
-        min_value=0, value=0, step=1000,
-    )
-    st.caption(
-        "入力するとセグメント別の獲得効率スコア（LTV:CAC比率）も算出されます。"
-        "不明な場合は空欄のままでOKです。"
-    )
-    cac_known = cac_input > 0
+    cac_input = 0
+    cac_known = False
 
     st.markdown("")
     st.markdown("### レポート情報")
@@ -935,7 +945,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v142</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v144</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2220,7 +2230,7 @@ with exp1:
         xl_buf = io.BytesIO()
         wb.save(xl_buf)
         xl_buf.seek(0)
-        st.download_button("Excel ダウンロード", xl_buf,
+        st.download_button("Excel", xl_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.xlsx",
                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     except Exception as e:
@@ -2797,7 +2807,7 @@ with exp2:
         pptx_buf = io.BytesIO()
         prs.save(pptx_buf)
         pptx_buf.seek(0)
-        st.download_button("PowerPoint ダウンロード", pptx_buf,
+        st.download_button("PowerPoint", pptx_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.pptx",
                            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation")
     except ImportError:
@@ -3061,7 +3071,7 @@ with exp3:
 
         doc.build(story)
         pdf_buf.seek(0)
-        st.download_button("PDF ダウンロード", pdf_buf,
+        st.download_button("PDF", pdf_buf,
                            file_name=f"LTV分析_{client_name or 'report'}.pdf",
                            mime="application/pdf")
     except ImportError:
