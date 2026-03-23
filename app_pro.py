@@ -964,7 +964,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v168</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v169</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -3476,7 +3476,7 @@ if segment_cols_input.strip():
 <div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:12px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
   <div style='margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #1a3040; font-size:0.85rem; color:#ccc;'>
     <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a;'>セグメント加重平均 LTV∞</span>　
-    <span style='font-size:1.1rem; color:#a8dadc; font-weight:700;'>¥{weighted_ltv_rev:,.0f}</span>（売上）　
+    <b>¥{weighted_ltv_rev:,.0f}</b>（売上）　
     <span style='color:#888;'>¥{weighted_ltv_gp:,.0f}（粗利）</span>　
     <span style='color:{diff_color}; font-size:0.8rem;'>全体値（¥{ltv_rev:,.0f}）との差：{diff_str}</span>
   </div>
@@ -3493,7 +3493,7 @@ if segment_cols_input.strip():
             remaining = len(seg_results) - len(seg_results_display)
             st.markdown(f"<div style='font-size:0.78rem; color:#888; margin:12px 0 4px 0;'>詳細表示 — 上位 {seg_display_limit} 件（全 {len(seg_results)} 件）</div>", unsafe_allow_html=True)
             if remaining > 0:
-                st.caption(f"残り{remaining}件はパワポ・PDFに出力されます。サイドバーの「ブラウザ表示件数」を増やすと追加表示できます。")
+                st.caption(f"エクスポートされる各ファイルには全項目出力されます。サイドバーの「ブラウザ表示件数」を増やすと追加表示できます。")
             for sr in seg_results_display:
                 sv           = sr['セグメント']
                 k_s          = sr['k']
