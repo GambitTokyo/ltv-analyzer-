@@ -936,7 +936,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v133</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v135</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -3147,7 +3147,7 @@ if segment_cols_input.strip():
 
             # 結果テーブル
             display_df = seg_df.copy()
-            display_df = display_df.drop(columns=['総ポテンシャル', '優先スコア'], errors='ignore')
+            display_df = display_df.drop(columns=['総ポテンシャル', '優先スコア', 'λ_raw', 'arpu_s', 'arpu_long_s', 'arpu_0_dorm_s'], errors='ignore')
             if not cac_known:
                 display_df = display_df.drop(columns=['獲得効率'], errors='ignore')
 
@@ -3412,11 +3412,22 @@ if segment_cols_input.strip():
                             text=f'λ＝{lam_s_int}日', showarrow=False, font=dict(color='#a8dadc', size=10),
                             xanchor='center', yanchor='middle', bgcolor='#111820', borderpad=2)
 
-                        # プロット点
+                        # プロット点（全体分析と同じ分岐）
                         plot_pts_s = sorted(set([p for p in [180, 365, 730, 1095, 1460, 1825, lam_s_int] if p <= x_max_s]))
-                        for arpu_v, color in [(arpu_s, '#56b4d3'), (arpu_s * gpm, '#a8dadc')]:
+                        for arpu_v, color in [(arpu_s, '#56b4d3'), (arpu_s * gpm, '#a8dadc'), (arpu_s * gpm / cac_n, '#4a7a8a')]:
                             px_s = [p for p in plot_pts_s]
-                            py_s = [ltv_horizon_offset(k_s, lam_s, arpu_v, p, ltv_offset_days) for p in plot_pts_s]
+                            if business_type == '都度購入型':
+                                if arpu_v == arpu_s * gpm / cac_n:
+                                    py_s = [ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, p, _dorm_s) / cac_n for p in plot_pts_s]
+                                elif arpu_v == arpu_s * gpm:
+                                    py_s = [ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, p, _dorm_s) for p in plot_pts_s]
+                                else:
+                                    py_s = [ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, p, _dorm_s) for p in plot_pts_s]
+                            else:
+                                if arpu_v == arpu_s * gpm / cac_n:
+                                    py_s = [ltv_horizon_offset(k_s, lam_s, arpu_s * gpm, p, ltv_offset_days) / cac_n for p in plot_pts_s]
+                                else:
+                                    py_s = [ltv_horizon_offset(k_s, lam_s, arpu_v, p, ltv_offset_days) for p in plot_pts_s]
                             fig_hor_s.add_trace(go.Scatter(x=px_s, y=py_s, mode='markers',
                                 marker=dict(color=color, size=5, line=dict(color='#111820', width=1)),
                                 showlegend=False, hovertemplate='%{x}日: ¥%{y:,.0f}<extra></extra>'))
