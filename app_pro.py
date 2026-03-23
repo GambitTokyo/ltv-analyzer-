@@ -220,6 +220,12 @@ div.stDownloadButton {
     margin-right: 0.2rem !important;
 }
 
+/* ── Sample selectbox font ── */
+[data-testid="stSidebar"] [data-testid="stSelectbox"] select,
+[data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div {
+    font-size: 0.82rem !important;
+}
+
 /* ── Radio & Slider accent color (override Streamlit red) ── */
 /* ── Radio label ── */
 [data-testid="stRadio"] > label {
@@ -761,7 +767,7 @@ with st.sidebar:
     spot_b64    = base64.b64encode(spot_csv).decode()
     supp_b64    = base64.b64encode(supp_csv).decode()
 
-    st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>クリックして読み込んで試せます。</span>", unsafe_allow_html=True)
+    st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>サンプルデータを選択してお試しください。</span>", unsafe_allow_html=True)
 
     # サンプルデータをセッションステートで管理
     if 'sample_df' not in st.session_state:
@@ -787,9 +793,15 @@ with st.sidebar:
         _key, _df = _sample_options[_selected_sample]
         st.session_state.sample_df = _df
         st.session_state.sample_label = _selected_sample
+        # サンプルに応じてデフォルト設定をセッションに保存
+        if 'sub' in _key:
+            st.session_state['_sample_biz']   = 'サブスク・継続課金型'
+            st.session_state['_sample_prorate'] = (_key == 'sub_on')
+        else:
+            st.session_state['_sample_biz']   = '都度購入型'
+            st.session_state['_sample_prorate'] = False
         st.rerun()
 
-    st.caption("ビジネスタイプと各種設定をデータに合わせて正しく選択してください。")
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
@@ -817,13 +829,13 @@ with st.sidebar:
     )
 
     st.markdown("### ビジネスタイプ")
+    _biz_options = ["サブスク・継続課金型", "都度購入型"]
+    _biz_default = st.session_state.get('_sample_biz', 'サブスク・継続課金型')
+    _biz_idx = _biz_options.index(_biz_default) if _biz_default in _biz_options else 0
     business_type = st.radio(
         "ビジネスタイプ",
-        [
-            "サブスク・継続課金型",
-            "都度購入型",
-        ],
-        index=0,
+        _biz_options,
+        index=_biz_idx,
     )
 
     if business_type == "サブスク・継続課金型":
@@ -855,7 +867,7 @@ with st.sidebar:
         st.caption("月額：毎月同じ日に更新（例：5/15契約 → 6/15・7/15…）。年額：365日固定。カスタム：隔月・四半期など任意の日数。")
 
         st.markdown("<div style='font-size:0.82rem; color:#c8d0d8; margin-bottom:4px;'>解約時の日割り計算あり</div>", unsafe_allow_html=True)
-        prorate_cancel = st.toggle("解約時の日割り計算あり", value=False, label_visibility="collapsed")
+        prorate_cancel = st.toggle("解約時の日割り計算あり", value=st.session_state.get("_sample_prorate", False), label_visibility="collapsed")
         st.caption("OFFの場合、解約日を契約更新日に丸めます（一般的なサブスク）。ONの場合、実際の解約日をそのまま使用します。")
 
     else:  # 都度購入型
@@ -950,7 +962,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v158</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v159</div>
 </div>
 """, unsafe_allow_html=True)
 
