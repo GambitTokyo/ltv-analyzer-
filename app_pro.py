@@ -964,7 +964,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v169</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v171</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -3391,6 +3391,7 @@ if segment_cols_input.strip():
             total_n = seg_df['顧客数'].sum()
             weighted_ltv_rev = (seg_df['LTV∞（売上）'] * seg_df['顧客数']).sum() / total_n
             weighted_ltv_gp  = (seg_df['LTV∞（粗利）'] * seg_df['顧客数']).sum() / total_n
+            weighted_cac     = weighted_ltv_gp / cac_n
             diff_pct = (weighted_ltv_rev - ltv_rev) / ltv_rev * 100
             diff_str = f"+{diff_pct:.1f}%" if diff_pct >= 0 else f"{diff_pct:.1f}%"
             diff_color = "#a8dadc" if diff_pct >= 0 else "#e8a0a0"
@@ -3446,11 +3447,29 @@ if segment_cols_input.strip():
                 w = f'{seg_col_w}%' if col == 'セグメント' else f'{num_col_w}%'
                 header_html += f"<th style='text-align:{align}; padding:9px 14px; color:{ACCENT}; font-size:0.8rem; font-weight:600; border-bottom:2px solid {ACCENT}; width:{w};'>{col}</th>"
 
+            # 加重平均行
+            avg_row_vals = {
+                'セグメント': f'加重平均　<span style="font-size:0.72rem; color:{diff_color};">{diff_str}</span>',
+                '顧客数':      f'{total_n:,}',
+                'LTV∞（売上）': f'¥{weighted_ltv_rev:,.0f}',
+                'LTV∞（粗利）': f'¥{weighted_ltv_gp:,.0f}',
+                'CAC上限（粗利）': f'¥{weighted_cac:,.0f}',
+                'k': '—', 'λ（日）': '—', 'R²': '—',
+            }
+            avg_row_html = "<tr style='background:#0d2030; border-bottom:1px solid #1a3a4a;'>"
+            for col in cols:
+                align = 'left' if col == 'セグメント' else 'right'
+                w = f'{seg_col_w}%' if col == 'セグメント' else f'{num_col_w}%'
+                val = avg_row_vals.get(col, '—')
+                color = '#56b4d3' if col == 'セグメント' else '#a8dadc'
+                avg_row_html += f"<td style='text-align:{align}; padding:8px 14px; color:{color}; font-size:0.82rem; font-weight:600; font-variant-numeric:tabular-nums; width:{w};'>{val}</td>"
+            avg_row_html += '</tr>'
+
             seg_tbl_html = f"""
 <table style='width:100%; border-collapse:collapse; margin-top:4px; table-layout:fixed;'>
   <colgroup>{''.join([f'<col style="width:{seg_col_w}%;">' if c == 'セグメント' else f'<col style="width:{num_col_w}%;">' for c in cols])}</colgroup>
   <thead><tr style='background:{BG_HEAD};'>{header_html}</tr></thead>
-  <tbody>{seg_html_rows}</tbody>
+  <tbody>{avg_row_html}{seg_html_rows}</tbody>
 </table>"""
             st.markdown(seg_tbl_html, unsafe_allow_html=True)
 
@@ -3471,19 +3490,10 @@ if segment_cols_input.strip():
   {cac_str}
 </div>""", unsafe_allow_html=True)
 
-            # テーブル下：加重平均＋NOTEを1つのボックスに統合
+            # NOTEのみ（加重平均はテーブル内に移動）
             st.markdown(f"""
-<div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:12px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
-  <div style='margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #1a3040; font-size:0.85rem; color:#ccc;'>
-    <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a;'>セグメント加重平均 LTV∞</span>　
-    <b>¥{weighted_ltv_rev:,.0f}</b>（売上）　
-    <span style='color:#888;'>¥{weighted_ltv_gp:,.0f}（粗利）</span>　
-    <span style='color:{diff_color}; font-size:0.8rem;'>全体値（¥{ltv_rev:,.0f}）との差：{diff_str}</span>
-  </div>
-  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — セグメント加重平均と全体LTV∞が異なる理由<br>
-  全体LTV∞（¥{ltv_rev:,.0f}）はすべての顧客を1つのWeibullモデルでフィットした値です。セグメント加重平均（¥{weighted_ltv_rev:,.0f}）は各セグメントを個別にフィットした後、顧客数で重み付け平均した値です。<br>
-  セグメントを切ることで顧客の<b>異質性（heterogeneity）が分離</b>されるため、切り口によって値が変わります。これはモデルの誤りではなく統計的に正しい現象です。<br>
-  <b>意思決定の基準：</b>広告投資・予算配分にはセグメント別LTV∞を、ビジネス全体の健全性評価には全体LTV∞を参照することを推奨します。
+<div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:10px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
+  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。全体LTV∞（¥{ltv_rev:,.0f}）との差は統計的に正常な現象です。広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。
 </div>""", unsafe_allow_html=True)
 
 
