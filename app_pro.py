@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v190</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v191</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -9462,624 +9462,505 @@ if True:
         with open(_TMPL_PATH, 'wb') as _f:
             _f.write(_tmpl_bytes)
 
-        from pptx import Presentation
-        from pptx.util import Inches, Pt, Emu
-        from pptx.dml.color import RGBColor
-        from pptx.enum.text import PP_ALIGN
-
-        # ── テンプレート実測カラー ──
-        G_DARK   = RGBColor(0x0D, 0x0D, 0x0D)   # タイトルスライド背景
-        G_CARD   = RGBColor(0x10, 0x20, 0x30)   # KPIカード背景 #102030
-        G_CBDR   = RGBColor(0x2A, 0x4A, 0x5A)   # KPIカードボーダー #2A4A5A
-        G_BLUE   = RGBColor(0x56, 0xB4, 0xD3)   # 水色メイン #56B4D3
-        G_LBLUE  = RGBColor(0xA8, 0xDA, 0xDC)   # 薄水色 #A8DADC
-        G_OFFWHT = RGBColor(0xE8, 0xE4, 0xDC)   # オフホワイト #E8E4DC
-        G_SUBHDR = RGBColor(0x88, 0xAA, 0xBB)   # サブヘッダ色 #88AABB
-        G_GRAY   = RGBColor(0x88, 0x88, 0x88)   # グレー #888888
-        G_LGRAY  = RGBColor(0xAA, 0xAA, 0xAA)   # 薄グレー #AAAAAA
-        G_NAVY   = RGBColor(0x0D, 0x1F, 0x2D)   # テーブル行背景濃 #0D1F2D
-        G_ROW1   = RGBColor(0x0D, 0x15, 0x20)   # テーブル行1 #0D1520
-        G_ROW2   = RGBColor(0x0A, 0x10, 0x18)   # テーブル行2 #0A1018
-        G_WHITE  = RGBColor(0xFF, 0xFF, 0xFF)   # 白
-        G_TEALT  = RGBColor(0x3A, 0x6A, 0x7A)   # NOTE色 #3A6A7A
-        G_ROWSP  = RGBColor(0xC8, 0xD0, 0xD8)   # テーブルテキスト薄 #C8D0D8
-
-        # 後方互換
-        BG = G_DARK; GOLD = G_BLUE; TEAL = G_LBLUE; WHITE = G_WHITE; GRAY = G_GRAY
-
-        def add_bg(slide, prs, dark=False):
-            """背景：タイトル系は黒(#0D0D0D)、コンテンツ系は黒(#111820相当)"""
-            bg = slide.shapes.add_shape(1, 0, 0, prs.slide_width, prs.slide_height)
-            bg.fill.solid()
-            bg.fill.fore_color.rgb = RGBColor(0x0D,0x0D,0x0D) if dark else RGBColor(0x0D,0x0D,0x0D)
-            bg.line.fill.background()
-
-        def add_content_chrome(slide, prs):
-            """左側水色縦線 + フッター"""
-            bar = slide.shapes.add_shape(1, 0, 0, Inches(0.07), prs.slide_height)
-            bar.fill.solid(); bar.fill.fore_color.rgb = G_BLUE; bar.line.fill.background()
-            txbox(slide, f'Copyright © LTV-analyzer All rights reserved.',
-                  0.22, 7.18, 10, 0.25, size=7, color=G_GRAY)
-
-        def txbox(slide, text, l, t, w, h, size=12, bold=False, color=None, align=PP_ALIGN.LEFT):
-            if color is None: color = G_OFFWHT
-            tb = slide.shapes.add_textbox(Inches(l), Inches(t), Inches(w), Inches(h))
-            tf = tb.text_frame; tf.word_wrap = True
-            p  = tf.paragraphs[0]; p.alignment = align
-            run = p.add_run(); run.text = text
-            run.font.size  = Pt(size)
-            run.font.bold  = bold
-            run.font.color.rgb = color
-            return tb
-
-        def slide_title(slide, title, subtitle=None):
-            """タイトル行（左寄せ・オフホワイト大文字）＋水色下線＋サブタイトル"""
-            txbox(slide, title, 0.37, 0.185, 12.6, 0.72, size=24, bold=True, color=G_OFFWHT)
-            # 水色下線
-            uline = slide.shapes.add_shape(1, Inches(0.37), Inches(0.88), Inches(12.6), Pt(1.5))
-            uline.fill.solid(); uline.fill.fore_color.rgb = G_BLUE; uline.line.fill.background()
-            if subtitle:
-                txbox(slide, subtitle, 0.37, 0.91, 12.6, 0.35, size=10, color=G_SUBHDR)
-
         from datetime import date
         from pptx.oxml.ns import qn
-        from pptx.oxml import parse_xml
-        import copy, lxml.etree as etree
+        from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+        import copy
 
-        # ── テンプレートをコピーして使用 ──
+        # ── テンプレートをbase64から復元 ──
+        import os, base64 as _b64mod
         _TMPL_PATH = '/tmp/ltv_analyzer_template.pptx'
-
-        # テンプレートをバイナリで一時保存（初回のみ）
-        import os, base64
         if not os.path.exists(_TMPL_PATH):
-            # テンプレートが存在しない場合は空のPRSで続行（フォールバック）
-            prs = Presentation()
-            prs.slide_width = Inches(13.33)
-            prs.slide_height = Inches(7.5)
-        else:
-            prs = Presentation(_TMPL_PATH)
+            with open(_TMPL_PATH, 'wb') as _f:
+                _f.write(_b64mod.b64decode(_TMPL_B64))
 
-        # テンプレートが存在する場合はそのスライドを利用
-        # テンプレートPRSのスライドを参照用に保持
-        _tmpl_prs = None
-        try:
-            _tmpl_prs = Presentation(_TMPL_PATH) if os.path.exists(_TMPL_PATH) else None
-        except Exception:
-            _tmpl_prs = None
+        # ── テンプレートを直接開く ──
+        prs = Presentation(_TMPL_PATH)
+
+        # ── ヘルパー関数 ──
+        def _copy_slide(prs, from_idx):
+            """指定スライドを複製して末尾に追加（マスタ・背景・画像完全維持）"""
+            src = prs.slides[from_idx]
+            new = prs.slides.add_slide(src.slide_layout)
+            src_sp = src.shapes._spTree
+            new_sp = new.shapes._spTree
+            for el in list(new_sp)[2:]:
+                new_sp.remove(el)
+            for el in list(src_sp)[2:]:
+                new_sp.append(copy.deepcopy(el))
+            for rId, rel in src.part.rels.items():
+                if rel.reltype == RT.IMAGE:
+                    new.part.rels._rels[rId] = rel
+            return new
 
         def _set_text(shape, text):
-            """shapeのテキストを安全に設定（書式保持）"""
-            if not shape.has_text_frame:
-                return
+            """shapeの最初のrun のテキストを設定"""
+            if not shape.has_text_frame: return
             tf = shape.text_frame
-            if tf.paragraphs:
-                p = tf.paragraphs[0]
-                if p.runs:
-                    p.runs[0].text = text
-                    # 残りのrunを消去
-                    for run in p.runs[1:]:
-                        run.text = ''
-                else:
-                    p.text = text
-            # 後続パラグラフのテキストを消去
-            for para in tf.paragraphs[1:]:
-                for run in para.runs:
-                    run.text = ''
+            if tf.paragraphs and tf.paragraphs[0].runs:
+                tf.paragraphs[0].runs[0].text = text
 
-        def _set_table_cell(cell, text):
-            """テーブルセルのテキストを設定（書式保持）"""
-            tf = cell.text_frame
-            if tf.paragraphs:
-                p = tf.paragraphs[0]
-                if p.runs:
-                    p.runs[0].text = text
-                else:
-                    p.text = text
+        def _set_multiline(shape, text):
+            """改行を含むテキストを段落ごとに設定"""
+            if not shape.has_text_frame: return
+            lines = text.split('\n')
+            tf = shape.text_frame
+            for i, para in enumerate(tf.paragraphs):
+                if i < len(lines) and para.runs:
+                    para.runs[0].text = lines[i]
+                elif i < len(lines):
+                    para.text = lines[i]
 
-        def _copy_slide_from_tmpl(tmpl_prs, slide_idx, target_prs):
-            """テンプレートのスライドをターゲットPRSにコピー"""
-            tmpl_slide = tmpl_prs.slides[slide_idx]
-            # スライドレイアウトを取得
-            slide_layout = target_prs.slide_layouts[6]
-            new_slide = target_prs.slides.add_slide(slide_layout)
-            # spTreeをコピー
-            tmpl_sp_tree = tmpl_slide.shapes._spTree
-            new_sp_tree  = new_slide.shapes._spTree
-            # 既存要素をクリア（nvGrpSpPrとgrpSpPrは保持）
-            for el in list(new_sp_tree)[2:]:
-                new_sp_tree.remove(el)
-            # テンプレートの要素をコピー
-            for el in list(tmpl_sp_tree)[2:]:
-                new_sp_tree.append(copy.deepcopy(el))
-            return new_slide
+        def _replace_image(slide, shape, buf):
+            """shapeの画像をbufの内容で差し替え"""
+            blip = shape._element.find('.//' + qn('a:blip'))
+            if blip is not None:
+                buf.seek(0)
+                img_part, new_rId = slide.part.get_or_add_image_part(buf)
+                blip.set(qn('r:embed'), new_rId)
 
-        # テンプレートが使えない場合はフォールバック
-        use_template = _tmpl_prs is not None
+        def _set_table_row(tbl, row_idx, values):
+            """テーブルのrow_idx行目に値をセット"""
+            if row_idx >= len(tbl.rows): return
+            row = tbl.rows[row_idx]
+            for c_idx, v in enumerate(values):
+                if c_idx < len(row.cells):
+                    tf = row.cells[c_idx].text_frame
+                    if tf.paragraphs and tf.paragraphs[0].runs:
+                        tf.paragraphs[0].runs[0].text = str(v)
 
-        if use_template:
-            # テンプレートベースのPPTX生成
-            new_prs = Presentation()
-            new_prs.slide_width  = _tmpl_prs.slide_width
-            new_prs.slide_height = _tmpl_prs.slide_height
-            blank_layout = new_prs.slide_layouts[6]
+        # ── データ期間計算 ──
+        _date_cols = [df['start_date']]
+        if 'last_purchase_date' in df.columns and df['last_purchase_date'].notna().any():
+            _date_cols.append(df['last_purchase_date'])
+        if 'end_date' in df.columns and df['end_date'].notna().any():
+            _date_cols.append(df['end_date'])
+        _all_dates_flat = pd.concat(_date_cols).dropna()
+        _data_start = _all_dates_flat.min().strftime('%Y/%m/%d')
+        _data_end   = _all_dates_flat.max().strftime('%Y/%m/%d')
 
-            # ── Slide 1: タイトル ──
-            s1 = _copy_slide_from_tmpl(_tmpl_prs, 0, new_prs)
-            for sh in s1.shapes:
-                if sh.name == 'TextBox 5':
-                    _set_text(sh, client_name or '')
-                elif sh.name == 'TextBox 6':
-                    _set_text(sh, date.today().strftime('%Y年%m月%d日'))
-                elif sh.name == 'TextBox 7':
-                    _set_text(sh, analyst_name or '')
+        # ══════════════════════════════════════════════
+        # Slide 1: タイトル（テンプレートSlide1を更新）
+        # ══════════════════════════════════════════════
+        s1 = prs.slides[0]
+        for sh in s1.shapes:
+            if sh.name == 'TextBox 5':
+                _set_text(sh, client_name or '')
+            elif sh.name == 'TextBox 6':
+                _set_text(sh, date.today().strftime('%Y年%m月%d日'))
+            elif sh.name == 'TextBox 7':
+                _set_text(sh, analyst_name or '')
 
-            # ── データ期間計算 ──
-            _date_cols = [df['start_date']]
-            if 'last_purchase_date' in df.columns and df['last_purchase_date'].notna().any():
-                _date_cols.append(df['last_purchase_date'])
-            if 'end_date' in df.columns and df['end_date'].notna().any():
-                _date_cols.append(df['end_date'])
-            _all_dates_flat = pd.concat(_date_cols).dropna()
-            _data_start = _all_dates_flat.min().strftime('%Y/%m/%d')
-            _data_end   = _all_dates_flat.max().strftime('%Y/%m/%d')
+        # ══════════════════════════════════════════════
+        # Slide 2: 分析結果サマリー
+        # ══════════════════════════════════════════════
+        s2 = prs.slides[1]
+        for sh in s2.shapes:
+            n = sh.name
+            if n == 'テキスト プレースホルダー 6':
+                info1 = (
+                    f"データ期間: {_data_start} – {_data_end}　|　"
+                    f"顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　"
+                    f"継続中: {(df['event']==0).sum():,}件　|　"
+                    f"平均日次 ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
+                )
+                info2 = (
+                    f"異常値の処理：除外なし　|　{business_type}　|　"
+                    f"{billing_cycle}　|　解約時の日割り計算：{'ON' if ltv_offset_days == 0 else 'OFF'}"
+                )
+                if sh.has_text_frame:
+                    tf = sh.text_frame
+                    if len(tf.paragraphs) >= 1 and tf.paragraphs[0].runs:
+                        tf.paragraphs[0].runs[0].text = info1
+                    if len(tf.paragraphs) >= 2 and tf.paragraphs[1].runs:
+                        tf.paragraphs[1].runs[0].text = info2
+            elif n == 'グループ化 26':
+                kpi_map = {
+                    'TextBox 6':  f'¥{ltv_rev:,.0f}',
+                    'TextBox 10': f'¥{cac_upper:,.0f}',
+                    'TextBox 11': f'CAC上限（{cac_label}）',
+                    'TextBox 14': f'{k:.3f}',
+                    'TextBox 18': f'{lam_actual:.0f}日',
+                    'TextBox 22': f'{r2:.3f}',
+                }
+                for grp_sh in sh.shapes:
+                    if grp_sh.name in kpi_map:
+                        _set_text(grp_sh, kpi_map[grp_sh.name])
+            elif n == 'テキスト ボックス 49':
+                if sh.has_text_frame:
+                    tf = sh.text_frame
+                    if len(tf.paragraphs) >= 1 and tf.paragraphs[0].runs:
+                        tf.paragraphs[0].runs[0].text = '結論'
+                    if len(tf.paragraphs) >= 2 and tf.paragraphs[1].runs:
+                        tf.paragraphs[1].runs[0].text = k_summary + r2_summary
 
-            # ── Slide 2: 分析結果サマリー ──
-            s2 = _copy_slide_from_tmpl(_tmpl_prs, 1, new_prs)
-            for sh in s2.shapes:
-                n = sh.name
-                if n == 'テキスト プレースホルダー 6':
-                    # データ期間・基本情報
-                    info_text = (
-                        f"データ期間: {_data_start} – {_data_end}　|　"
-                        f"顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　"
-                        f"継続中: {(df['event']==0).sum():,}件　|　"
-                        f"平均日次ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
-                    )
-                    info2 = (
-                        f"異常値の処理：除外なし　|　{business_type}　|　"
-                        f"{billing_cycle}　|　解約時の日割り計算：{'ON' if ltv_offset_days == 0 else 'OFF'}"
-                    )
-                    if sh.has_text_frame:
-                        tf = sh.text_frame
-                        if len(tf.paragraphs) >= 1 and tf.paragraphs[0].runs:
-                            tf.paragraphs[0].runs[0].text = info_text
-                        if len(tf.paragraphs) >= 2 and tf.paragraphs[1].runs:
-                            tf.paragraphs[1].runs[0].text = info2
-                elif n == 'グループ化 26':
-                    # KPI5枚のデータを更新
-                    kpi_map = {
-                        'TextBox 6':  f'¥{ltv_rev:,.0f}',
-                        'TextBox 10': f'¥{cac_upper:,.0f}',
-                        'TextBox 14': f'{k:.3f}',
-                        'TextBox 18': f'{lam_actual:.0f}日',
-                        'TextBox 22': f'{r2:.3f}',
-                        'TextBox 11': f'CAC上限（{cac_label}）',
-                    }
-                    for grp_sh in sh.shapes:
-                        if grp_sh.name in kpi_map:
-                            _set_text(grp_sh, kpi_map[grp_sh.name])
-                elif n == 'テキスト ボックス 49':
-                    # 結論テキスト
-                    if sh.has_text_frame:
-                        tf = sh.text_frame
-                        if len(tf.paragraphs) >= 1 and tf.paragraphs[0].runs:
-                            tf.paragraphs[0].runs[0].text = '結論'
-                        if len(tf.paragraphs) >= 2 and tf.paragraphs[1].runs:
-                            tf.paragraphs[1].runs[0].text = k_summary + r2_summary
+        # ══════════════════════════════════════════════
+        # Slide 3: 分析の信頼性（Survival Curve / Weibull Plot）
+        # ══════════════════════════════════════════════
+        s3 = prs.slides[2]
+        if k < 0.7:
+            k_insight = f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
+        elif k < 1.0:
+            k_insight = f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
+        elif k < 1.5:
+            k_insight = f"k={k:.3f}（逓増型・中程度）: 継続期間が長いほど離脱リスクが増す。1年超の顧客へのエンゲージメント強化が鍵。"
+        else:
+            k_insight = f"k={k:.3f}（強い逓増型）: 長期顧客ほど急速に離脱。VIP施策・継続特典による長期繋ぎ止めが急務。"
+        lam_disp_s3 = lam + ltv_offset_days if business_type == '都度購入型' else lam
+        if r2 >= 0.95:
+            r2_comment = f"R²={r2:.3f}: 非常に高精度。LTV∞推定値の信頼性は高い。"
+        elif r2 >= 0.85:
+            r2_comment = f"R²={r2:.3f}: 許容範囲内。推定値に±15%程度の幅を見込んで意思決定を。"
+        else:
+            r2_comment = f"R²={r2:.3f}: やや低め。データ件数不足または複数の離脱パターンが混在している可能性あり。"
+        for sh in s3.shapes:
+            if sh.name == 'Picture 3':
+                buf1.seek(0); _replace_image(s3, sh, buf1)
+            elif sh.name == 'Picture 4':
+                buf2.seek(0); _replace_image(s3, sh, buf2)
+            elif sh.name == 'TextBox 7':
+                k_text = (
+                    f"k（形状パラメータ） = {k:.3f}\n"
+                    f"→ 左グラフ（Survival Curve）の曲線の急峻さを決める値。k=1で指数分布（一定離脱率）\n"
+                    f"→ {k_insight}"
+                )
+                _set_multiline(sh, k_text)
+            elif sh.name == 'TextBox 8':
+                lam_text = (
+                    f"λ（尺度パラメータ） = {lam_disp_s3:.1f}日（約{lam_disp_s3/365:.1f}年）\n"
+                    f"→ 大きいほどLTV∞到達が長期化する。λ日時点での暫定LTV到達率はk値により異なる（k=1のとき63.2%）\n"
+                    f"→ {r2_comment}"
+                )
+                _set_multiline(sh, lam_text)
 
-            # ── Slide 3: 分析の信頼性 ──
-            s3 = _copy_slide_from_tmpl(_tmpl_prs, 2, new_prs)
-            # 画像を差し替え（Survival Curve / Weibull Plot）
-            pic_count = 0
-            for sh in s3.shapes:
-                if sh.name in ('Picture 3', 'Picture 4'):
-                    pic_count += 1
-                    # 既存picのblipを差し替え
-                    blip = sh._element.find('.//' + qn('a:blip'))
-                    if blip is not None:
-                        # 既存のrIdを使って画像を差し替え
-                        rId = blip.get(qn('r:embed'))
-                        if rId and pic_count == 1:
-                            buf1.seek(0)
-                            slide_part = s3.part
-                            image_part, new_rId = slide_part.get_or_add_image_part(buf1)
-                            blip.set(qn('r:embed'), new_rId)
-                        elif rId and pic_count == 2:
-                            buf2.seek(0)
-                            slide_part = s3.part
-                            image_part, new_rId = slide_part.get_or_add_image_part(buf2)
-                            blip.set(qn('r:embed'), new_rId)
-                elif sh.name == 'TextBox 7':
-                    # k説明テキスト
-                    if k < 0.7:
-                        k_insight = f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
-                    elif k < 1.0:
-                        k_insight = f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
-                    else:
-                        k_insight = f"k={k:.3f}（逓増型）: 継続期間が長いほど離脱リスクが増す。長期顧客へのエンゲージメント強化が鍵。"
-                    k_text = (
-                        f"k（形状パラメータ） = {k:.3f}\n"
-                        f"→ 左グラフ（Survival Curve）の曲線の急峻さを決める値。k=1で指数分布（一定離脱率）\n"
-                        f"→ {k_insight}"
-                    )
-                    if sh.has_text_frame:
-                        tf = sh.text_frame
-                        for para in tf.paragraphs:
-                            for run in para.runs:
-                                run.text = ''
-                        if tf.paragraphs:
-                            tf.paragraphs[0].runs[0].text = k_text if tf.paragraphs[0].runs else ''
-                        # 複数行対応
-                        lines = k_text.split('\n')
-                        for i, para in enumerate(tf.paragraphs):
-                            if i < len(lines) and para.runs:
-                                para.runs[0].text = lines[i]
-                elif sh.name == 'TextBox 8':
-                    lam_disp_pp = lam + ltv_offset_days if business_type == '都度購入型' else lam
-                    lam_yr = lam_disp_pp / 365
-                    if r2 >= 0.95:
-                        r2_comment = f"R²={r2:.3f}: 非常に高精度。LTV∞推定値の信頼性は高い。"
-                    elif r2 >= 0.85:
-                        r2_comment = f"R²={r2:.3f}: 許容範囲内。推定値に±15%程度の幅を見込んで意思決定を。"
-                    else:
-                        r2_comment = f"R²={r2:.3f}: やや低め。セグメント分割を推奨。"
-                    lam_text = (
-                        f"λ（尺度パラメータ） = {lam_disp_pp:.1f}日（約{lam_yr:.1f}年）\n"
-                        f"→ 大きいほどLTV∞到達が長期化する。λ日時点での暫定LTV到達率はk値により異なる（k=1のとき63.2%）\n"
-                        f"→ {r2_comment}"
-                    )
-                    lines = lam_text.split('\n')
-                    if sh.has_text_frame:
-                        for i, para in enumerate(sh.text_frame.paragraphs):
-                            if i < len(lines) and para.runs:
-                                para.runs[0].text = lines[i]
+        # ══════════════════════════════════════════════
+        # Slide 4: 暫定LTVテーブル
+        # ══════════════════════════════════════════════
+        s4 = prs.slides[3]
+        all_rows_pp = []
+        for h in horizons:
+            if business_type == '都度購入型':
+                _dorm_pp = dormancy_days or 180
+                lh_r = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_pp)
+                lh_g = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, _dorm_pp)
+            else:
+                lh_r = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
+                lh_g = ltv_horizon_offset(k, lam, gp_daily, h, ltv_offset_days)
+            label = f'{h}日' if h < 365 else f'{h//365}年（{h:,}日）'
+            all_rows_pp.append((label, lh_r, lh_g, lh_g/cac_n, lh_r/ltv_rev*100))
+        all_rows_pp.append((f'λ {round(lam_actual):,}日', lam_rev, lam_gp, lam_gp/cac_n, lam_rev/ltv_rev*100))
+        all_rows_pp.append((f'LTV∞到達率: 99%（{int(days_99):,}日）', rev_99, gp_99, gp_99/cac_n, 99.0))
 
-            # ── Slide 4: 暫定LTVテーブル ──
-            s4 = _copy_slide_from_tmpl(_tmpl_prs, 3, new_prs)
+        for sh in s4.shapes:
+            if sh.shape_type == 19:  # TABLE
+                tbl = sh.table
+                for r_idx, (label, lr, lg, lc, pct) in enumerate(all_rows_pp):
+                    _set_table_row(tbl, r_idx + 1,
+                        [label, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%'])
+            elif sh.name == 'テキスト ボックス 17':
+                reading = (
+                    f"このテーブルの読み方\n"
+                    f"λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。\n"
+                    f"k={k:.3f}（{'強い初期離脱型' if k < 0.7 else '初期離脱型'}）: LTV∞は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。CAC投資判断には暫定LTV（現実的な期間）を使ってください。\n"
+                    f"LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。\u000b"
+                    f"1年時点でLTV∞の{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）、 "
+                    f"2年時点で{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）、 "
+                    f"3年時点で{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。\n\n"
+                    f"CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 {cac_recover_rev_str} / 粗利ベース 約 {cac_recover_gp_str}（契約から）"
+                )
+                _set_multiline(sh, reading)
 
-            # データ行計算
-            all_rows_pp = []
-            for h in horizons:
-                if business_type == '都度購入型':
-                    _dorm_pp = dormancy_days or 180
-                    lh_r = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_pp)
-                    lh_g = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, _dorm_pp)
-                else:
-                    lh_r = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
-                    lh_g = ltv_horizon_offset(k, lam, gp_daily, h, ltv_offset_days)
-                label = f'{h}日' if h < 365 else f'{h//365}年（{h:,}日）'
-                all_rows_pp.append((label, lh_r, lh_g, lh_g/cac_n, lh_r/ltv_rev*100))
+        # ══════════════════════════════════════════════
+        # Slide 5: 暫定LTVグラフ
+        # ══════════════════════════════════════════════
+        s5 = prs.slides[4]
+        for sh in s5.shapes:
+            if sh.name == 'コンテンツ プレースホルダー 6' and buf_ltv is not None:
+                buf_ltv.seek(0); _replace_image(s5, sh, buf_ltv)
 
-            all_rows_pp.append((f'λ {round(lam_actual):,}日', lam_rev, lam_gp, lam_gp/cac_n, lam_rev/ltv_rev*100))
-            all_rows_pp.append((f'LTV∞到達率: 99%（{int(days_99):,}日）', rev_99, gp_99, gp_99/cac_n, 99.0))
+        # ══════════════════════════════════════════════
+        # Slide 6〜: セグメント別
+        # ══════════════════════════════════════════════
+        if segment_cols_input.strip():
+            seg_cols_pp = [c.strip() for c in segment_cols_input.split(',')
+                          if c.strip() and c.strip() in df.columns]
 
-            for sh in s4.shapes:
-                if sh.shape_type == 19:  # TABLE
-                    tbl = sh.table
-                    for r_idx, (label, lr, lg, lc, pct) in enumerate(all_rows_pp):
-                        if r_idx + 1 < len(tbl.rows):
-                            row = tbl.rows[r_idx + 1]
-                            vals = [label, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%']
-                            for c_idx, v in enumerate(vals):
-                                if c_idx < len(row.cells):
-                                    _set_table_cell(row.cells[c_idx], v)
-                elif sh.name == 'テキスト ボックス 17':
-                    # 「このテーブルの読み方」テキスト
-                    reading_text = (
-                        f"このテーブルの読み方\n"
-                        f"λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は継続期間の目安です。\n"
-                        f"k={k:.3f}（{'強い初期離脱型' if k < 0.7 else '初期離脱型'}）: LTV∞は大きく見えますが少数の超長期顧客の分が含まれており、CAC投資判断には暫定LTV（現実的な期間）を使ってください。\n"
-                        f"LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。\n"
-                        f"1年時点でLTV∞の{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）、2年で{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）、3年で{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。\n\n"
-                        f"CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース {cac_recover_rev_str} / 粗利ベース {cac_recover_gp_str}（契約から）"
-                    )
-                    lines = reading_text.split('\n')
-                    if sh.has_text_frame:
-                        for i, para in enumerate(sh.text_frame.paragraphs):
-                            if i < len(lines) and para.runs:
-                                para.runs[0].text = lines[i]
-                            elif i < len(lines):
-                                para.text = lines[i]
+            # Slide 6: セグメント扉
+            s6 = prs.slides[5]
+            for sh in s6.shapes:
+                if sh.name == 'TextBox 4':
+                    _set_text(sh, '  |  '.join(seg_cols_pp))
 
-            # ── Slide 5: 暫定LTVグラフ ──
-            s5 = _copy_slide_from_tmpl(_tmpl_prs, 4, new_prs)
-            for sh in s5.shapes:
-                if sh.name == 'コンテンツ プレースホルダー 6' and not sh.has_text_frame:
-                    blip = sh._element.find('.//' + qn('a:blip'))
-                    if blip is not None and buf_ltv is not None:
-                        buf_ltv.seek(0)
-                        slide_part = s5.part
-                        image_part, new_rId = slide_part.get_or_add_image_part(buf_ltv)
-                        blip.set(qn('r:embed'), new_rId)
+            # 元のSlide7〜10を保持して後で複製に使う
+            # （prs.slides[6]〜[9]がSlide7〜10）
 
-            # ── セグメントがある場合 ──
-            if segment_cols_input.strip():
-                seg_cols_pp = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
-
-                # ── Slide 6: セグメント扉 ──
-                s6 = _copy_slide_from_tmpl(_tmpl_prs, 5, new_prs)
-                for sh in s6.shapes:
-                    if sh.name == 'TextBox 4':
-                        _set_text(sh, '  |  '.join(seg_cols_pp))
-
-                for sc in seg_cols_pp:
-                    # セグメントデータ計算
-                    seg_vals = df[sc].dropna().unique()
-                    pp_rows = []
-                    for sv in sorted(seg_vals):
-                        df_s = df[df[sc] == sv]
-                        if len(df_s) < 10 or df_s['event'].sum() < 5:
-                            continue
-                        try:
-                            km_s = _compute_km_df(df_s)
-                            k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
-                            if k_s is None: continue
-                            arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
-                            gp_s = arpu_s * gpm
-                            ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
-                            ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
-                            pp_rows.append({
-                                'seg': str(sv), 'n': len(df_s),
-                                'ltv_r': ltv_r, 'ltv_g': ltv_g,
-                                'cac': ltv_g / cac_n,
-                                'k': k_s, 'lam': lam_s, 'r2': r2_s
-                            })
-                        except Exception:
-                            continue
-                    if not pp_rows:
+            first_sc = True
+            for sc in seg_cols_pp:
+                # セグメントデータ計算
+                seg_vals = df[sc].dropna().unique()
+                pp_rows = []
+                for sv in sorted(seg_vals):
+                    df_s = df[df[sc] == sv]
+                    if len(df_s) < 10 or df_s['event'].sum() < 5:
                         continue
-                    pp_rows.sort(key=lambda x: x['ltv_r'], reverse=True)
-                    best_pp = pp_rows[0]
-                    avg_ltv_pp = sum(r['ltv_r'] for r in pp_rows) / len(pp_rows)
-                    avg_cac_pp = sum(r['cac'] for r in pp_rows) / len(pp_rows)
-                    premium_pp = (best_pp['ltv_r'] - avg_ltv_pp) / avg_ltv_pp * 100
-                    cac_diff_pp = best_pp['cac'] - avg_cac_pp
+                    try:
+                        km_s = _compute_km_df(df_s)
+                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
+                        if k_s is None: continue
+                        arpu_s = (df_s['revenue_total'].sum() / df_s['duration'].sum()
+                                 if billing_cycle == '日次（都度購入）'
+                                 else df_s['arpu_daily'].mean())
+                        gp_s = arpu_s * gpm
+                        ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
+                        ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
+                        pp_rows.append({'seg': str(sv), 'n': len(df_s),
+                            'ltv_r': ltv_r, 'ltv_g': ltv_g, 'cac': ltv_g/cac_n,
+                            'k': k_s, 'lam': lam_s, 'r2': r2_s})
+                    except Exception:
+                        continue
+                if not pp_rows:
+                    continue
+                pp_rows.sort(key=lambda x: x['ltv_r'], reverse=True)
+                best = pp_rows[0]
+                avg_ltv = sum(r['ltv_r'] for r in pp_rows) / len(pp_rows)
+                avg_cac = sum(r['cac'] for r in pp_rows) / len(pp_rows)
+                premium = (best['ltv_r'] - avg_ltv) / avg_ltv * 100
+                cac_diff = best['cac'] - avg_cac
 
-                    # ── Slide 7: LTV∞比較グラフ ──
-                    s7 = _copy_slide_from_tmpl(_tmpl_prs, 6, new_prs)
-                    for sh in s7.shapes:
-                        if sh.name == 'タイトル 4':
-                            _set_text(sh, f'{sc}: LTV∞')
-                        elif sh.name == 'テキスト プレースホルダー 5':
-                            cac_diff_str = f"+¥{cac_diff_pp:,.0f}高く設定可能" if cac_diff_pp >= 0 else f"¥{abs(cac_diff_pp):,.0f}低め"
-                            top_text = (
-                                f"Top Pick　{best_pp['seg']}\n"
-                                f"LTV∞(売上): ¥{best_pp['ltv_r']:,.0f}（全セグメント平均比 +{premium_pp:.1f}%）　|　"
-                                f"許容CAC上限 ¥{best_pp['cac']:,.0f}（全セグメント平均より{cac_diff_str}）"
-                            )
-                            if sh.has_text_frame:
-                                lines = top_text.split('\n')
-                                for i, para in enumerate(sh.text_frame.paragraphs):
-                                    if i < len(lines) and para.runs:
-                                        para.runs[0].text = lines[i]
-                        elif sh.name == 'コンテンツ プレースホルダー 18':
-                            # 棒グラフ画像を生成して差し替え
-                            import matplotlib.pyplot as _plt_bar
-                            import matplotlib.ticker as _mticker
-                            _fig_bar, _ax_bar = _plt_bar.subplots(figsize=(10.7, 4.2))
-                            _fig_bar.patch.set_facecolor('#111820')
-                            _ax_bar.set_facecolor('#111820')
-                            _segs = [r['seg'] for r in pp_rows]
-                            _ltvs = [r['ltv_r'] for r in pp_rows]
-                            _colors = ['#56b4d3' if r['seg'] == best_pp['seg'] else '#a8dadc' for r in pp_rows]
-                            _bars = _ax_bar.bar(_segs, _ltvs, color=_colors, width=0.55)
-                            for _bar, _val in zip(_bars, _ltvs):
-                                _ax_bar.text(_bar.get_x() + _bar.get_width()/2,
-                                            _bar.get_height() + max(_ltvs)*0.01,
-                                            f'¥{_val:,.0f}', ha='center', va='bottom',
-                                            fontsize=9, color='#cccccc')
-                            _ax_bar.set_ylabel('LTV∞（¥）', color='#888', fontsize=9)
-                            _ax_bar.tick_params(colors='#888', labelsize=8)
-                            _ax_bar.yaxis.set_major_formatter(_mticker.FuncFormatter(lambda v, _: f'¥{v:,.0f}'))
-                            _ax_bar.grid(axis='y', alpha=0.2, color='#1a3040')
-                            for _sp in _ax_bar.spines.values(): _sp.set_color('#1a3040')
-                            _fig_bar.tight_layout()
-                            _buf_bar = io.BytesIO()
-                            _fig_bar.savefig(_buf_bar, format='png', dpi=130, bbox_inches='tight', facecolor='#111820')
-                            _buf_bar.seek(0); _plt_bar.close()
-                            # 既存picのblipを差し替え
-                            blip7 = sh._element.find('.//' + qn('a:blip'))
-                            if blip7 is not None:
-                                slide_part = s7.part
-                                image_part, new_rId = slide_part.get_or_add_image_part(_buf_bar)
-                                blip7.set(qn('r:embed'), new_rId)
+                # ── Slide 7: LTV∞比較棒グラフ ──
+                # 最初のscはSlide7(index=6)を直接更新、2つ目以降は複製
+                if first_sc:
+                    s7 = prs.slides[6]
+                else:
+                    s7 = _copy_slide(prs, 6)
 
-                    # ── Slide 8: セグメントサマリーテーブル ──
-                    s8 = _copy_slide_from_tmpl(_tmpl_prs, 7, new_prs)
-                    for sh in s8.shapes:
-                        if sh.name == 'コンテンツ プレースホルダー 6':
-                            # テーブル画像を生成して差し替え（サマリーテーブル）
-                            import matplotlib.pyplot as _plt_tbl
-                            import matplotlib.patches as _mpatch
-                            _fig_t, _ax_t = _plt_tbl.subplots(figsize=(11.8, 1.65))
-                            _fig_t.patch.set_facecolor('#111820')
-                            _ax_t.set_facecolor('#111820')
-                            _ax_t.axis('off')
-                            # ヘッダ
-                            _hdrs = ['セグメント', '顧客数', 'LTV∞(売上)', 'LTV∞(粗利)', 'CAC上限(粗利)', 'k', 'λ(日)', 'R²']
-                            _col_w = [0.22, 0.08, 0.13, 0.13, 0.13, 0.08, 0.10, 0.07]
-                            _col_x = [0]
-                            for w in _col_w[:-1]: _col_x.append(_col_x[-1]+w)
-                            _hdr_patch = _mpatch.FancyBboxPatch((0,0.78), 1, 0.22, 
-                                boxstyle='square,pad=0', facecolor='#0D1F2D', transform=_ax_t.transAxes)
-                            _ax_t.add_patch(_hdr_patch)
-                            for _cx, _cw, _h in zip(_col_x, _col_w, _hdrs):
-                                _ax_t.text(_cx+_cw/2, 0.89, _h, transform=_ax_t.transAxes,
-                                          ha='center', va='center', fontsize=7.5,
-                                          color='#56b4d3', fontweight='bold')
-                            # データ行
-                            all_seg_rows = pp_rows + [{'seg':'加重平均',
-                                'n': sum(r['n'] for r in pp_rows),
-                                'ltv_r': sum(r['ltv_r']*r['n'] for r in pp_rows)/sum(r['n'] for r in pp_rows),
-                                'ltv_g': sum(r['ltv_g']*r['n'] for r in pp_rows)/sum(r['n'] for r in pp_rows),
-                                'cac': sum(r['ltv_g']*r['n'] for r in pp_rows)/sum(r['n'] for r in pp_rows)/cac_n,
-                                'k': None, 'lam': None, 'r2': None}]
-                            for _ri, _row in enumerate(all_seg_rows):
-                                _y = 0.78 - (_ri+1)*0.78/len(all_seg_rows)
-                                _h_row = 0.78/len(all_seg_rows)
-                                _is_wa = _row['seg'] == '加重平均'
-                                _bg = '#1A3A4A' if _is_wa else ('#0D1520' if _ri%2==0 else '#0A1018')
-                                _is_best = not _is_wa and _row['seg'] == best_pp['seg']
-                                if _is_best: _bg = '#0D1F2D'
-                                _p = _mpatch.FancyBboxPatch((0,_y), 1, _h_row,
-                                    boxstyle='square,pad=0', facecolor=_bg, transform=_ax_t.transAxes)
-                                _ax_t.add_patch(_p)
-                                _vals = [
-                                    _row['seg'],
-                                    f"{_row['n']:,}",
-                                    f"¥{_row['ltv_r']:,.0f}",
-                                    f"¥{_row['ltv_g']:,.0f}",
-                                    f"¥{_row['cac']:,.0f}",
-                                    f"{_row['k']:.3f}" if _row['k'] else '—',
-                                    f"{_row['lam']:.1f}" if _row['lam'] else '—',
-                                    f"{_row['r2']:.3f}" if _row['r2'] else '—',
-                                ]
-                                _tc = '#A8DADC' if _is_wa or _is_best else '#E8E4DC'
-                                for _cx2, _cw2, _v2 in zip(_col_x, _col_w, _vals):
-                                    _align = 'left' if _cx2 == 0 else 'right'
-                                    _x2 = _cx2 + (0.02 if _align=='left' else _cw2-0.02)
-                                    _ax_t.text(_x2, _y+_h_row/2, _v2, transform=_ax_t.transAxes,
-                                              ha=_align, va='center', fontsize=7.5, color=_tc)
-                            _fig_t.tight_layout(pad=0)
-                            _buf_t = io.BytesIO()
-                            _fig_t.savefig(_buf_t, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
-                            _buf_t.seek(0); _plt_tbl.close()
-                            blip8 = sh._element.find('.//' + qn('a:blip'))
-                            if blip8 is not None:
-                                slide_part = s8.part
-                                image_part, new_rId = slide_part.get_or_add_image_part(_buf_t)
-                                blip8.set(qn('r:embed'), new_rId)
-                        elif sh.name == 'テキスト ボックス 9':
-                            wa_n   = sum(r['n'] for r in pp_rows)
-                            wa_r   = sum(r['ltv_r']*r['n'] for r in pp_rows) / wa_n
-                            diff_p = (wa_r - ltv_rev) / ltv_rev * 100
-                            note_t = (
-                                f"NOTE — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
-                                f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{diff_p:+.1f}%）は統計的に正常な現象です。"
-                                f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。"
-                            )
-                            _set_text(sh, note_t)
+                for sh in s7.shapes:
+                    if sh.name == 'タイトル 4':
+                        _set_text(sh, f'{sc}: LTV∞')
+                    elif sh.name == 'テキスト プレースホルダー 5':
+                        cac_diff_str = (f"+¥{cac_diff:,.0f}高く設定可能"
+                                       if cac_diff >= 0 else f"¥{abs(cac_diff):,.0f}低め")
+                        top_text = (
+                            f"Top Pick　{best['seg']}\n"
+                            f"LTV∞(売上): ¥{best['ltv_r']:,.0f}（全セグメント平均比 +{premium:.1f}%）"
+                            f"　|　許容CAC上限 ¥{best['cac']:,.0f}（全セグメント平均より{cac_diff_str}）"
+                        )
+                        _set_multiline(sh, top_text)
+                    elif sh.name == 'コンテンツ プレースホルダー 18':
+                        # 棒グラフ生成
+                        import matplotlib.pyplot as _plt_bar
+                        import matplotlib.ticker as _mticker
+                        _fig, _ax = _plt_bar.subplots(figsize=(10.7, 4.2))
+                        _fig.patch.set_facecolor('#111820'); _ax.set_facecolor('#111820')
+                        _segs = [r['seg'] for r in pp_rows]
+                        _ltvs = [r['ltv_r'] for r in pp_rows]
+                        _cols = ['#56b4d3' if r['seg'] == best['seg'] else '#a8dadc' for r in pp_rows]
+                        _bars = _ax.bar(_segs, _ltvs, color=_cols, width=0.55)
+                        for _b, _v in zip(_bars, _ltvs):
+                            _ax.text(_b.get_x()+_b.get_width()/2, _b.get_height()+max(_ltvs)*0.01,
+                                    f'¥{_v:,.0f}', ha='center', va='bottom', fontsize=9, color='#cccccc')
+                        _ax.set_ylabel('LTV∞（¥）', color='#888', fontsize=9)
+                        _ax.tick_params(colors='#888', labelsize=8)
+                        _ax.yaxis.set_major_formatter(_mticker.FuncFormatter(lambda v,_: f'¥{v:,.0f}'))
+                        _ax.grid(axis='y', alpha=0.2, color='#1a3040')
+                        for _sp in _ax.spines.values(): _sp.set_color('#1a3040')
+                        _fig.tight_layout()
+                        _buf_bar = io.BytesIO()
+                        _fig.savefig(_buf_bar, format='png', dpi=130, bbox_inches='tight', facecolor='#111820')
+                        _buf_bar.seek(0); _plt_bar.close()
+                        _replace_image(s7, sh, _buf_bar)
 
-                    # ── Slide 9〜: セグメント詳細 ──
-                    # テンプレートのSlide9をベースに各セグメントのスライドを生成
-                    for sv in sorted(seg_vals):
-                        df_sv = df[df[sc] == sv]
-                        if len(df_sv) < 10 or df_sv['event'].sum() < 5:
-                            continue
-                        try:
-                            km_sv = _compute_km_df(df_sv)
-                            k_sv, lam_sv, r2_sv, _ = _fit_weibull_df(km_sv)
-                            if k_sv is None: continue
-                            arpu_sv = df_sv['revenue_total'].sum() / df_sv['duration'].sum() if billing_cycle == '日次（都度購入）' else df_sv['arpu_daily'].mean()
-                            gp_sv = arpu_sv * gpm
-                            ltv_r_sv, _ = ltv_inf(k_sv, lam_sv, arpu_sv)
-                            ltv_g_sv, _ = ltv_inf(k_sv, lam_sv, gp_sv)
-                            lam_sv_disp = lam_sv + ltv_offset_days if business_type == '都度購入型' else lam_sv
-                            is_best_sv = str(sv) == best_pp['seg']
+                # ── Slide 8: セグメントサマリー ──
+                if first_sc:
+                    s8 = prs.slides[7]
+                else:
+                    s8 = _copy_slide(prs, 7)
 
-                            # テンプレートのSlide9をコピー
-                            tmpl_slide_idx = 8 if is_best_sv else 9
-                            s9 = _copy_slide_from_tmpl(_tmpl_prs, tmpl_slide_idx, new_prs)
+                for sh in s8.shapes:
+                    if sh.name == 'コンテンツ プレースホルダー 6':
+                        # サマリーテーブル画像生成
+                        import matplotlib.pyplot as _plt_t
+                        import matplotlib.patches as _mpatch
+                        _n_rows = len(pp_rows) + 1  # セグメント行 + 加重平均行
+                        _fig_h = max(1.2, _n_rows * 0.32 + 0.4)
+                        _fig_t, _ax_t = _plt_t.subplots(figsize=(11.8, _fig_h))
+                        _fig_t.patch.set_facecolor('#111820'); _ax_t.set_facecolor('#111820')
+                        _ax_t.axis('off')
+                        _hdrs = ['セグメント', '顧客数', 'LTV∞(売上)', 'LTV∞(粗利)', 'CAC上限(粗利)', 'k', 'λ(日)', 'R²']
+                        _col_w = [0.22, 0.08, 0.13, 0.12, 0.13, 0.08, 0.10, 0.07]
+                        _norm_w = [w/sum(_col_w) for w in _col_w]
+                        _col_x = [sum(_norm_w[:i]) for i in range(len(_norm_w))]
+                        # ヘッダ
+                        _hdr_h = 1.0 / (_n_rows + 1)
+                        _bg = _mpatch.FancyBboxPatch((0, 1-_hdr_h), 1, _hdr_h,
+                            boxstyle='square,pad=0', facecolor='#0D1F2D', transform=_ax_t.transAxes)
+                        _ax_t.add_patch(_bg)
+                        for _cx, _cw, _h in zip(_col_x, _norm_w, _hdrs):
+                            _al = 'left' if _cx == 0 else 'right'
+                            _tx = _cx + (0.01 if _al == 'left' else _cw - 0.01)
+                            _ax_t.text(_tx, 1-_hdr_h/2, _h, transform=_ax_t.transAxes,
+                                      ha=_al, va='center', fontsize=7.5, color='#56B4D3', fontweight='bold')
+                        # データ行
+                        _wa_n = sum(r['n'] for r in pp_rows)
+                        _wa_r = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n
+                        _wa_g = sum(r['ltv_g']*r['n'] for r in pp_rows) / _wa_n
+                        _all_rows_t = pp_rows + [{'seg':'加重平均','n':_wa_n,'ltv_r':_wa_r,'ltv_g':_wa_g,
+                            'cac':_wa_g/cac_n,'k':None,'lam':None,'r2':None}]
+                        for _ri, _row in enumerate(_all_rows_t):
+                            _y = 1 - _hdr_h - (_ri+1)*((1-_hdr_h)/len(_all_rows_t))
+                            _rh = (1-_hdr_h)/len(_all_rows_t)
+                            _is_wa = _row['seg'] == '加重平均'
+                            _is_best = not _is_wa and _row['seg'] == best['seg']
+                            _bg2 = '#1A3A4A' if _is_wa else ('#0D1F2D' if _is_best else ('#0D1520' if _ri%2==0 else '#0A1018'))
+                            _p = _mpatch.FancyBboxPatch((0,_y), 1, _rh,
+                                boxstyle='square,pad=0', facecolor=_bg2, transform=_ax_t.transAxes)
+                            _ax_t.add_patch(_p)
+                            _vals = [_row['seg'], f"{_row['n']:,}",
+                                f"¥{_row['ltv_r']:,.0f}", f"¥{_row['ltv_g']:,.0f}", f"¥{_row['cac']:,.0f}",
+                                f"{_row['k']:.3f}" if _row['k'] else '—',
+                                f"{_row['lam']:.1f}" if _row['lam'] else '—',
+                                f"{_row['r2']:.3f}" if _row['r2'] else '—']
+                            _tc = '#A8DADC' if _is_wa or _is_best else '#E8E4DC'
+                            for _cx2, _cw2, _v2 in zip(_col_x, _norm_w, _vals):
+                                _al2 = 'left' if _cx2 == 0 else 'right'
+                                _tx2 = _cx2 + (0.01 if _al2=='left' else _cw2-0.01)
+                                _ax_t.text(_tx2, _y+_rh/2, _v2, transform=_ax_t.transAxes,
+                                          ha=_al2, va='center', fontsize=7.5, color=_tc)
+                        _fig_t.tight_layout(pad=0)
+                        _buf_t = io.BytesIO()
+                        _fig_t.savefig(_buf_t, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
+                        _buf_t.seek(0); _plt_t.close()
+                        _replace_image(s8, sh, _buf_t)
+                    elif sh.name == 'テキスト ボックス 9':
+                        _wa_n2 = sum(r['n'] for r in pp_rows)
+                        _wa_r2 = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n2
+                        _diff_p = (_wa_r2 - ltv_rev) / ltv_rev * 100
+                        _set_text(sh,
+                            f"Note\u00a0— 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
+                            f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
+                            f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。")
 
-                            # タイトル・サブタイトル更新
-                            for sh in s9.shapes:
-                                if sh.name == 'タイトル 8':
-                                    _set_text(sh, f'{sc}: {str(sv)}')
-                                elif sh.name == 'テキスト プレースホルダー 9':
-                                    if sh.has_text_frame and sh.text_frame.paragraphs:
-                                        pass  # デフォルトテキスト維持
-                                elif sh.name == 'Picture 6':
-                                    # Survival Curve
-                                    import matplotlib.pyplot as _plt_sv
-                                    _fig_sv1, _ax_sv1 = _plt_sv.subplots(figsize=(5.4, 3.1))
-                                    _fig_sv1.patch.set_facecolor('#111820'); _ax_sv1.set_facecolor('#111820')
-                                    _ax_sv1.step(km_sv['t'], km_sv['S'], color='#56b4d3', lw=1.5, label='KM Curve (Observed)')
-                                    _t_ra = km_sv['t'].values
-                                    _ax_sv1.plot(_t_ra, [float(weibull_s(t, k_sv, lam_sv)) for t in _t_ra],
-                                                '--', color='#a8dadc', lw=1.2, label='Weibull Fit')
-                                    _ax_sv1.set_xlabel('Days', color='#888', fontsize=8)
-                                    _ax_sv1.set_ylabel('Survival Rate S(t)', color='#888', fontsize=8)
-                                    _ax_sv1.tick_params(colors='#666', labelsize=7)
-                                    _ax_sv1.legend(fontsize=7, framealpha=0.2)
-                                    _ax_sv1.grid(True, alpha=0.2)
-                                    _ax_sv1.set_title('Survival Curve', color='#ccc', fontsize=9)
-                                    _fig_sv1.tight_layout()
-                                    _buf_sv1 = io.BytesIO()
-                                    _fig_sv1.savefig(_buf_sv1, format='png', dpi=130, bbox_inches='tight', facecolor='#111820')
-                                    _buf_sv1.seek(0); _plt_sv.close()
-                                    blip_sv1 = sh._element.find('.//' + qn('a:blip'))
-                                    if blip_sv1 is not None:
-                                        img_part, new_rId = s9.part.get_or_add_image_part(_buf_sv1)
-                                        blip_sv1.set(qn('r:embed'), new_rId)
-                                elif sh.name == 'Picture 7':
-                                    # Weibull Plot
-                                    import numpy as _np_sv
-                                    _km_fit = km_sv[km_sv['S'] > 0]
-                                    _ln_t = _np_sv.log(_km_fit['t'].values.astype(float) + 1e-10)
-                                    _ln_ns = _np_sv.log(-_np_sv.log(_km_fit['S'].values.astype(float) + 1e-15))
-                                    _valid = _np_sv.isfinite(_ln_t) & _np_sv.isfinite(_ln_ns)
-                                    _ln_t, _ln_ns = _ln_t[_valid], _ln_ns[_valid]
-                                    _sl, _it, _, _, _ = __import__('scipy').stats.linregress(_ln_t, _ln_ns)
-                                    _x_l = _np_sv.linspace(_ln_t.min(), _ln_t.max(), 100)
-                                    import matplotlib.pyplot as _plt_sv2
-                                    _fig_sv2, _ax_sv2 = _plt_sv2.subplots(figsize=(5.4, 3.1))
-                                    _fig_sv2.patch.set_facecolor('#111820'); _ax_sv2.set_facecolor('#111820')
-                                    _ax_sv2.scatter(_ln_t, _ln_ns, color='#56b4d3', s=18, alpha=0.75, label='Observed')
-                                    _ax_sv2.plot(_x_l, _sl*_x_l+_it, '--', color='#a8dadc', lw=1.5, label=f'R²={r2_sv:.3f}')
-                                    _ax_sv2.annotate(f'y = {_sl:.4f}x + {_it:.4f}', xy=(0.05,0.93), xycoords='axes fraction', color='#777', fontsize=8)
-                                    _ax_sv2.set_xlabel('ln(t)', color='#888', fontsize=8)
-                                    _ax_sv2.set_ylabel('ln(−ln(S(t)))', color='#888', fontsize=8)
-                                    _ax_sv2.tick_params(colors='#666', labelsize=7)
-                                    _ax_sv2.legend(fontsize=7, framealpha=0.2)
-                                    _ax_sv2.grid(True, alpha=0.2)
-                                    _ax_sv2.set_title('Weibull Linearization Plot', color='#ccc', fontsize=9)
-                                    _fig_sv2.tight_layout()
-                                    _buf_sv2 = io.BytesIO()
-                                    _fig_sv2.savefig(_buf_sv2, format='png', dpi=130, bbox_inches='tight', facecolor='#111820')
-                                    _buf_sv2.seek(0); _plt_sv2.close()
-                                    blip_sv2 = sh._element.find('.//' + qn('a:blip'))
-                                    if blip_sv2 is not None:
-                                        img_part, new_rId = s9.part.get_or_add_image_part(_buf_sv2)
-                                        blip_sv2.set(qn('r:embed'), new_rId)
-                                elif sh.shape_type == 19:  # TABLE
-                                    # 暫定LTVテーブルデータ更新
-                                    tbl9 = sh.table
-                                    _sv_rows = []
-                                    for _h in horizons:
-                                        if business_type == '都度購入型':
-                                            _lr2 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _h, 0)
-                                        else:
-                                            _lr2 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _h, ltv_offset_days)
-                                        _lg2 = _lr2 * gpm
-                                        _label2 = f'{_h}日' if _h < 365 else f'{_h//365}年（{_h:,}日）'
-                                        _sv_rows.append((_label2, _lr2, _lg2, _lg2/cac_n, _lr2/ltv_r_sv*100))
-                                    # λ行
-                                    _lr_lam = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, int(lam_sv), ltv_offset_days)
-                                    _lg_lam = _lr_lam * gpm
-                                    _sv_rows.append((f'λ {round(lam_sv_disp):,}日', _lr_lam, _lg_lam, _lg_lam/cac_n, _lr_lam/ltv_r_sv*100))
-                                    # 99%行
-                                    try:
-                                        from scipy.optimize import brentq as _bq2
-                                        _d99 = _bq2(lambda _hh2: ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _hh2, ltv_offset_days)/ltv_r_sv-0.99, 1, 365000)
-                                        _lr99 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _d99, ltv_offset_days)
-                                        _lg99 = _lr99 * gpm
-                                        _sv_rows.append((f'LTV∞到達率: 99%（{int(_d99):,}日）', _lr99, _lg99, _lg99/cac_n, 99.0))
-                                    except Exception:
-                                        _sv_rows.append(('LTV∞到達率: 99%', ltv_r_sv, ltv_g_sv, ltv_g_sv/cac_n, 99.0))
-                                    for r_idx, (_lbl, _lr, _lg, _lc, _pct) in enumerate(_sv_rows):
-                                        if r_idx + 1 < len(tbl9.rows):
-                                            _row9 = tbl9.rows[r_idx + 1]
-                                            _v9 = [_lbl, f'¥{_lr:,.0f}', f'¥{_lg:,.0f}', f'¥{_lc:,.0f}', f'{_pct:.1f}%']
-                                            for _ci, _v in enumerate(_v9):
-                                                if _ci < len(_row9.cells):
-                                                    _set_table_cell(_row9.cells[_ci], _v)
+                # ── Slide 9〜: セグメント詳細 ──
+                for sv in sorted(seg_vals):
+                    df_sv = df[df[sc] == sv]
+                    if len(df_sv) < 10 or df_sv['event'].sum() < 5:
+                        continue
+                    try:
+                        km_sv = _compute_km_df(df_sv)
+                        k_sv, lam_sv, r2_sv, _ = _fit_weibull_df(km_sv)
+                        if k_sv is None: continue
+                        arpu_sv = (df_sv['revenue_total'].sum() / df_sv['duration'].sum()
+                                  if billing_cycle == '日次（都度購入）'
+                                  else df_sv['arpu_daily'].mean())
+                        gp_sv = arpu_sv * gpm
+                        ltv_r_sv, _ = ltv_inf(k_sv, lam_sv, arpu_sv)
+                        lam_sv_disp = lam_sv + ltv_offset_days if business_type == '都度購入型' else lam_sv
+                        is_best_sv = str(sv) == best['seg']
 
-                        except Exception:
-                            continue
+                        # Top Pickなら Slide9(index=8)、そうでなければSlide10(index=9)を複製
+                        tmpl_idx = 8 if is_best_sv else 9
+                        if first_sc and sv == sorted(seg_vals)[0]:
+                            # 最初のセグメントは既存スライドを更新
+                            s9 = prs.slides[tmpl_idx]
+                        else:
+                            s9 = _copy_slide(prs, tmpl_idx)
 
-            prs = new_prs
+                        # タイトル更新
+                        for sh in s9.shapes:
+                            if sh.name == 'タイトル 8':
+                                _set_text(sh, f'{sc}: {str(sv)}')
+                            elif sh.name == 'Picture 6':
+                                # Survival Curve
+                                import matplotlib.pyplot as _plt_sv
+                                _fig_sv1, _ax_sv1 = _plt_sv.subplots(figsize=(5.4, 3.1))
+                                _fig_sv1.patch.set_facecolor('#111820'); _ax_sv1.set_facecolor('#111820')
+                                _ax_sv1.step(km_sv['t'], km_sv['S'], color='#56b4d3', lw=1.5, label='KM Curve (Observed)')
+                                _t_ra = km_sv['t'].values
+                                _ax_sv1.plot(_t_ra, [float(weibull_s(t, k_sv, lam_sv)) for t in _t_ra],
+                                            '--', color='#a8dadc', lw=1.2, label='Weibull Fit')
+                                _ax_sv1.set_xlabel('Days', color='#888', fontsize=8)
+                                _ax_sv1.set_ylabel('Survival Rate S(t)', color='#888', fontsize=8)
+                                _ax_sv1.tick_params(colors='#666', labelsize=7)
+                                _ax_sv1.legend(fontsize=7, framealpha=0.2)
+                                _ax_sv1.grid(True, alpha=0.2)
+                                _ax_sv1.set_title('Survival Curve', color='#ccc', fontsize=9)
+                                _fig_sv1.tight_layout()
+                                _buf_sv1 = io.BytesIO()
+                                _fig_sv1.savefig(_buf_sv1, format='png', dpi=130, bbox_inches='tight', facecolor='#111820')
+                                _buf_sv1.seek(0); _plt_sv.close()
+                                _replace_image(s9, sh, _buf_sv1)
+                            elif sh.name == 'Picture 7':
+                                # Weibull Plot
+                                import numpy as _np_sv
+                                _km_fit = km_sv[km_sv['S'] > 0]
+                                _ln_t = _np_sv.log(_km_fit['t'].values.astype(float) + 1e-10)
+                                _ln_ns = _np_sv.log(-_np_sv.log(_km_fit['S'].values.astype(float) + 1e-15))
+                                _valid = _np_sv.isfinite(_ln_t) & _np_sv.isfinite(_ln_ns)
+                                _ln_t, _ln_ns = _ln_t[_valid], _ln_ns[_valid]
+                                _sl, _it, _, _, _ = __import__('scipy').stats.linregress(_ln_t, _ln_ns)
+                                _x_l = _np_sv.linspace(_ln_t.min(), _ln_t.max(), 100)
+                                import matplotlib.pyplot as _plt_sv2
+                                _fig_sv2, _ax_sv2 = _plt_sv2.subplots(figsize=(5.4, 3.1))
+                                _fig_sv2.patch.set_facecolor('#111820'); _ax_sv2.set_facecolor('#111820')
+                                _ax_sv2.scatter(_ln_t, _ln_ns, color='#56b4d3', s=18, alpha=0.75, label='Observed')
+                                _ax_sv2.plot(_x_l, _sl*_x_l+_it, '--', color='#a8dadc', lw=1.5, label=f'R²={r2_sv:.3f}')
+                                _ax_sv2.annotate(f'y = {_sl:.4f}x + {_it:.4f}', xy=(0.05,0.93), xycoords='axes fraction', color='#777', fontsize=8)
+                                _ax_sv2.set_xlabel('ln(t)', color='#888', fontsize=8)
+                                _ax_sv2.set_ylabel('ln(−ln(S(t)))', color='#888', fontsize=8)
+                                _ax_sv2.tick_params(colors='#666', labelsize=7)
+                                _ax_sv2.legend(fontsize=7, framealpha=0.2)
+                                _ax_sv2.grid(True, alpha=0.2)
+                                _ax_sv2.set_title('Weibull Linearization Plot', color='#ccc', fontsize=9)
+                                _fig_sv2.tight_layout()
+                                _buf_sv2 = io.BytesIO()
+                                _fig_sv2.savefig(_buf_sv2, format='png', dpi=130, bbox_inches='tight', facecolor='#111820')
+                                _buf_sv2.seek(0); _plt_sv2.close()
+                                _replace_image(s9, sh, _buf_sv2)
+                            elif sh.shape_type == 19:  # TABLE
+                                tbl9 = sh.table
+                                _sv_rows = []
+                                for _h in horizons:
+                                    _lr2 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _h, ltv_offset_days)
+                                    _lg2 = _lr2 * gpm
+                                    _label2 = f'{_h}日' if _h < 365 else f'{_h//365}年（{_h:,}日）'
+                                    _sv_rows.append((_label2, _lr2, _lg2, _lg2/cac_n, _lr2/ltv_r_sv*100))
+                                _lr_lam = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, int(lam_sv), ltv_offset_days)
+                                _lg_lam = _lr_lam * gpm
+                                _sv_rows.append((f'λ {round(lam_sv_disp):,}日', _lr_lam, _lg_lam, _lg_lam/cac_n, _lr_lam/ltv_r_sv*100))
+                                try:
+                                    from scipy.optimize import brentq as _bq2
+                                    _d99 = _bq2(lambda _hh2: ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _hh2, ltv_offset_days)/ltv_r_sv-0.99, 1, 365000)
+                                    _lr99 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _d99, ltv_offset_days)
+                                    _lg99 = _lr99 * gpm
+                                    _sv_rows.append((f'LTV∞到達率: 99%（{int(_d99):,}日）', _lr99, _lg99, _lg99/cac_n, 99.0))
+                                except Exception:
+                                    _sv_rows.append(('LTV∞到達率: 99%', ltv_r_sv, ltv_r_sv*gpm, ltv_r_sv*gpm/cac_n, 99.0))
+                                for r_idx, row_data in enumerate(_sv_rows):
+                                    _set_table_row(tbl9, r_idx+1,
+                                        [row_data[0], f'¥{row_data[1]:,.0f}', f'¥{row_data[2]:,.0f}',
+                                         f'¥{row_data[3]:,.0f}', f'{row_data[4]:.1f}%'])
+                    except Exception:
+                        continue
 
-        pptx_buf = io.BytesIO()
+                first_sc = False
+
+        else:
+            # セグメントなし：Slide7〜10をPRSから削除
+            # 末尾から削除
+            sldIdLst = prs.slides._sldIdLst
+            while len(prs.slides) > 6:
+                last_sldId = list(sldIdLst)[-1]
+                rId = last_sldId.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+                if rId:
+                    try:
+                        prs.part.drop_rel(rId)
+                    except Exception:
+                        pass
+                sldIdLst.remove(last_sldId)
+
+
+
+                pptx_buf = io.BytesIO()
         prs.save(pptx_buf)
         pptx_buf.seek(0)
         import base64 as _b64
