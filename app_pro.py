@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v188</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v189</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2390,97 +2390,19 @@ if True:
         )
         txbox(s2, hint_text, 0.35, 5.93, 12.6, 0.95, size=8.5, color=G_WHITE)
 
-        # ── Slide 3: 暫定 LTV — 観測期間別（Gambitスタイル）──
-        s3_ltv = prs.slides.add_slide(blank)
-        add_bg(s3_ltv, prs, dark=False)
-        add_content_chrome(s3_ltv, prs)
-        slide_title(s3_ltv, '暫定 LTV — 観測期間別', 'Provisional LTV by Time Horizon')
-
-        # 1段目：読み方（薄グレー背景）
-        reading_box = s3_ltv.shapes.add_shape(1, Inches(0.25), Inches(1.05), Inches(12.85), Inches(0.85))
-        reading_box.fill.solid(); reading_box.fill.fore_color.rgb = G_LGRAY
-        reading_box.line.fill.background()
-        reading_text = (
-            f"・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値。実際には時間をかけてこの値に漸近します。"
-            f"  ・LTV∞到達率：各時点でLTV∞の何%に到達できるかを示します。"
-            f"  ・CAC上限：LTV（粗利）÷{cac_n:.0f}で算出。この金額以内に顧客獲得コストを抑えると収益性が成立します。"
-        )
-        txbox(s3_ltv, reading_text, 0.35, 1.1, 12.6, 0.75, size=8.5, color=G_NAVY)
-
-        # 2段目：左グラフ＋右テーブル
-        if buf_ltv is not None:
-            buf_ltv.seek(0)
-            s3_ltv.shapes.add_picture(buf_ltv, Inches(0.4), Inches(2.1), Inches(6.2), Inches(3.5))
-
-        # 右側テーブル（Gambitスタイル）
-        t_cols = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率']
-        t_cx   = [6.75, 8.3, 9.75, 11.0, 12.1]
-        t_cw   = [1.45, 1.35, 1.35, 1.35, 1.2]
-        # ヘッダー
-        for cx, cw, ch in zip(t_cx, t_cw, t_cols):
-            hdr = s3_ltv.shapes.add_shape(1, Inches(cx), Inches(2.0), Inches(cw), Inches(0.35))
-            hdr.fill.solid(); hdr.fill.fore_color.rgb = G_NAVY
-            hdr.line.fill.background()
-            txbox(s3_ltv, ch, cx+0.02, 2.02, cw-0.04, 0.3, size=7.5, bold=True, color=G_WHITE, align=PP_ALIGN.CENTER)
-
-        # データ行（horizons + λ + 99%）
-        all_rows_pp = []
-        for h in horizons:
-            if business_type == '都度購入型':
-                _dorm_pp = dormancy_days or 180
-                lh_r = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_pp)
-                lh_g = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, _dorm_pp)
-            else:
-                lh_r = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
-                lh_g = ltv_horizon_offset(k, lam, gp_daily,   h, ltv_offset_days)
-            label = f'{h}日' if h < 365 else f'{h//365}年（{h}日）'
-            all_rows_pp.append((label, lh_r, lh_g, lh_g/cac_n, lh_r/ltv_rev*100, False))
-        # λ行
-        all_rows_pp.append((f'λ {round(lam_actual):,}日', lam_rev, lam_gp, lam_gp/cac_n, lam_rev/ltv_rev*100, True))
-        # 99%行
-        all_rows_pp.append((f'99%到達（{int(days_99):,}日）', rev_99, gp_99, gp_99/cac_n, 99.0, True))
-
-        row_y2 = 2.38
-        for i, (hl, lr, lg, lc, pct, is_special) in enumerate(all_rows_pp):
-            bg_color = G_NAVY if is_special else (G_LGRAY if i%2==0 else G_WHITE)
-            txt_color = G_WHITE if is_special else G_NAVY
-            vals = [hl, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%']
-            for cx, cw, v in zip(t_cx, t_cw, vals):
-                cell = s3_ltv.shapes.add_shape(1, Inches(cx), Inches(row_y2), Inches(cw), Inches(0.3))
-                cell.fill.solid(); cell.fill.fore_color.rgb = bg_color
-                cell.line.fill.background()
-                align = PP_ALIGN.LEFT if cx == t_cx[0] else PP_ALIGN.RIGHT
-                txbox(s3_ltv, v, cx+0.03, row_y2+0.02, cw-0.05, 0.26, size=7.5, color=txt_color, align=align)
-            row_y2 += 0.31
-
-        # 3段目：CAC設計の目安
-        cac_box = s3_ltv.shapes.add_shape(1, Inches(0.25), Inches(5.9), Inches(12.85), Inches(1.05))
-        cac_box.fill.solid(); cac_box.fill.fore_color.rgb = G_NAVY
-        cac_box.line.fill.background()
-        txbox(s3_ltv, 'CAC設計の目安', 0.35, 5.93, 3, 0.3, size=9, bold=True, color=G_LBLUE)
-        cac_guide = (
-            f"回収期間に迷ったら、λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f} を用いてCAC上限を算出してください。\n"
-            f"λはリピート顧客の63.2%が離脱するまでの期間（初回購入起点）をデータが示した答えです。\n"
-            f"CAC上限（{cac_label}）= ¥{cac_upper:,.0f}　|　CAC回収: 売上ベース 約 {cac_recover_rev_str} / 粗利ベース 約 {cac_recover_gp_str}"
-        )
-        txbox(s3_ltv, cac_guide, 0.35, 6.22, 12.6, 0.65, size=8.5, color=G_WHITE)
-
-        # ── Slide 4: Charts（Gambitスタイル）──
+        # ══════════════════════════════════════════════════════════════
+        # Slide 3: 分析の信頼性（Survival Curve / Weibull Plot）
+        # ══════════════════════════════════════════════════════════════
         s3 = prs.slides.add_slide(blank)
         add_bg(s3, prs, dark=False)
         add_content_chrome(s3, prs)
-        slide_title(s3, 'Survival Curve  /  Weibull Linearization Plot', '生存曲線とWeibull直線化プロット')
+        slide_title(s3, '分析の信頼性', 'Weibullパラメータの読み方と示唆')
         buf1.seek(0); s3.shapes.add_picture(buf1, Inches(0.25), Inches(1.1), Inches(6.3), Inches(3.7))
         buf2.seek(0); s3.shapes.add_picture(buf2, Inches(6.78), Inches(1.1), Inches(6.3), Inches(3.7))
 
-        # Weibull parameter explanation box
         param_box = s3.shapes.add_shape(1, Inches(0.25), Inches(4.9), Inches(12.85), Inches(2.0))
-        param_box.fill.solid(); param_box.fill.fore_color.rgb = G_NAVY
-        param_box.line.fill.background()
+        param_box.fill.solid(); param_box.fill.fore_color.rgb = G_NAVY; param_box.line.fill.background()
 
-        txbox(s3, 'Weibullパラメータの読み方と示唆', 0.35, 4.93, 12, 0.3, size=9, bold=True, color=G_LBLUE)
-
-        # k の詳細解釈
         if k < 0.7:
             k_insight = f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
         elif k < 1.0:
@@ -2497,7 +2419,6 @@ if True:
         )
         txbox(s3, k_text, 0.35, 5.25, 6.3, 1.6, size=8, color=G_WHITE)
 
-        # λ と R² の詳細解釈
         lam_disp_pp = lam + ltv_offset_days if business_type == '都度購入型' else lam
         lam_yr = lam_disp_pp / 365
         if r2 >= 0.95:
@@ -2514,74 +2435,98 @@ if True:
         )
         txbox(s3, lam_text, 6.78, 5.25, 6.3, 1.6, size=8, color=G_WHITE)
 
-        # 共通データ部分
-        pdata = (
-            f"【分析結果】\n"
-            f"顧客数: {len(df):,}件（解約済み: {df['event'].sum():,}件）\n"
-            f"平均日次ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
-            f"LTV∞ 売上ベース: ¥{ltv_rev:,.0f} / 粗利ベース: ¥{ltv_val:,.0f}\n"
-            f"CAC上限 ({cac_label}): ¥{cac_upper:,.0f}\n"
-            f"Weibull k={k:.4f} / λ={lam_display:.1f}日 / R²={r2:.4f}\n"
-            f"分析手法: Kaplan-Meier法 + Weibullモデル"
-        )
+        # ══════════════════════════════════════════════════════════════
+        # Slide 4: 暫定 LTV — 観測期間別（テーブルのみ）
+        # ══════════════════════════════════════════════════════════════
+        s4_ltv = prs.slides.add_slide(blank)
+        add_bg(s4_ltv, prs, dark=False)
+        add_content_chrome(s4_ltv, prs)
+        slide_title(s4_ltv, '暫定 LTV — 観測期間別')
 
-        # ── Slide 4: AI Prompt 1 - 結果の読み方 ──
-        s4 = prs.slides.add_slide(blank)
-        add_bg(s4, prs, dark=False)
-        add_content_chrome(s4, prs)
-        slide_title(s4, 'AIプロンプト ①  結果の読み方', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
-        p1_text = (
-            f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
-            f"1. Weibullのkとλの値は何を意味していますか？顧客離脱パターンはどう解釈すればよいですか？\n"
-            f"2. LTV∞（売上ベース¥{ltv_rev:,.0f}）の値は適切な水準ですか？\n"
-            f"3. R²={r2:.4f}からフィット精度はどう評価できますか？\n"
-            f"4. この結果で特に注意すべき点があれば教えてください。"
-        )
-        pb1 = s4.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
-        pb1.fill.solid(); pb1.fill.fore_color.rgb = G_NAVY
-        pb1.line.color.rgb = G_BLUE
-        txbox(s4, p1_text, 0.65, 1.35, 12.0, 5.6, size=9, color=G_WHITE)
+        # テーブルヘッダー
+        t_cols = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率']
+        t_cx   = [0.25, 3.75, 6.30, 9.00, 11.40]
+        t_cw   = [3.40, 2.45, 2.60, 2.30,  1.65]
+        for cx, cw, ch in zip(t_cx, t_cw, t_cols):
+            hdr = s4_ltv.shapes.add_shape(1, Inches(cx), Inches(1.05), Inches(cw), Inches(0.38))
+            hdr.fill.solid(); hdr.fill.fore_color.rgb = G_NAVY; hdr.line.fill.background()
+            align = PP_ALIGN.LEFT if cx == t_cx[0] else PP_ALIGN.RIGHT
+            txbox(s4_ltv, ch, cx+0.06, 1.08, cw-0.1, 0.32, size=8.5, bold=True, color=G_WHITE, align=align)
 
-        # ── Slide 5: AI Prompt 2 - マーケ戦略 ──
-        s5 = prs.slides.add_slide(blank)
-        add_bg(s5, prs, dark=False)
-        add_content_chrome(s5, prs)
-        slide_title(s5, 'AIプロンプト ②  マーケ戦略への活用', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
-        p2_text = (
-            f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
-            f"1. このLTV∞とCAC上限をもとに、広告予算の上限をどう設定すべきですか？\n"
-            f"2. 顧客獲得チャネル別にROIを評価するには何が必要ですか？\n"
-            f"3. LTVを高めるために優先すべき施策は何ですか？\n"
-            f"4. このビジネスに最適なLTV:CAC比率の目安を教えてください。"
-        )
-        pb2 = s5.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
-        pb2.fill.solid(); pb2.fill.fore_color.rgb = G_NAVY
-        pb2.line.color.rgb = G_BLUE
-        txbox(s5, p2_text, 0.65, 1.35, 12.0, 5.6, size=9, color=G_WHITE)
+        # データ行計算
+        all_rows_pp = []
+        for h in horizons:
+            if business_type == '都度購入型':
+                _dorm_pp = dormancy_days or 180
+                lh_r = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_pp)
+                lh_g = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, _dorm_pp)
+            else:
+                lh_r = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
+                lh_g = ltv_horizon_offset(k, lam, gp_daily,   h, ltv_offset_days)
+            label = f'{h}日' if h < 365 else f'{h//365}年（{h:,}日）'
+            all_rows_pp.append((label, lh_r, lh_g, lh_g/cac_n, lh_r/ltv_rev*100, False))
+        all_rows_pp.append((f'λ {round(lam_actual):,}日', lam_rev, lam_gp, lam_gp/cac_n, lam_rev/ltv_rev*100, True))
+        all_rows_pp.append((f'LTV∞到達率: 99%（{int(days_99):,}日）', rev_99, gp_99, gp_99/cac_n, 99.0, True))
 
-        # ── Slide 6: AI Prompt 3 - 精度の検証 ──
-        s6 = prs.slides.add_slide(blank)
-        add_bg(s6, prs, dark=False)
-        add_content_chrome(s6, prs)
-        slide_title(s6, 'AIプロンプト ③  精度の検証', 0.5, 0.25, 12, 0.5, size=18, bold=True, color=WHITE)
-        dormancy_q = "4. 解約日ベースで分析していますが、解約データの欠損や遅延がある場合にLTV推定にどんな影響が出ますか？" if dormancy_days is None else f"4. 休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"
-        p3_text = (
-            f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata}\n\n【質問】\n"
-            f"1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？\n"
-            f"2. R²={r2:.4f}は十分ですか？改善するにはどうすればよいですか？\n"
-            f"3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？\n"
-            f"{dormancy_q}"
-        )
-        pb3 = s6.shapes.add_shape(1, Inches(0.5), Inches(1.2), Inches(12.3), Inches(5.8))
-        pb3.fill.solid(); pb3.fill.fore_color.rgb = G_NAVY
-        pb3.line.color.rgb = G_BLUE
-        txbox(s6, p3_text, 0.65, 1.35, 12.0, 5.6, size=9, color=G_WHITE)
+        row_y4 = 1.46
+        for i, (hl, lr, lg, lc, pct, is_special) in enumerate(all_rows_pp):
+            if is_special:
+                bg_color = RGBColor(0x0D, 0x1F, 0x2D)
+                txt_color = G_WHITE
+            else:
+                bg_color = RGBColor(0xF5, 0xF7, 0xFA) if i % 2 == 0 else G_WHITE
+                txt_color = G_NAVY
+            vals = [hl, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%']
+            for cx, cw, v in zip(t_cx, t_cw, vals):
+                cell = s4_ltv.shapes.add_shape(1, Inches(cx), Inches(row_y4), Inches(cw), Inches(0.34))
+                cell.fill.solid(); cell.fill.fore_color.rgb = bg_color; cell.line.fill.background()
+                align = PP_ALIGN.LEFT if cx == t_cx[0] else PP_ALIGN.RIGHT
+                txbox(s4_ltv, v, cx+0.06, row_y4+0.03, cw-0.1, 0.28, size=8.5, color=txt_color, align=align)
+            row_y4 += 0.35
 
-        # ── セグメント別スライド追加 ──
+        # 「このテーブルの読み方」テキスト
+        note_y = max(row_y4 + 0.1, 4.5)
+        note_box = s4_ltv.shapes.add_shape(1, Inches(0.25), Inches(note_y), Inches(12.85), Inches(0.28))
+        note_box.fill.solid(); note_box.fill.fore_color.rgb = G_BLUE; note_box.line.fill.background()
+        txbox(s4_ltv, 'このテーブルの読み方', 0.35, note_y+0.02, 4, 0.24, size=8.5, bold=True, color=G_WHITE)
+
+        reading_lines = []
+        reading_lines.append(f'・λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は{"中程度の" if 300 < lam_actual < 700 else ""}継続期間で、{round(lam_actual/365*12):.0f}ヶ月継続する顧客が多いビジネスです。')
+        reading_lines.append(f'・k={k:.3f}（{"強い" if k < 0.7 else ""}初期離脱型）: {"契約直後に大量離脱するパターン" if k < 0.7 else "初期に離脱が集中するパターン"}です。CAC投資判断には暫定LTV（現実的な期間）を使ってください。')
+        reading_lines.append(f'・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値。1年時点でLTV∞の{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）、2年で{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）、3年で{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。')
+        reading_lines.append(f'・CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース {cac_recover_rev_str} / 粗利ベース {cac_recover_gp_str}（契約から）')
+
+        note_text = '\n'.join(reading_lines)
+        txbox(s4_ltv, note_text, 0.25, note_y+0.32, 12.85, 2.5, size=8, color=G_NAVY)
+
+        # ══════════════════════════════════════════════════════════════
+        # Slide 5: 暫定 LTV — 観測期間別の推移グラフ
+        # ══════════════════════════════════════════════════════════════
+        s5_ltv = prs.slides.add_slide(blank)
+        add_bg(s5_ltv, prs, dark=False)
+        add_content_chrome(s5_ltv, prs)
+        txbox(s5_ltv, '暫定 LTV — 観測期間別の推移グラフ', 0.25, 0.1, 12.85, 0.45, size=14, bold=True, color=G_NAVY)
+        if buf_ltv is not None:
+            buf_ltv.seek(0)
+            s5_ltv.shapes.add_picture(buf_ltv, Inches(0.25), Inches(0.65), Inches(12.85), Inches(6.2))
+
+        # ══════════════════════════════════════════════════════════════
+        # Slide 6〜: セグメント別
+        # ══════════════════════════════════════════════════════════════
         if segment_cols_input.strip():
             seg_cols_pp = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
+
+            # ── Slide 6: セグメント別扉 ──
+            s6_div = prs.slides.add_slide(blank)
+            add_bg(s6_div, prs, dark=True)
+            bar_l = s6_div.shapes.add_shape(1, 0, 0, Inches(0.12), prs.slide_height)
+            bar_l.fill.solid(); bar_l.fill.fore_color.rgb = G_BLUE; bar_l.line.fill.background()
+            txbox(s6_div, 'セグメント別', 0.4, 2.8, 10, 0.9, size=32, bold=True, color=G_WHITE)
+            seg_subtitle = '  |  '.join(seg_cols_pp)
+            txbox(s6_div, seg_subtitle, 0.4, 3.85, 10, 0.5, size=14, color=G_LBLUE)
+
             for sc in seg_cols_pp:
-                # セグメント別データ計算
+                # ─── セグメントデータ計算 ───
                 seg_vals = df[sc].dropna().unique()
                 pp_rows = []
                 for sv in sorted(seg_vals):
@@ -2593,243 +2538,246 @@ if True:
                         k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
                         if k_s is None: continue
                         arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
-                        gp_s   = arpu_s * gpm
+                        gp_s = arpu_s * gpm
                         ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
                         ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
-                        pp_rows.append({'seg': str(sv), 'n': len(df_s), 'ltv_r': ltv_r, 'ltv_g': ltv_g, 'cac': ltv_g/cac_n, 'total': ltv_r*len(df_s)})
+                        pp_rows.append({
+                            'seg': str(sv), 'n': len(df_s),
+                            'ltv_r': ltv_r, 'ltv_g': ltv_g,
+                            'cac': ltv_g / cac_n,
+                            'k': k_s, 'lam': lam_s, 'r2': r2_s,
+                            'total': ltv_r * len(df_s)
+                        })
                     except Exception:
                         continue
                 if not pp_rows:
                     continue
                 pp_rows.sort(key=lambda x: x['ltv_r'], reverse=True)
-                top10 = pp_rows[:10]
-                best_pp = top10[0]
+                best_pp = pp_rows[0]
                 avg_ltv_pp = sum(r['ltv_r'] for r in pp_rows) / len(pp_rows)
+                avg_cac_pp = sum(r['cac'] for r in pp_rows) / len(pp_rows)
                 premium_pp = (best_pp['ltv_r'] - avg_ltv_pp) / avg_ltv_pp * 100
+                cac_diff_pp = best_pp['cac'] - avg_cac_pp
 
-                # スライド追加
-                s_seg = prs.slides.add_slide(blank)
-                add_bg(s_seg, prs)
-                txbox(s_seg, f'セグメント別 LTV∞ 比較：{sc}', 0.5, 0.2, 12.3, 0.5, size=18, bold=True, color=WHITE)
-                txbox(s_seg, f'上位{len(top10)}セグメント（LTV∞降順）', 0.5, 0.75, 12.3, 0.3, size=9, color=GRAY)
+                # ── Slide 7: セグメント別LTV∞比較（棒グラフ＋Top Pickテキスト）──
+                s7 = prs.slides.add_slide(blank)
+                add_bg(s7, prs, dark=False)
+                add_content_chrome(s7, prs)
+                slide_title(s7, f'{sc}: LTV∞')
 
-                # テーブル
-                col_x = [0.5, 2.8, 4.8, 6.6, 8.4, 10.2]
-                headers = ['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', '総ポテンシャル']
-                for cx, hd in zip(col_x, headers):
-                    txbox(s_seg, hd, cx, 1.1, 1.9, 0.3, size=8, bold=True, color=GOLD)
-                row_y = 1.45
-                for r in top10:
-                    vals = [r['seg'], f"{r['n']:,}", f"¥{r['ltv_r']:,.0f}", f"¥{r['ltv_g']:,.0f}", f"¥{r['cac']:,.0f}", f"¥{r['total']:,.0f}"]
-                    for cx, v in zip(col_x, vals):
-                        txbox(s_seg, v, cx, row_y, 1.9, 0.28, size=8, color=WHITE)
-                    row_y += 0.3
+                # Top Pick テキスト行
+                cac_diff_str = f"+¥{cac_diff_pp:,.0f}高く設定可能" if cac_diff_pp >= 0 else f"¥{abs(cac_diff_pp):,.0f}低め"
+                txbox(s7, f'Top Pick  {best_pp["seg"]}', 0.25, 0.85, 5, 0.32, size=10, bold=True, color=G_BLUE)
+                txbox(s7,
+                    f'LTV∞(売上): ¥{best_pp["ltv_r"]:,.0f}（全セグメント平均比 +{premium_pp:.1f}%）　|　許容CAC上限 ¥{best_pp["cac"]:,.0f}（全セグメント平均より{cac_diff_str}）',
+                    0.25, 1.15, 12.85, 0.3, size=8.5, color=G_NAVY)
 
-                # 推奨ボックス
-                rec_box = s_seg.shapes.add_shape(1, Inches(0.5), Inches(5.0), Inches(12.3), Inches(2.3))
-                rec_box.fill.solid(); rec_box.fill.fore_color.rgb = RGBColor(0x05,0x18,0x28)
-                rec_box.line.color.rgb = GOLD
+                # 棒グラフ（matplotlib で生成）
+                import matplotlib.pyplot as _plt_bar
+                import matplotlib.ticker as _mticker
+                _fig_bar, _ax_bar = _plt_bar.subplots(figsize=(11, 4.2))
+                _fig_bar.patch.set_facecolor('#111820')
+                _ax_bar.set_facecolor('#111820')
+                _segs   = [r['seg'] for r in pp_rows]
+                _ltvs   = [r['ltv_r'] for r in pp_rows]
+                _colors = ['#56b4d3' if r['seg'] == best_pp['seg'] else '#a8dadc' for r in pp_rows]
+                _bars = _ax_bar.bar(_segs, _ltvs, color=_colors, width=0.55)
+                for _bar, _val in zip(_bars, _ltvs):
+                    _ax_bar.text(_bar.get_x() + _bar.get_width()/2, _bar.get_height() + max(_ltvs)*0.01,
+                                 f'¥{_val:,.0f}', ha='center', va='bottom', fontsize=9, color='#cccccc')
+                _ax_bar.set_ylabel('LTV∞（¥）', color='#888', fontsize=9)
+                _ax_bar.tick_params(colors='#888', labelsize=8)
+                _ax_bar.yaxis.set_major_formatter(_mticker.FuncFormatter(lambda v, _: f'¥{v:,.0f}'))
+                _ax_bar.grid(axis='y', alpha=0.2, color='#1a3040')
+                for _sp in _ax_bar.spines.values(): _sp.set_color('#1a3040')
+                _fig_bar.tight_layout()
+                _buf_bar = io.BytesIO()
+                _fig_bar.savefig(_buf_bar, format='png', dpi=130, bbox_inches='tight', facecolor='#111820')
+                _buf_bar.seek(0)
+                _plt_bar.close()
+                s7.shapes.add_picture(_buf_bar, Inches(0.25), Inches(1.5), Inches(12.85), Inches(5.3))
 
-                # 優先セグメントの示唆テキスト生成
-                _k_b   = None
-                _lam_b = None
-                for _r in pp_rows:
-                    if _r['seg'] == best_pp['seg']:
-                        # k/lam を再取得
-                        try:
-                            _df_b = df[df[sc] == best_pp['seg']]
-                            _km_b = _compute_km_df(_df_b)
-                            _k_b, _lam_b, _r2_b, _ = _fit_weibull_df(_km_b)
-                        except Exception:
-                            pass
-                        break
+                # ── Slide 8: セグメント分析結果サマリーテーブル ──
+                s8 = prs.slides.add_slide(blank)
+                add_bg(s8, prs, dark=False)
+                add_content_chrome(s8, prs)
+                slide_title(s8, '分析結果のサマリー')
 
-                if _k_b is not None and _k_b < 1.0:
-                    seg_strategy = "初期離脱型（k<1）: オンボーディング強化で離脱を抑えると大幅なLTV改善が期待できます。"
-                elif _k_b is not None:
-                    seg_strategy = "逓増離脱型（k>1）: 長期継続顧客への特別フォロー・特典設計が離脱防止の鍵です。"
-                else:
-                    seg_strategy = "このセグメントに顧客獲得投資を集中させることで収益性を維持しながら積極的な拡大が可能です。"
+                # テーブルヘッダー（セグメント/顧客数/LTV∞売上/LTV∞粗利/CAC上限/k/λ/R²）
+                s8_cols  = ['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', 'k', 'λ（日）', 'R²']
+                s8_cx    = [0.25, 2.85, 4.25, 6.05, 7.85, 9.65, 10.65, 11.75]
+                s8_cw    = [2.50, 1.30, 1.70, 1.70,  1.70, 0.90,  1.00,  0.80]
+                for cx, cw, ch in zip(s8_cx, s8_cw, s8_cols):
+                    hdr8 = s8.shapes.add_shape(1, Inches(cx), Inches(1.05), Inches(cw), Inches(0.38))
+                    hdr8.fill.solid(); hdr8.fill.fore_color.rgb = G_NAVY; hdr8.line.fill.background()
+                    align8 = PP_ALIGN.LEFT if cx == s8_cx[0] else PP_ALIGN.RIGHT
+                    txbox(s8, ch, cx+0.04, 1.08, cw-0.06, 0.32, size=7.5, bold=True, color=G_LBLUE, align=align8)
 
-                rec_text = (
-                    f"優先獲得推奨セグメント: {best_pp['seg']}\n"
-                    f"LTV∞（売上）¥{best_pp['ltv_r']:,.0f}  全平均比 +{premium_pp:.1f}%  |  "
-                    f"LTV∞（粗利）¥{best_pp['ltv_g']:,.0f}  |  CAC上限（粗利）¥{best_pp['cac']:,.0f}\n"
-                    f"示唆: {seg_strategy}"
+                row_y8 = 1.46
+                for i8, r8 in enumerate(pp_rows):
+                    is_best8 = r8['seg'] == best_pp['seg']
+                    bg8  = RGBColor(0x0D, 0x1F, 0x2D) if is_best8 else (RGBColor(0xF5, 0xF7, 0xFA) if i8%2==0 else G_WHITE)
+                    txt8 = G_WHITE if is_best8 else G_NAVY
+                    vals8 = [
+                        r8['seg'], f"{r8['n']:,}",
+                        f"¥{r8['ltv_r']:,.0f}", f"¥{r8['ltv_g']:,.0f}", f"¥{r8['cac']:,.0f}",
+                        f"{r8['k']:.3f}", f"{r8['lam']:.1f}", f"{r8['r2']:.3f}"
+                    ]
+                    for cx, cw, v in zip(s8_cx, s8_cw, vals8):
+                        cell8 = s8.shapes.add_shape(1, Inches(cx), Inches(row_y8), Inches(cw), Inches(0.32))
+                        cell8.fill.solid(); cell8.fill.fore_color.rgb = bg8; cell8.line.fill.background()
+                        align8 = PP_ALIGN.LEFT if cx == s8_cx[0] else PP_ALIGN.RIGHT
+                        txbox(s8, v, cx+0.04, row_y8+0.02, cw-0.06, 0.28, size=7.5, color=txt8, align=align8)
+                    row_y8 += 0.33
+
+                # 加重平均行
+                wa_n   = sum(r['n'] for r in pp_rows)
+                wa_r   = sum(r['ltv_r'] * r['n'] for r in pp_rows) / wa_n
+                wa_g   = sum(r['ltv_g'] * r['n'] for r in pp_rows) / wa_n
+                wa_cac = wa_g / cac_n
+                wa_vals = ['加重平均', f'{wa_n:,}', f'¥{wa_r:,.0f}', f'¥{wa_g:,.0f}', f'¥{wa_cac:,.0f}', '—', '—', '—']
+                for cx, cw, v in zip(s8_cx, s8_cw, wa_vals):
+                    cell_wa = s8.shapes.add_shape(1, Inches(cx), Inches(row_y8), Inches(cw), Inches(0.32))
+                    cell_wa.fill.solid(); cell_wa.fill.fore_color.rgb = RGBColor(0x1A, 0x3A, 0x4A); cell_wa.line.fill.background()
+                    align_wa = PP_ALIGN.LEFT if cx == s8_cx[0] else PP_ALIGN.RIGHT
+                    txbox(s8, v, cx+0.04, row_y8+0.02, cw-0.06, 0.28, size=7.5, color=RGBColor(0xA8, 0xDA, 0xDC), align=align_wa)
+                row_y8 += 0.33
+
+                # NOTE テキスト
+                diff_pct = (wa_r - ltv_rev) / ltv_rev * 100
+                note8 = (
+                    f"NOTE — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
+                    f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{diff_pct:+.1f}%）は統計的に正常な現象です。"
+                    f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。"
                 )
-                if cac_known:
-                    ratio_pp = best_pp['ltv_g'] / cac_input
-                    judge_pp = "健全（3:1以上）" if ratio_pp >= 3.0 else ("要注意（3:1未満）" if ratio_pp >= 1.5 else "危険水域（1.5:1未満）")
-                    rec_text += f"\nLTV:CAC比率（粗利）= {ratio_pp:.1f}:1  {judge_pp}"
+                note8_y = min(row_y8 + 0.15, 6.3)
+                note8_box = s8.shapes.add_shape(1, Inches(0.25), Inches(note8_y), Inches(12.85), Inches(0.8))
+                note8_box.fill.solid(); note8_box.fill.fore_color.rgb = RGBColor(0xEE, 0xF5, 0xFF); note8_box.line.color.rgb = G_BLUE
+                txbox(s8, note8, 0.4, note8_y+0.05, 12.6, 0.7, size=8, color=G_NAVY)
 
-                # セグメント間格差の示唆
-                if len(pp_rows) >= 2:
-                    worst = pp_rows[-1]
-                    gap = (best_pp['ltv_r'] - worst['ltv_r']) / worst['ltv_r'] * 100
-                    rec_text += f"\n最上位 vs 最下位 セグメントのLTV差: +{gap:.0f}%。獲得チャネル・訴求をセグメント別に最適化する余地があります。"
-
-                txbox(s_seg, rec_text, 0.65, 5.05, 12.0, 2.15, size=8, color=RGBColor(0xc8,0xd8,0xe8))
-        # 全セグメント詳細スライド（4分割レイアウト）
-        if segment_cols_input.strip():
-            seg_cols_all = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
-            for sc_all in seg_cols_all:
-                seg_vals_all = df[sc_all].dropna().unique()
-                for sv_all in sorted(seg_vals_all):
-                    df_sv_all = df[df[sc_all] == sv_all]
-                    if len(df_sv_all) < 10 or df_sv_all['event'].sum() < 5:
+                # ── Slide 9〜: セグメント詳細 ──
+                for sv in sorted(seg_vals):
+                    df_sv = df[df[sc] == sv]
+                    if len(df_sv) < 10 or df_sv['event'].sum() < 5:
                         continue
                     try:
-                        km_sv_all = _compute_km_df(df_sv_all)
-                        k_sv, lam_sv, r2_sv, _ = _fit_weibull_df(km_sv_all)
+                        km_sv = _compute_km_df(df_sv)
+                        k_sv, lam_sv, r2_sv, _ = _fit_weibull_df(km_sv)
                         if k_sv is None: continue
-                        arpu_sv = df_sv_all['revenue_total'].sum() / df_sv_all['duration'].sum() if billing_cycle == '日次（都度購入）' else df_sv_all['arpu_daily'].mean()
-                        ltv_inf_sv = lam_sv * __import__('scipy').special.gamma(1 + 1/k_sv) * arpu_sv
+                        arpu_sv = df_sv['revenue_total'].sum() / df_sv['duration'].sum() if billing_cycle == '日次（都度購入）' else df_sv['arpu_daily'].mean()
+                        gp_sv   = arpu_sv * gpm
+                        ltv_inf_sv_r, _ = ltv_inf(k_sv, lam_sv, arpu_sv)
+                        ltv_inf_sv_g, _ = ltv_inf(k_sv, lam_sv, gp_sv)
+                        lam_sv_disp = lam_sv + ltv_offset_days if business_type == '都度購入型' else lam_sv
+                        is_best_sv = str(sv) == best_pp['seg']
 
-                        s_all = prs.slides.add_slide(blank)
-                        add_bg(s_all, prs)
-
-                        # 優先セグメント判定（セグメント比較スライドで使ったbest_ppと照合）
-                        is_best_slide = False
-                        for _sc_chk, _bp_chk in [(k, v) for k, v in [('_best', None)]]:
-                            pass
-                        # pp_rowsを再計算せず、LTV∞が最大かどうかで判定
-                        seg_ltvs_all = {}
-                        for _sv2 in df[sc_all].dropna().unique():
-                            _df2 = df[df[sc_all] == _sv2]
-                            if len(_df2) >= 10 and _df2['event'].sum() >= 5:
-                                try:
-                                    _km2 = _compute_km_df(_df2)
-                                    _k2, _l2, _, _ = _fit_weibull_df(_km2)
-                                    if _k2: seg_ltvs_all[str(_sv2)] = lam_sv * __import__('scipy').special.gamma(1+1/_k2) * _df2['arpu_daily'].mean()
-                                except: pass
-                        is_best_slide = bool(seg_ltvs_all) and str(sv_all) == max(seg_ltvs_all, key=seg_ltvs_all.get)
+                        s9 = prs.slides.add_slide(blank)
+                        add_bg(s9, prs, dark=False)
+                        add_content_chrome(s9, prs)
 
                         # タイトル
-                        title_color = GOLD if is_best_slide else WHITE
-                        txbox(s_all, f'{sc_all}：{str(sv_all)}　詳細分析', 0.5, 0.1, 12.3, 0.45, size=15, bold=True, color=title_color)
-                        txbox(s_all, f'顧客数 {len(df_sv_all):,}件　LTV∞（売上）¥{ltv_inf_sv:,.0f}　k={k_sv:.3f}　λ={lam_sv:.1f}日　R²={r2_sv:.3f}', 0.5, 0.58, 12.3, 0.28, size=8, color=GRAY)
+                        slide_title(s9, f'{sc}: {str(sv)}', '分析の信頼性　|　暫定 LTV — 観測期間別')
 
-                        # 優先セグメントは左上に目立つバッジボックスを追加
-                        if is_best_slide:
-                            badge_box = s_all.shapes.add_shape(1, Inches(11.5), Inches(0.05), Inches(1.3), Inches(0.42))
-                            badge_box.fill.solid(); badge_box.fill.fore_color.rgb = GOLD; badge_box.line.fill.background()
-                            txbox(s_all, 'TOP', 11.5, 0.08, 1.3, 0.35, size=10, bold=True, color=RGBColor(0x0d,0x1f,0x2d))
+                        # Top Pickバッジ
+                        if is_best_sv:
+                            badge = s9.shapes.add_shape(1, Inches(11.8), Inches(0.05), Inches(1.3), Inches(0.68))
+                            badge.fill.solid(); badge.fill.fore_color.rgb = G_BLUE; badge.line.fill.background()
+                            txbox(s9, 'Top\nPick', 11.82, 0.07, 1.26, 0.6, size=11, bold=True, color=G_WHITE, align=PP_ALIGN.CENTER)
 
-                        # ── 上段左：生存曲線 ──
-                        import matplotlib.pyplot as plt_sv1
-                        fig_sv1, ax_sv1 = plt_sv1.subplots(figsize=(5.5, 3.2))
-                        fig_sv1.patch.set_facecolor('#111820')
-                        ax_sv1.set_facecolor('#111820')
-                        ax_sv1.step(km_sv_all['t'], km_sv_all['S'], color='#56b4d3', lw=1.5, label='KM Curve (Observed)')
-                        t_ra = km_sv_all['t'].values
-                        ax_sv1.plot(t_ra, [float(weibull_s(t, k_sv, lam_sv)) for t in t_ra],
-                                   '--', color='#a8dadc', lw=1.2, label='Weibull Fit')
-                        ax_sv1.set_xlabel('Days', color='#888', fontsize=8)
-                        ax_sv1.set_ylabel('Survival Rate S(t)', color='#888', fontsize=8)
-                        ax_sv1.tick_params(colors='#666', labelsize=7)
-                        ax_sv1.legend(fontsize=7, framealpha=0.2)
-                        ax_sv1.grid(True, alpha=0.2)
-                        ax_sv1.set_title('Survival Curve', color='#ccc', fontsize=9)
-                        fig_sv1.tight_layout()
-                        buf_sv1 = io.BytesIO()
-                        fig_sv1.savefig(buf_sv1, format='png', dpi=120, bbox_inches='tight', facecolor='#111820')
-                        buf_sv1.seek(0)
-                        plt_sv1.close()
-                        s_all.shapes.add_picture(buf_sv1, Inches(0.3), Inches(0.9), Inches(6.0), Inches(3.5))
+                        # 生存曲線
+                        import matplotlib.pyplot as _plt_sv
+                        _fig_sv1, _ax_sv1 = _plt_sv.subplots(figsize=(5.5, 3.2))
+                        _fig_sv1.patch.set_facecolor('#111820'); _ax_sv1.set_facecolor('#111820')
+                        _ax_sv1.step(km_sv['t'], km_sv['S'], color='#56b4d3', lw=1.5, label='KM Curve (Observed)')
+                        _t_ra = km_sv['t'].values
+                        _ax_sv1.plot(_t_ra, [float(weibull_s(t, k_sv, lam_sv)) for t in _t_ra], '--', color='#a8dadc', lw=1.2, label='Weibull Fit')
+                        _ax_sv1.set_xlabel('Days', color='#888', fontsize=8); _ax_sv1.set_ylabel('Survival Rate S(t)', color='#888', fontsize=8)
+                        _ax_sv1.tick_params(colors='#666', labelsize=7); _ax_sv1.legend(fontsize=7, framealpha=0.2)
+                        _ax_sv1.grid(True, alpha=0.2); _ax_sv1.set_title('Survival Curve', color='#ccc', fontsize=9)
+                        _fig_sv1.tight_layout()
+                        _buf_sv1 = io.BytesIO()
+                        _fig_sv1.savefig(_buf_sv1, format='png', dpi=120, bbox_inches='tight', facecolor='#111820')
+                        _buf_sv1.seek(0); _plt_sv.close()
+                        s9.shapes.add_picture(_buf_sv1, Inches(0.25), Inches(1.0), Inches(6.3), Inches(3.4))
 
-                        # ── 上段右：Weibull直線化プロット ──
-                        import numpy as np_sv2
-                        km_fit2 = km_sv_all[km_sv_all['S'] > 0]
-                        ln_t2 = np_sv2.log(km_fit2['t'].values.astype(float) + 1e-10)
-                        ln_neg2 = np_sv2.log(-np_sv2.log(km_fit2['S'].values.astype(float) + 1e-15))
-                        valid2 = np_sv2.isfinite(ln_t2) & np_sv2.isfinite(ln_neg2)
-                        ln_t2, ln_neg2 = ln_t2[valid2], ln_neg2[valid2]
-                        slope2, int2, _, _, _ = __import__('scipy').stats.linregress(ln_t2, ln_neg2)
-                        x_l2 = np_sv2.linspace(ln_t2.min(), ln_t2.max(), 100)
+                        # Weibull直線化プロット
+                        import numpy as _np_sv
+                        _km_fit = km_sv[km_sv['S'] > 0]
+                        _ln_t  = _np_sv.log(_km_fit['t'].values.astype(float) + 1e-10)
+                        _ln_ns = _np_sv.log(-_np_sv.log(_km_fit['S'].values.astype(float) + 1e-15))
+                        _valid = _np_sv.isfinite(_ln_t) & _np_sv.isfinite(_ln_ns)
+                        _ln_t, _ln_ns = _ln_t[_valid], _ln_ns[_valid]
+                        _sl, _it, _, _, _ = __import__('scipy').stats.linregress(_ln_t, _ln_ns)
+                        _x_l  = _np_sv.linspace(_ln_t.min(), _ln_t.max(), 100)
+                        _fig_sv2, _ax_sv2 = _plt_sv.subplots(figsize=(5.5, 3.2))
+                        _fig_sv2.patch.set_facecolor('#111820'); _ax_sv2.set_facecolor('#111820')
+                        _ax_sv2.scatter(_ln_t, _ln_ns, color='#56b4d3', s=18, alpha=0.75, label='Observed')
+                        _ax_sv2.plot(_x_l, _sl*_x_l+_it, '--', color='#a8dadc', lw=1.5, label=f'R²={r2_sv:.3f}')
+                        _ax_sv2.annotate(f'y = {_sl:.4f}x + {_it:.4f}', xy=(0.05, 0.93), xycoords='axes fraction', color='#777', fontsize=8)
+                        _ax_sv2.set_xlabel('ln(t)', color='#888', fontsize=8); _ax_sv2.set_ylabel('ln(−ln(S(t)))', color='#888', fontsize=8)
+                        _ax_sv2.tick_params(colors='#666', labelsize=7); _ax_sv2.legend(fontsize=7, framealpha=0.2)
+                        _ax_sv2.grid(True, alpha=0.2); _ax_sv2.set_title('Weibull Linearization Plot', color='#ccc', fontsize=9)
+                        _fig_sv2.tight_layout()
+                        _buf_sv2 = io.BytesIO()
+                        _fig_sv2.savefig(_buf_sv2, format='png', dpi=120, bbox_inches='tight', facecolor='#111820')
+                        _buf_sv2.seek(0); _plt_sv.close()
+                        s9.shapes.add_picture(_buf_sv2, Inches(6.78), Inches(1.0), Inches(6.3), Inches(3.4))
 
-                        fig_sv2, ax_sv2 = plt_sv1.subplots(figsize=(5.5, 3.2))
-                        fig_sv2.patch.set_facecolor('#111820')
-                        ax_sv2.set_facecolor('#111820')
-                        ax_sv2.scatter(ln_t2, ln_neg2, color='#56b4d3', s=18, alpha=0.75, label='Observed')
-                        ax_sv2.plot(x_l2, slope2 * x_l2 + int2, '--', color='#a8dadc', lw=1.5, label=f'R²={r2_sv:.3f}')
-                        ax_sv2.annotate(f'y = {slope2:.4f}x + {int2:.4f}', xy=(0.05, 0.93), xycoords='axes fraction', color='#777', fontsize=8)
-                        ax_sv2.set_xlabel('ln(t)', color='#888', fontsize=8)
-                        ax_sv2.set_ylabel('ln(−ln(S(t)))', color='#888', fontsize=8)
-                        ax_sv2.tick_params(colors='#666', labelsize=7)
-                        ax_sv2.legend(fontsize=7, framealpha=0.2)
-                        ax_sv2.grid(True, alpha=0.2)
-                        ax_sv2.set_title('Weibull Linearization Plot', color='#ccc', fontsize=9)
-                        fig_sv2.tight_layout()
-                        buf_sv2 = io.BytesIO()
-                        fig_sv2.savefig(buf_sv2, format='png', dpi=120, bbox_inches='tight', facecolor='#111820')
-                        buf_sv2.seek(0)
-                        plt_sv1.close()
-                        s_all.shapes.add_picture(buf_sv2, Inches(6.6), Inches(0.9), Inches(6.0), Inches(3.5))
+                        # 暫定LTVテーブル（5列: ホライズン/LTV売上/LTV粗利/CAC上限/LTV∞到達率）
+                        sv_t_cols = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率']
+                        sv_t_cx   = [0.25, 4.25, 6.75, 9.25, 11.65]
+                        sv_t_cw   = [3.90, 2.40, 2.40, 2.30,  1.43]
+                        tbl_top = 4.48
+                        for cx, cw, ch in zip(sv_t_cx, sv_t_cw, sv_t_cols):
+                            _hh = s9.shapes.add_shape(1, Inches(cx), Inches(tbl_top), Inches(cw), Inches(0.32))
+                            _hh.fill.solid(); _hh.fill.fore_color.rgb = G_NAVY; _hh.line.fill.background()
+                            _al = PP_ALIGN.LEFT if cx == sv_t_cx[0] else PP_ALIGN.RIGHT
+                            txbox(s9, ch, cx+0.05, tbl_top+0.02, cw-0.08, 0.26, size=8, bold=True, color=G_LBLUE, align=_al)
 
-                        # ── 下段：暫定LTVテーブル（全幅）──
-                        cols_ha = ['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']
-                        col_xa = [0.3, 3.5, 7.5, 10.0]
-                        for cx, ch in zip(col_xa, cols_ha):
-                            txbox(s_all, ch, cx, 4.55, 2.5, 0.3, size=8, bold=True, color=GOLD)
-                        hl_a = s_all.shapes.add_shape(1, Inches(0.3), Inches(4.85), Inches(12.3), Inches(0.02))
-                        hl_a.fill.solid(); hl_a.fill.fore_color.rgb = GOLD; hl_a.line.fill.background()
-                        row_ya = 4.92
-                        for i_h, h in enumerate(horizons):
-                            lh_a = ltv_horizon(k_sv, lam_sv, arpu_sv, h)
-                            label_a = f'{h}日' if h < 365 else f'{h//365}年'
-                            row_vals_a = [label_a, f'¥{lh_a:,.0f}', f'{lh_a/ltv_inf_sv*100:.1f}%', f'¥{lh_a*gpm/cac_n:,.0f}']
-                            bg_a = s_all.shapes.add_shape(1, Inches(0.3), Inches(row_ya - 0.02), Inches(12.3), Inches(0.33))
-                            bg_a.fill.solid()
-                            bg_a.fill.fore_color.rgb = RGBColor(0x1a,0x3a,0x4a) if i_h%2==0 else RGBColor(0x0d,0x1f,0x2d)
-                            bg_a.line.fill.background()
-                            for cx, rv in zip(col_xa, row_vals_a):
-                                txbox(s_all, rv, cx, row_ya, 2.5, 0.3, size=9, color=WHITE)
-                            row_ya += 0.34
+                        sv_rows = []
+                        for _h in horizons:
+                            if business_type == '都度購入型':
+                                _d2 = dormancy_days or 180
+                                _lr2 = ltv_horizon_spot(k_sv, lam_sv, arpu_sv*(1-gpm), arpu_sv, _h, _d2) if False else ltv_horizon_spot(k_sv, lam_sv, arpu_sv, arpu_sv, _h, _d2)
+                                _lr2 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _h, 0)
+                            else:
+                                _lr2 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _h, ltv_offset_days)
+                            _lg2 = _lr2 * gpm
+                            _label2 = f'{_h}日' if _h < 365 else f'{_h//365}年（{_h:,}日）'
+                            sv_rows.append((_label2, _lr2, _lg2, _lg2/cac_n, _lr2/ltv_inf_sv_r*100, False))
+                        # λ行
+                        _lam_sv_h = lam_sv_disp
+                        _lr_lam = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, int(lam_sv), ltv_offset_days) if business_type != '都度購入型' else ltv_horizon_spot(k_sv, lam_sv, arpu_sv, arpu_sv, int(lam_sv), dormancy_days or 180)
+                        _lg_lam = _lr_lam * gpm
+                        sv_rows.append((f'λ {round(_lam_sv_h):,}日', _lr_lam, _lg_lam, _lg_lam/cac_n, _lr_lam/ltv_inf_sv_r*100, True))
+                        # 99%到達行
+                        try:
+                            from scipy.optimize import brentq as _bq2
+                            _days99_sv = _bq2(lambda _hh2: ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _hh2, ltv_offset_days) / ltv_inf_sv_r - 0.99, 1, 365000)
+                            _lr99 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _days99_sv, ltv_offset_days)
+                            _lg99 = _lr99 * gpm
+                            sv_rows.append((f'LTV∞到達率: 99%（{int(_days99_sv):,}日）', _lr99, _lg99, _lg99/cac_n, 99.0, True))
+                        except Exception:
+                            pass
 
-                        # ── セグメント詳細 示唆ボックス ──
-                        # k に基づく施策示唆
-                        if k_sv < 0.8:
-                            sv_action = f"k={k_sv:.3f}: 初期集中型。利用開始30日以内のオンボーディング改善が最優先です。"
-                        elif k_sv < 1.0:
-                            sv_action = f"k={k_sv:.3f}: 緩やかな初期集中。継続的なリテンション施策とオンボーディング改善を並行実施してください。"
-                        elif k_sv < 1.5:
-                            sv_action = f"k={k_sv:.3f}: 逓増離脱型。1年超の長期顧客フォロー施策（特典・コミュニティ等）が有効です。"
-                        else:
-                            sv_action = f"k={k_sv:.3f}: 強い逓増型。継続インセンティブ設計を急務とし、定期的な利用促進施策を投入してください。"
-
-                        # λに基づく回収サイクル示唆
-                        lam_sv_yr = lam_sv / 365
-                        ltv_1y_sv = ltv_horizon(k_sv, lam_sv, arpu_sv, 365)
-                        pct_1y_sv = ltv_1y_sv / ltv_inf_sv * 100 if ltv_inf_sv > 0 else 0
-                        if pct_1y_sv >= 75:
-                            sv_recovery = f"1年でLTV∞の{pct_1y_sv:.0f}%を回収（高速）。CACは積極的に投資可能です。"
-                        elif pct_1y_sv >= 45:
-                            sv_recovery = f"1年時点でLTV∞の{pct_1y_sv:.0f}%（中程度）。18〜24ヶ月の回収計画でCACを設定してください。"
-                        else:
-                            sv_recovery = f"1年時点でのLTV回収率{pct_1y_sv:.0f}%（低速）。長期キャッシュフローを見据えた資金計画が必要です。"
-
-                        # R² コメント
-                        if r2_sv >= 0.93:
-                            sv_r2 = f"R²={r2_sv:.3f}: 高精度。この推定値は意思決定に十分活用できます。"
-                        elif r2_sv >= 0.80:
-                            sv_r2 = f"R²={r2_sv:.3f}: 中程度の精度。推定値に±20%の幅を持たせて判断してください。"
-                        else:
-                            sv_r2 = f"R²={r2_sv:.3f}: 精度に注意。データ件数{len(df_sv_all):,}件での推定のため参考値として扱ってください。"
-
-                        # テーブルの最終行のy座標を使って示唆ボックスを配置
-                        insight_y = min(row_ya + 0.05, 6.8)
-                        insight_h = 7.3 - insight_y
-                        if insight_h > 0.4:
-                            ib = s_all.shapes.add_shape(1, Inches(0.3), Inches(insight_y), Inches(12.3), Inches(insight_h))
-                            ib.fill.solid(); ib.fill.fore_color.rgb = RGBColor(0x05,0x18,0x28)
-                            ib.line.color.rgb = GOLD
-                            ib_text = f"示唆  {sv_action}  |  {sv_recovery}  |  {sv_r2}"
-                            txbox(s_all, ib_text, 0.4, insight_y + 0.03, 12.1, insight_h - 0.05, size=7.5, color=RGBColor(0xc8,0xd8,0xe8))
+                        row_sv = tbl_top + 0.33
+                        for _i9, (_lbl, _lr, _lg, _lc, _pct, _sp) in enumerate(sv_rows):
+                            _bg9  = RGBColor(0x0D, 0x1F, 0x2D) if _sp else (RGBColor(0xF0, 0xF4, 0xF8) if _i9%2==0 else G_WHITE)
+                            _tc9  = G_WHITE if _sp else G_NAVY
+                            _vals9 = [_lbl, f'¥{_lr:,.0f}', f'¥{_lg:,.0f}', f'¥{_lc:,.0f}', f'{_pct:.1f}%']
+                            for _cx9, _cw9, _v9 in zip(sv_t_cx, sv_t_cw, _vals9):
+                                _cc9 = s9.shapes.add_shape(1, Inches(_cx9), Inches(row_sv), Inches(_cw9), Inches(0.31))
+                                _cc9.fill.solid(); _cc9.fill.fore_color.rgb = _bg9; _cc9.line.fill.background()
+                                _al9 = PP_ALIGN.LEFT if _cx9 == sv_t_cx[0] else PP_ALIGN.RIGHT
+                                txbox(s9, _v9, _cx9+0.05, row_sv+0.02, _cw9-0.08, 0.26, size=8, color=_tc9, align=_al9)
+                            row_sv += 0.32
 
                     except Exception:
                         continue
 
-        pptx_buf = io.BytesIO()
+
+
+                pptx_buf = io.BytesIO()
         prs.save(pptx_buf)
         pptx_buf.seek(0)
         import base64 as _b64
