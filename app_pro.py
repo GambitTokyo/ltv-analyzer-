@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v202</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v203</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -12455,7 +12455,7 @@ if True:
                         [label, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%'])
             elif sh.name == 'テキスト ボックス 3':
                 from pptx.util import Pt as _Pt
-                sh.top = int(4.55 * 914400)
+                sh.top = int(5.05 * 914400)
                 if sh.has_text_frame:
                     tf = sh.text_frame
                     k_type = '強い初期離脱型' if k < 0.7 else ('初期離脱型' if k < 1.0 else '逓増型')
@@ -12477,10 +12477,12 @@ if True:
                         t.text = text
                         return r
 
-                    # 全runクリア
+                    # 全runと<a:br>をクリア
                     for _pp in tf.paragraphs:
                         for _rr in _pp._p.findall(_qn4('a:r')):
                             _pp._p.remove(_rr)
+                        for _br in _pp._p.findall(_qn4('a:br')):
+                            _pp._p.remove(_br)
 
                     # 段落数調整（6段落必要）
                     while len(tf.paragraphs) < 6:
@@ -12528,10 +12530,14 @@ if True:
         # Slide 5: 暫定LTVグラフ
         # ══════════════════════════════════════════════
         # buf_ltvを日本語フォントで再生成
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as _plt5
         import matplotlib.font_manager as _fm5
         _fp5 = _fm5.FontProperties(fname=_JP_FONT_PATH) if _JP_FONT_PATH else None
-        if _fp5: _plt5.rcParams['font.family'] = _fp5.get_name()
+        if _fp5:
+            _plt5.rcParams['font.family'] = _fp5.get_name()
+            _plt5.rcParams['axes.unicode_minus'] = False
         _fig5, _ax5 = _plt5.subplots(figsize=(10, 3.5))
         _fig5.patch.set_facecolor('#111820'); _ax5.set_facecolor('#111820')
         _fp5k = dict(fontproperties=_fp5) if _fp5 else {}
@@ -12639,11 +12645,15 @@ if True:
                                     para.runs[0].text = lines[i]
                     elif sh.name == 'コンテンツ プレースホルダー 7':
                         # 棒グラフ生成（日本語フォント設定）
+                        import matplotlib
+                        matplotlib.use('Agg')
                         import matplotlib.pyplot as _plt_bar
                         import matplotlib.ticker as _mticker
                         import matplotlib.font_manager as _fm_bar
                         _fp_bar = _fm_bar.FontProperties(fname=_JP_FONT_PATH) if _JP_FONT_PATH else None
-                        if _fp_bar: _plt_bar.rcParams['font.family'] = _fp_bar.get_name()
+                        if _fp_bar:
+                            _plt_bar.rcParams['font.family'] = _fp_bar.get_name()
+                            _plt_bar.rcParams['axes.unicode_minus'] = False
                         _fig, _ax = _plt_bar.subplots(figsize=(10.7, 4.2))
                         _fig.patch.set_facecolor('#111820'); _ax.set_facecolor('#111820')
                         _segs = [r['seg'] for r in pp_rows]
@@ -12730,8 +12740,9 @@ if True:
                             elif len(p.runs) == 1:
                                 p.runs[0].text = 'NOTE' + _note_body
 
-                # ── Slide 9〜: セグメント詳細 ──
-                for sv in sorted(seg_vals):
+                # ── Slide 9〜: セグメント詳細 (TOP PICK優先) ──
+                _sv_order = sorted(seg_vals, key=lambda x: (0 if str(x) == best['seg'] else 1, str(x)))
+                for sv in _sv_order:
                     df_sv = df[df[sc] == sv]
                     if len(df_sv) < 10 or df_sv['event'].sum() < 5:
                         continue
