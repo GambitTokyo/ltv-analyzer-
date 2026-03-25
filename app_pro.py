@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v220</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v221</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -12531,26 +12531,34 @@ if True:
                         _make_run4(_pp[3], f'（¥{all_rows_pp[3][1]:,.0f}）に到達します。', color='#CCCCCC', size_pt=10)
                     except Exception: pass
 
-                    # para4: CAC回収期間（bullet=•）— 内部で直接計算して確実に書く
+                    # para4: CAC回収期間（bullet=•）
                     try:
-                        from scipy.optimize import brentq as _bq4
                         def _rec_str4(days):
                             return f"{days/365:.1f}年（{int(days):,}日）" if days >= 365 else f"{int(days)}日"
+                        from scipy.optimize import brentq as _bq4
                         try:
                             _r4 = _bq4(lambda h: ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days) - cac_upper, 1, 36500)
                             _cac_rev_s = _rec_str4(_r4)
                         except Exception:
-                            _cac_rev_s = cac_recover_rev_str if 'cac_recover_rev_str' in vars() else '算出不可'
+                            _cac_rev_s = cac_recover_rev_str
                         try:
                             _g4 = _bq4(lambda h: ltv_horizon_offset(k, lam, gp_daily, h, ltv_offset_days) - cac_upper, 1, 36500)
                             _cac_gp_s = _rec_str4(_g4)
                         except Exception:
-                            _cac_gp_s = cac_recover_gp_str if 'cac_recover_gp_str' in vars() else '算出不可'
+                            _cac_gp_s = cac_recover_gp_str
                         _make_run4(_pp[4], f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 ', color='#CCCCCC', size_pt=10)
                         _make_run4(_pp[4], _cac_rev_s, bold=True, color='#A8DADC', size_pt=10)
                         _make_run4(_pp[4], ' / 粗利ベース 約 ', color='#CCCCCC', size_pt=10)
                         _make_run4(_pp[4], _cac_gp_s, bold=True, color='#56B4D3', size_pt=10)
-                    except Exception: pass
+                    except Exception as _e4:
+                        # フォールバック: 直接変数参照
+                        try:
+                            _make_run4(_pp[4], f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 ', color='#CCCCCC', size_pt=10)
+                            _make_run4(_pp[4], cac_recover_rev_str, bold=True, color='#A8DADC', size_pt=10)
+                            _make_run4(_pp[4], ' / 粗利ベース 約 ', color='#CCCCCC', size_pt=10)
+                            _make_run4(_pp[4], cac_recover_gp_str, bold=True, color='#56B4D3', size_pt=10)
+                        except Exception:
+                            pass
 
                     # para5: CAC設計の目安（buNone=True, bullet無し）
                     _make_run4(_pp[5], 'CAC設計の目安', bold=True, color='#56B4D3', size_pt=10)
@@ -12632,8 +12640,16 @@ if True:
         _buf5.seek(0)
         s5 = prs.slides[4]
         for sh in s5.shapes:
-            if sh.name == 'コンテンツ プレースホルダー 6':
+            if sh.name == 'コンテンツ プレースホルダー 7':
+                # グラフサイズをPPTXから読み取った値に拡大
+                from pptx.util import Inches as _In5, Pt as _Pt5
+                sh.left   = int(0.629 * 914400)
+                sh.top    = int(1.857 * 914400)
+                sh.width  = int(12.075 * 914400)
+                sh.height = int(3.765 * 914400)
                 _replace_image(s5, sh, _buf5)
+            elif sh.name == 'タイトル 5' and sh.has_text_frame:
+                _set_text(sh, '暫定 LTV — 観測期間別の推移グラフ')
 
         # ══════════════════════════════════════════════
         # Slide 6〜: セグメント別
