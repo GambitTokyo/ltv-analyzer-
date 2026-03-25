@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v193</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v194</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -9552,6 +9552,9 @@ if True:
         for sh in s2.shapes:
             n = sh.name
             if n == 'テキスト プレースホルダー 6':
+                # billing_cycleの内部コードを表示名に変換
+                _bc_disp = (billing_cycle_display if 'billing_cycle_display' in dir()
+                            else billing_cycle.split('←')[0].strip())
                 info1 = (
                     f"データ期間: {_data_start} – {_data_end}　|　"
                     f"顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　"
@@ -9560,7 +9563,7 @@ if True:
                 )
                 info2 = (
                     f"異常値の処理：除外なし　|　{business_type}　|　"
-                    f"{billing_cycle}　|　解約時の日割り計算：{'ON' if ltv_offset_days == 0 else 'OFF'}"
+                    f"{_bc_disp}　|　解約時の日割り計算：{'ON' if ltv_offset_days == 0 else 'OFF'}"
                 )
                 if sh.has_text_frame:
                     tf = sh.text_frame
@@ -9618,14 +9621,26 @@ if True:
                     f"→ 左グラフ（Survival Curve）の曲線の急峻さを決める値。k=1で指数分布（一定離脱率）\n"
                     f"→ {k_insight}"
                 )
-                _set_multiline(sh, k_text)
+                if sh.has_text_frame:
+                    lines = k_text.split('\n')
+                    tf = sh.text_frame
+                    for i, para in enumerate(tf.paragraphs):
+                        if i < len(lines):
+                            for run in para.runs: run.text = ''
+                            if para.runs: para.runs[0].text = lines[i]
             elif sh.name == 'TextBox 8':
                 lam_text = (
                     f"λ（尺度パラメータ） = {lam_disp_s3:.1f}日（約{lam_disp_s3/365:.1f}年）\n"
                     f"→ 大きいほどLTV∞到達が長期化する。λ日時点での暫定LTV到達率はk値により異なる（k=1のとき63.2%）\n"
                     f"→ {r2_comment}"
                 )
-                _set_multiline(sh, lam_text)
+                if sh.has_text_frame:
+                    lines = lam_text.split('\n')
+                    tf = sh.text_frame
+                    for i, para in enumerate(tf.paragraphs):
+                        if i < len(lines):
+                            for run in para.runs: run.text = ''
+                            if para.runs: para.runs[0].text = lines[i]
 
         # ══════════════════════════════════════════════
         # Slide 4: 暫定LTVテーブル
@@ -9652,17 +9667,29 @@ if True:
                     _set_table_row(tbl, r_idx + 1,
                         [label, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%'])
             elif sh.name == 'テキスト ボックス 17':
-                reading = (
-                    f"このテーブルの読み方\n"
-                    f"λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。\n"
-                    f"k={k:.3f}（{'強い初期離脱型' if k < 0.7 else '初期離脱型'}）: LTV∞は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。CAC投資判断には暫定LTV（現実的な期間）を使ってください。\n"
-                    f"LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。\u000b"
-                    f"1年時点でLTV∞の{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）、 "
-                    f"2年時点で{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）、 "
-                    f"3年時点で{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。\n\n"
-                    f"CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 {cac_recover_rev_str} / 粗利ベース 約 {cac_recover_gp_str}（契約から）"
-                )
-                _set_multiline(sh, reading)
+                from pptx.util import Pt as _Pt
+                from pptx.oxml.ns import qn as _qn
+                # テキストボックスをもう少し上に移動（top: 4.855→4.5in）
+                sh.top = int(4.5 * 914400)
+                # 全paragraphのrunを10ptに変更してテキストを設定
+                reading_lines = [
+                    'このテーブルの読み方',
+                    f'λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。',
+                    f'k={k:.3f}（{"強い初期離脱型" if k < 0.7 else "初期離脱型"}）: LTV∞は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。CAC投資判断には暫定LTV（現実的な期間）を使ってください。',
+                    f'LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。',
+                    f'1年時点でLTV∞の{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）、 2年時点で{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）、 3年時点で{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。',
+                    '',
+                    f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 {cac_recover_rev_str} / 粗利ベース 約 {cac_recover_gp_str}（契約から）',
+                ]
+                if sh.has_text_frame:
+                    tf = sh.text_frame
+                    for i, para in enumerate(tf.paragraphs):
+                        for run in para.runs:
+                            run.text = ''
+                            run.font.size = _Pt(10)
+                        if i < len(reading_lines) and para.runs:
+                            para.runs[0].text = reading_lines[i]
+                            para.runs[0].font.size = _Pt(10)
 
         # ══════════════════════════════════════════════
         # Slide 5: 暫定LTVグラフ
@@ -9721,12 +9748,8 @@ if True:
                 premium = (best['ltv_r'] - avg_ltv) / avg_ltv * 100
                 cac_diff = best['cac'] - avg_cac
 
-                # ── Slide 7: LTV∞比較棒グラフ ──
-                # 最初のscはSlide7(index=6)を直接更新、2つ目以降は複製
-                if first_sc:
-                    s7 = prs.slides[6]
-                else:
-                    s7 = _copy_slide(prs, 6)
+                # ── Slide 7: LTV∞比較棒グラフ（常に複製）──
+                s7 = _copy_slide(prs, 6)
 
                 for sh in s7.shapes:
                     if sh.name == 'タイトル 4':
@@ -9734,22 +9757,30 @@ if True:
                     elif sh.name == 'テキスト プレースホルダー 5':
                         cac_diff_str = (f"+¥{cac_diff:,.0f}高く設定可能"
                                        if cac_diff >= 0 else f"¥{abs(cac_diff):,.0f}低め")
-                        top_text = (
-                            f"Top Pick　{best['seg']}\n"
-                            f"LTV∞(売上): ¥{best['ltv_r']:,.0f}（全セグメント平均比 +{premium:.1f}%）"
-                            f"　|　許容CAC上限 ¥{best['cac']:,.0f}（全セグメント平均より{cac_diff_str}）"
-                        )
-                        _set_multiline(sh, top_text)
+                        if sh.has_text_frame:
+                            tf = sh.text_frame
+                            lines = [
+                                f"Top Pick　{best['seg']}",
+                                f"LTV∞(売上): ¥{best['ltv_r']:,.0f}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 ¥{best['cac']:,.0f}（全セグメント平均より{cac_diff_str}）"
+                            ]
+                            for i, para in enumerate(tf.paragraphs):
+                                for run in para.runs: run.text = ''
+                                if i < len(lines) and para.runs:
+                                    para.runs[0].text = lines[i]
                     elif sh.name == 'コンテンツ プレースホルダー 18':
                         # 棒グラフ生成
                         import matplotlib.pyplot as _plt_bar
                         import matplotlib.ticker as _mticker
+                        import matplotlib
+                        matplotlib.rcParams['font.family'] = ['DejaVu Sans', 'sans-serif']
                         _fig, _ax = _plt_bar.subplots(figsize=(10.7, 4.2))
                         _fig.patch.set_facecolor('#111820'); _ax.set_facecolor('#111820')
                         _segs = [r['seg'] for r in pp_rows]
                         _ltvs = [r['ltv_r'] for r in pp_rows]
                         _cols = ['#56b4d3' if r['seg'] == best['seg'] else '#a8dadc' for r in pp_rows]
-                        _bars = _ax.bar(_segs, _ltvs, color=_cols, width=0.55)
+                        _bars = _ax.bar(range(len(_segs)), _ltvs, color=_cols, width=0.55)
+                        _ax.set_xticks(range(len(_segs)))
+                        _ax.set_xticklabels(_segs, fontsize=8, color='#888')
                         for _b, _v in zip(_bars, _ltvs):
                             _ax.text(_b.get_x()+_b.get_width()/2, _b.get_height()+max(_ltvs)*0.01,
                                     f'¥{_v:,.0f}', ha='center', va='bottom', fontsize=9, color='#cccccc')
@@ -9764,11 +9795,8 @@ if True:
                         _buf_bar.seek(0); _plt_bar.close()
                         _replace_image(s7, sh, _buf_bar)
 
-                # ── Slide 8: セグメントサマリー ──
-                if first_sc:
-                    s8 = prs.slides[7]
-                else:
-                    s8 = _copy_slide(prs, 7)
+                # ── Slide 8: セグメントサマリー（常に複製）──
+                s8 = _copy_slide(prs, 7)
 
                 for sh in s8.shapes:
                     if sh.name == 'コンテンツ プレースホルダー 6':
@@ -9829,10 +9857,20 @@ if True:
                         _wa_n2 = sum(r['n'] for r in pp_rows)
                         _wa_r2 = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n2
                         _diff_p = (_wa_r2 - ltv_rev) / ltv_rev * 100
-                        _set_text(sh,
-                            f"Note\u00a0— 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
-                            f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
-                            f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。")
+                        # "NOTE" 部分（run[0]）と本文（run[1]以降）を分けて設定
+                        if sh.has_text_frame and sh.text_frame.paragraphs:
+                            tf = sh.text_frame
+                            p = tf.paragraphs[0]
+                            note_body = (
+                                f" — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
+                                f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
+                                f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。"
+                            )
+                            if len(p.runs) >= 2:
+                                p.runs[0].text = 'NOTE\u00a0'
+                                p.runs[1].text = note_body
+                            elif len(p.runs) == 1:
+                                p.runs[0].text = 'NOTE\u00a0' + note_body
 
                 # ── Slide 9〜: セグメント詳細 ──
                 for sv in sorted(seg_vals):
@@ -9851,18 +9889,19 @@ if True:
                         lam_sv_disp = lam_sv + ltv_offset_days if business_type == '都度購入型' else lam_sv
                         is_best_sv = str(sv) == best['seg']
 
-                        # Top Pickなら Slide9(index=8)、そうでなければSlide10(index=9)を複製
+                        # Top Pickはindex=8、それ以外はindex=9をコピー
                         tmpl_idx = 8 if is_best_sv else 9
-                        if first_sc and sv == sorted(seg_vals)[0]:
-                            # 最初のセグメントは既存スライドを更新
-                            s9 = prs.slides[tmpl_idx]
-                        else:
-                            s9 = _copy_slide(prs, tmpl_idx)
+                        s9 = _copy_slide(prs, tmpl_idx)
 
                         # タイトル更新
                         for sh in s9.shapes:
                             if sh.name == 'タイトル 8':
-                                _set_text(sh, f'{sc}: {str(sv)}')
+                                # 全runをクリアしてから設定
+                                if sh.has_text_frame:
+                                    for para in sh.text_frame.paragraphs:
+                                        for run in para.runs: run.text = ''
+                                    if sh.text_frame.paragraphs and sh.text_frame.paragraphs[0].runs:
+                                        sh.text_frame.paragraphs[0].runs[0].text = f'{sc}: {str(sv)}'
                             elif sh.name == 'Picture 6':
                                 # Survival Curve
                                 import matplotlib.pyplot as _plt_sv
@@ -9916,7 +9955,11 @@ if True:
                                 for _h in horizons:
                                     _lr2 = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, _h, ltv_offset_days)
                                     _lg2 = _lr2 * gpm
-                                    _label2 = f'{_h}日' if _h < 365 else f'{_h//365}年（{_h:,}日）'
+                                    # ラベルを重複しない形式で
+                                    if _h < 365:
+                                        _label2 = f'{_h}日'
+                                    else:
+                                        _label2 = f'{_h//365}年（{_h:,}日）'
                                     _sv_rows.append((_label2, _lr2, _lg2, _lg2/cac_n, _lr2/ltv_r_sv*100))
                                 _lr_lam = ltv_horizon_offset(k_sv, lam_sv, arpu_sv, int(lam_sv), ltv_offset_days)
                                 _lg_lam = _lr_lam * gpm
@@ -9930,13 +9973,35 @@ if True:
                                 except Exception:
                                     _sv_rows.append(('LTV∞到達率: 99%', ltv_r_sv, ltv_r_sv*gpm, ltv_r_sv*gpm/cac_n, 99.0))
                                 for r_idx, row_data in enumerate(_sv_rows):
-                                    _set_table_row(tbl9, r_idx+1,
-                                        [row_data[0], f'¥{row_data[1]:,.0f}', f'¥{row_data[2]:,.0f}',
-                                         f'¥{row_data[3]:,.0f}', f'{row_data[4]:.1f}%'])
+                                    if r_idx + 1 < len(tbl9.rows):
+                                        _row9 = tbl9.rows[r_idx + 1]
+                                        _vals9 = [row_data[0], f'¥{row_data[1]:,.0f}', f'¥{row_data[2]:,.0f}',
+                                                 f'¥{row_data[3]:,.0f}', f'{row_data[4]:.1f}%']
+                                        for _ci, _v in enumerate(_vals9):
+                                            if _ci < len(_row9.cells):
+                                                tf9 = _row9.cells[_ci].text_frame
+                                                for para9 in tf9.paragraphs:
+                                                    for run9 in para9.runs: run9.text = ''
+                                                if tf9.paragraphs and tf9.paragraphs[0].runs:
+                                                    tf9.paragraphs[0].runs[0].text = _v
                     except Exception:
                         continue
 
                 first_sc = False
+
+            # テンプレートの元スライド7〜10（index 6〜9）を削除
+            # ループで複製済みなので不要
+            _sldIdLst = prs.slides._sldIdLst
+            # 削除対象：セグメント処理前の元スライド（先頭から6〜9番目）
+            # 複製は末尾に追加されているので、index 6〜9を削除
+            _ids_to_remove = list(_sldIdLst)[6:10]
+            for _sldId in _ids_to_remove:
+                _rId = _sldId.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+                try:
+                    if _rId: prs.part.drop_rel(_rId)
+                except Exception:
+                    pass
+                _sldIdLst.remove(_sldId)
 
         else:
             # セグメントなし：Slide7〜10をPRSから削除
