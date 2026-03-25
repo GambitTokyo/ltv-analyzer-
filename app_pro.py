@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v218</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v219</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2828,7 +2828,7 @@ if True:
             "3iNpHPDe/wEAAP//AwBQSwMEFAAGAAgAAAAhADSXzgSWCwAAqAsBABYAAABwcHQvc2xpZGVz"
             "L3NsaWRlMTEueG1s7J1db9vWGcfvB+w7EAJ6J1o8LyQPjTiFKEpBBi8NHCcFdkdTtKWNojiS"
             "dl6KAEkMtG4vug7LFqwLsnVrtnXtiqItsLbzUGAfYB+iqp3mKl9hD99kW5ZtxYkRi3l8IR6S"
-            "5xydl+f8/udVPvPqtZ4nrblh1O37cxUyo1Qk13f67a6/Mle5vNiSRUWKYttv218fd+cq192o"
+            "5xydl+f8/udVPvPqtZ4nrblh1O37cxUyo1Qk13f67a6/Mle5vNiSRUWKYttv217fd+cq192o"
             "8urZH//oTDAbeW0JQvvRrD1X6cRxMFurRU7H7dnRTD9wfXi33A97dgy34UqtHdpXIdaeV6OK"
             "otV6dtev5OHDScL3l5e7jmv1ndWe68dZJKHr2TGkPOp0g6iILZgktiB0I4gmDb0nSWchZ84l"
             "r51co2AxdN3E5a+dC4NLwcUwfX1h7WIoddtQXhXJt3tQLJVa/iL3lt76a6mjNhJ8pXDas9eW"
