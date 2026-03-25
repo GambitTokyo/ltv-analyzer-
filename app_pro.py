@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v217</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v218</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2828,7 +2828,7 @@ if True:
             "3iNpHPDe/wEAAP//AwBQSwMEFAAGAAgAAAAhADSXzgSWCwAAqAsBABYAAABwcHQvc2xpZGVz"
             "L3NsaWRlMTEueG1s7J1db9vWGcfvB+w7EAJ6J1o8LyQPjTiFKEpBBi8NHCcFdkdTtKWNojiS"
             "dl6KAEkMtG4vug7LFqwLsnVrtnXtiqItsLbzUGAfYB+iqp3mKl9hD99kW5ZtxYkRi3l8IR6S"
-            "5xydl+f8/udVPvPqtZ4nrblh1O37cxUyo1Qk13f67a6/Mle5vNiSRUWKYttv217fd+cq192o"
+            "5xydl+f8/udVPvPqtZ4nrblh1O37cxUyo1Qk13f67a6/Mle5vNiSRUWKYttv218fd+cq192o"
             "8urZH//oTDAbeW0JQvvRrD1X6cRxMFurRU7H7dnRTD9wfXi33A97dgy34UqtHdpXIdaeV6OK"
             "otV6dtev5OHDScL3l5e7jmv1ndWe68dZJKHr2TGkPOp0g6iILZgktiB0I4gmDb0nSWchZ84l"
             "r51co2AxdN3E5a+dC4NLwcUwfX1h7WIoddtQXhXJt3tQLJVa/iL3lt76a6mjNhJ8pXDas9eW"
@@ -12771,11 +12771,30 @@ if True:
                         _set_text(sh, f'セグメント分析結果のサマリー：{sc}')
                     elif sh.shape_type == 19:
                         _tbl8 = sh.table
+                        # 全pp_rowsで加重平均を計算（全セグメント対象）
                         _wa_n = sum(r['n'] for r in pp_rows)
                         _wa_r = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n
                         _wa_g = sum(r['ltv_g']*r['n'] for r in pp_rows) / _wa_n
-                        _all_rows_t = pp_rows + [{'seg':'加重平均','n':_wa_n,'ltv_r':_wa_r,'ltv_g':_wa_g,
-                            'cac':_wa_g/cac_n,'k':None,'lam':None,'r2':None}]
+                        _wa_row = {'seg':'加重平均','n':_wa_n,'ltv_r':_wa_r,'ltv_g':_wa_g,
+                            'cac':_wa_g/cac_n,'k':None,'lam':None,'r2':None}
+                        # 表示は上位10件+加重平均
+                        _top10 = pp_rows[:10]
+                        _all_rows_t = _top10 + [_wa_row]
+
+                        # テーブル行を必要数に調整（ヘッダ除く）
+                        from pptx.oxml.ns import qn as _qn8
+                        import copy as _copy8
+                        _tbl8_el = _tbl8._tbl
+                        _existing_rows = len(_tbl8.rows)
+                        _needed_rows = len(_all_rows_t) + 1  # +1はヘッダ
+                        # 足りない行を複製して追加
+                        if _existing_rows < _needed_rows:
+                            _tmpl_row = _tbl8_el.findall(_qn8('a:tr'))[-1]
+                            for _ in range(_needed_rows - _existing_rows):
+                                _new_row = _copy8.deepcopy(_tmpl_row)
+                                _tbl8_el.append(_new_row)
+                        # 余分な行を非表示（空白化）
+                        _cur_rows = len(_tbl8.rows)
                         for _ri, _row in enumerate(_all_rows_t):
                             if _ri + 1 >= len(_tbl8.rows): break
                             _vals8 = [_row['seg'], f"{_row['n']:,}",
@@ -12795,9 +12814,9 @@ if True:
                         _wa_n2 = sum(r['n'] for r in pp_rows)
                         _wa_r2 = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n2
                         _diff_p = (_wa_r2 - ltv_rev) / ltv_rev * 100
-                        _note_body = (f"\xa0— 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
+                        _note_body = (f"\xa0— テーブルは上位10セグメントを表示。加重平均行は全{len(pp_rows)}セグメントを顧客数で重み付けした値です。"
                             f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
-                            f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。")
+                            f"詳細スライドには全セグメントを掲載しています。")
                         if sh.has_text_frame and sh.text_frame.paragraphs:
                             p = sh.text_frame.paragraphs[0]
                             for run in p.runs: run.text = ''
