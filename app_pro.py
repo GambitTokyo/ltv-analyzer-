@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v195</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v196</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -9456,11 +9456,15 @@ if True:
             "qwIAAIIeAAATAAAAAAAAAAAAAAAAAJ16BgBbQ29udGVudF9UeXBlc10ueG1sUEsFBgAAAABuAG4APCEA"
             "AHl9BgAAAA=="
         )
-        import tempfile, base64 as _b64mod
+        import tempfile, base64 as _b64mod, os as _os
         _tmpl_bytes = _b64mod.b64decode(_TMPL_B64)
-        _TMPL_PATH = '/tmp/ltv_analyzer_template.pptx'
-        with open(_TMPL_PATH, 'wb') as _f:
-            _f.write(_tmpl_bytes)
+        _tmpl_fd, _TMPL_PATH = tempfile.mkstemp(suffix='.pptx', prefix='ltv_tmpl_')
+        try:
+            with _os.fdopen(_tmpl_fd, 'wb') as _f:
+                _f.write(_tmpl_bytes)
+        except Exception:
+            _os.close(_tmpl_fd)
+            raise
 
         from datetime import date
         from pptx import Presentation
@@ -10069,7 +10073,9 @@ if True:
     except ImportError:
         _pp_html = '<span class="dl-btn-err">.pptx 未対応</span>'
     except Exception as e:
-        _pp_html = f'<span class="dl-btn-err">.pptx エラー: {str(e)[:80]}</span>'
+        import traceback as _tb
+        _tb_str = _tb.format_exc().replace('\n', ' | ')[-300:]
+        _pp_html = f'<span class="dl-btn-err">.pptx エラー: {str(e)[:150]}<br><small style="font-size:0.6rem;opacity:0.7">{_tb_str}</small></span>'
 
 # ── PDF export ────────────────────────────────────────────────
 if True:
