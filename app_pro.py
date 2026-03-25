@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v194</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v195</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -9514,12 +9514,15 @@ if True:
                 blip.set(qn('r:embed'), new_rId)
 
         def _set_table_row(tbl, row_idx, values):
-            """テーブルのrow_idx行目に値をセット"""
+            """テーブルのrow_idx行目に値をセット（全runクリア後に設定）"""
             if row_idx >= len(tbl.rows): return
             row = tbl.rows[row_idx]
             for c_idx, v in enumerate(values):
                 if c_idx < len(row.cells):
                     tf = row.cells[c_idx].text_frame
+                    for para in tf.paragraphs:
+                        for run in para.runs:
+                            run.text = ''
                     if tf.paragraphs and tf.paragraphs[0].runs:
                         tf.paragraphs[0].runs[0].text = str(v)
 
@@ -9553,8 +9556,7 @@ if True:
             n = sh.name
             if n == 'テキスト プレースホルダー 6':
                 # billing_cycleの内部コードを表示名に変換
-                _bc_disp = (billing_cycle_display if 'billing_cycle_display' in dir()
-                            else billing_cycle.split('←')[0].strip())
+                _bc_disp = billing_cycle_display if 'billing_cycle_display' in dir() else billing_cycle.split('←')[0].strip()
                 info1 = (
                     f"データ期間: {_data_start} – {_data_end}　|　"
                     f"顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　"
@@ -9567,10 +9569,16 @@ if True:
                 )
                 if sh.has_text_frame:
                     tf = sh.text_frame
-                    if len(tf.paragraphs) >= 1 and tf.paragraphs[0].runs:
-                        tf.paragraphs[0].runs[0].text = info1
-                    if len(tf.paragraphs) >= 2 and tf.paragraphs[1].runs:
-                        tf.paragraphs[1].runs[0].text = info2
+                    # para0: 全runをクリアして最初のrunに設定
+                    if len(tf.paragraphs) >= 1:
+                        p0 = tf.paragraphs[0]
+                        for r in p0.runs: r.text = ''
+                        if p0.runs: p0.runs[0].text = info1
+                    # para1: 全runをクリアして最初のrunに設定
+                    if len(tf.paragraphs) >= 2:
+                        p1 = tf.paragraphs[1]
+                        for r in p1.runs: r.text = ''
+                        if p1.runs: p1.runs[0].text = info2
             elif n == 'グループ化 26':
                 kpi_map = {
                     'TextBox 6':  f'¥{ltv_rev:,.0f}',
@@ -9586,10 +9594,16 @@ if True:
             elif n == 'テキスト ボックス 49':
                 if sh.has_text_frame:
                     tf = sh.text_frame
-                    if len(tf.paragraphs) >= 1 and tf.paragraphs[0].runs:
-                        tf.paragraphs[0].runs[0].text = '結論'
-                    if len(tf.paragraphs) >= 2 and tf.paragraphs[1].runs:
-                        tf.paragraphs[1].runs[0].text = k_summary + r2_summary
+                    # para0: '結論'
+                    if len(tf.paragraphs) >= 1:
+                        p0 = tf.paragraphs[0]
+                        for r in p0.runs: r.text = ''
+                        if p0.runs: p0.runs[0].text = '結論'
+                    # para1: 本文（全runクリアして最初のrunに）
+                    if len(tf.paragraphs) >= 2:
+                        p1 = tf.paragraphs[1]
+                        for r in p1.runs: r.text = ''
+                        if p1.runs: p1.runs[0].text = k_summary + r2_summary
 
         # ══════════════════════════════════════════════
         # Slide 3: 分析の信頼性（Survival Curve / Weibull Plot）
@@ -9622,12 +9636,11 @@ if True:
                     f"→ {k_insight}"
                 )
                 if sh.has_text_frame:
-                    lines = k_text.split('\n')
                     tf = sh.text_frame
-                    for i, para in enumerate(tf.paragraphs):
-                        if i < len(lines):
-                            for run in para.runs: run.text = ''
-                            if para.runs: para.runs[0].text = lines[i]
+                    for para in tf.paragraphs:
+                        for run in para.runs: run.text = ''
+                    if tf.paragraphs and tf.paragraphs[0].runs:
+                        tf.paragraphs[0].runs[0].text = k_text
             elif sh.name == 'TextBox 8':
                 lam_text = (
                     f"λ（尺度パラメータ） = {lam_disp_s3:.1f}日（約{lam_disp_s3/365:.1f}年）\n"
@@ -9635,12 +9648,11 @@ if True:
                     f"→ {r2_comment}"
                 )
                 if sh.has_text_frame:
-                    lines = lam_text.split('\n')
                     tf = sh.text_frame
-                    for i, para in enumerate(tf.paragraphs):
-                        if i < len(lines):
-                            for run in para.runs: run.text = ''
-                            if para.runs: para.runs[0].text = lines[i]
+                    for para in tf.paragraphs:
+                        for run in para.runs: run.text = ''
+                    if tf.paragraphs and tf.paragraphs[0].runs:
+                        tf.paragraphs[0].runs[0].text = lam_text
 
         # ══════════════════════════════════════════════
         # Slide 4: 暫定LTVテーブル
@@ -9668,36 +9680,59 @@ if True:
                         [label, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%'])
             elif sh.name == 'テキスト ボックス 17':
                 from pptx.util import Pt as _Pt
-                from pptx.oxml.ns import qn as _qn
-                # テキストボックスをもう少し上に移動（top: 4.855→4.5in）
-                sh.top = int(4.5 * 914400)
-                # 全paragraphのrunを10ptに変更してテキストを設定
-                reading_lines = [
-                    'このテーブルの読み方',
-                    f'λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。',
-                    f'k={k:.3f}（{"強い初期離脱型" if k < 0.7 else "初期離脱型"}）: LTV∞は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。CAC投資判断には暫定LTV（現実的な期間）を使ってください。',
-                    f'LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。',
-                    f'1年時点でLTV∞の{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）、 2年時点で{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）、 3年時点で{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。',
-                    '',
-                    f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 {cac_recover_rev_str} / 粗利ベース 約 {cac_recover_gp_str}（契約から）',
-                ]
+                sh.top = int(4.55 * 914400)
                 if sh.has_text_frame:
                     tf = sh.text_frame
+                    k_type = '強い初期離脱型' if k < 0.7 else ('初期離脱型' if k < 1.0 else '逓増型')
+                    _s4_lines = [
+                        'このテーブルの読み方',
+                        f'λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。',
+                        f'k={k:.3f}（{k_type}）: 契約直後に大量離脱するパターンです。LTV\u221e は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。CAC投資判断には暫定LTV（現実的な期間）を使ってください。',
+                        f'LTV\u221e（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。\x0b1年時点でLTV\u221eの{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）、\xa02年時点で{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）、\xa03年時点で{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。',
+                        '',
+                        f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約\xa0{cac_recover_rev_str}\xa0/ 粗利ベース 約\xa0{cac_recover_gp_str}（契約から）',
+                    ]
                     for i, para in enumerate(tf.paragraphs):
-                        for run in para.runs:
-                            run.text = ''
-                            run.font.size = _Pt(10)
-                        if i < len(reading_lines) and para.runs:
-                            para.runs[0].text = reading_lines[i]
+                        for run in para.runs: run.text = ''
+                        if i < len(_s4_lines) and para.runs:
+                            para.runs[0].text = _s4_lines[i]
                             para.runs[0].font.size = _Pt(10)
 
         # ══════════════════════════════════════════════
         # Slide 5: 暫定LTVグラフ
         # ══════════════════════════════════════════════
+        # buf_ltvを日本語フォントで再生成
+        import matplotlib.pyplot as _plt5
+        import matplotlib.font_manager as _fm5
+        _fp5 = _fm5.FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')
+        _plt5.rcParams['font.family'] = _fp5.get_name()
+        _fig5, _ax5 = _plt5.subplots(figsize=(10, 3.5))
+        _fig5.patch.set_facecolor('#111820'); _ax5.set_facecolor('#111820')
+        _ax5.plot(t_range, rev_line, color='#56b4d3', lw=2, label='LTV（売上）')
+        _ax5.plot(t_range, gp_line,  color='#a8dadc', lw=2, ls='--', label='LTV（粗利）')
+        _ax5.plot(t_range, cac_line, color='#4a7a8a', lw=1.5, ls=':', label='CAC上限')
+        _ax5.axhline(ltv_rev, color='#56b4d3', lw=0.8, ls=':', alpha=0.5, label=f'LTV∞ ¥{ltv_rev:,.0f}')
+        _ax5.axvline(lam_actual, color='#a8dadc', lw=1.2, ls='--', alpha=0.7)
+        _xtick_vals = [180, 365, 730, 1095, 1460, 1825]
+        _ax5.set_xticks(_xtick_vals)
+        _ax5.set_xticklabels(['180日', '1年', '2年', '3年', '4年', '5年'])
+        _ax5.set_xlim(0, x_max + 50)
+        _ax5.set_xlabel('継続期間', color='#888', fontsize=9)
+        _ax5.set_ylabel('金額（円）', color='#888', fontsize=9)
+        _ax5.tick_params(colors='#888')
+        _ax5.yaxis.set_major_formatter(_plt5.FuncFormatter(lambda v, _: f'¥{v:,.0f}'))
+        _ax5.legend(fontsize=8, framealpha=0.2, labelcolor='white', loc='upper left')
+        _ax5.grid(True, alpha=0.2, color='#1a3040')
+        for _sp5 in _ax5.spines.values(): _sp5.set_color('#1a3040')
+        _fig5.tight_layout()
+        _buf5 = io.BytesIO()
+        _fig5.savefig(_buf5, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
+        _buf5.seek(0); _plt5.close()
+
         s5 = prs.slides[4]
         for sh in s5.shapes:
-            if sh.name == 'コンテンツ プレースホルダー 6' and buf_ltv is not None:
-                buf_ltv.seek(0); _replace_image(s5, sh, buf_ltv)
+            if sh.name == 'コンテンツ プレースホルダー 6':
+                _replace_image(s5, sh, _buf5)
 
         # ══════════════════════════════════════════════
         # Slide 6〜: セグメント別
@@ -9710,7 +9745,11 @@ if True:
             s6 = prs.slides[5]
             for sh in s6.shapes:
                 if sh.name == 'TextBox 4':
-                    _set_text(sh, '  |  '.join(seg_cols_pp))
+                    if sh.has_text_frame and sh.text_frame.paragraphs:
+                        p = sh.text_frame.paragraphs[0]
+                        for run in p.runs: run.text = ''
+                        if p.runs:
+                            p.runs[0].text = '  |  '.join(seg_cols_pp)
 
             # 元のSlide7〜10を保持して後で複製に使う
             # （prs.slides[6]〜[9]がSlide7〜10）
@@ -9768,24 +9807,26 @@ if True:
                                 if i < len(lines) and para.runs:
                                     para.runs[0].text = lines[i]
                     elif sh.name == 'コンテンツ プレースホルダー 18':
-                        # 棒グラフ生成
+                        # 棒グラフ生成（日本語フォント設定）
                         import matplotlib.pyplot as _plt_bar
                         import matplotlib.ticker as _mticker
-                        import matplotlib
-                        matplotlib.rcParams['font.family'] = ['DejaVu Sans', 'sans-serif']
+                        import matplotlib.font_manager as _fm_bar
+                        _fp_bar = _fm_bar.FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')
+                        _plt_bar.rcParams['font.family'] = _fp_bar.get_name()
                         _fig, _ax = _plt_bar.subplots(figsize=(10.7, 4.2))
                         _fig.patch.set_facecolor('#111820'); _ax.set_facecolor('#111820')
                         _segs = [r['seg'] for r in pp_rows]
                         _ltvs = [r['ltv_r'] for r in pp_rows]
                         _cols = ['#56b4d3' if r['seg'] == best['seg'] else '#a8dadc' for r in pp_rows]
-                        _bars = _ax.bar(range(len(_segs)), _ltvs, color=_cols, width=0.55)
-                        _ax.set_xticks(range(len(_segs)))
-                        _ax.set_xticklabels(_segs, fontsize=8, color='#888')
+                        _xs = range(len(_segs))
+                        _bars = _ax.bar(_xs, _ltvs, color=_cols, width=0.55)
+                        _ax.set_xticks(list(_xs))
+                        _ax.set_xticklabels(_segs, fontsize=8, color='#cccccc')
                         for _b, _v in zip(_bars, _ltvs):
                             _ax.text(_b.get_x()+_b.get_width()/2, _b.get_height()+max(_ltvs)*0.01,
                                     f'¥{_v:,.0f}', ha='center', va='bottom', fontsize=9, color='#cccccc')
                         _ax.set_ylabel('LTV∞（¥）', color='#888', fontsize=9)
-                        _ax.tick_params(colors='#888', labelsize=8)
+                        _ax.tick_params(axis='y', colors='#888', labelsize=8)
                         _ax.yaxis.set_major_formatter(_mticker.FuncFormatter(lambda v,_: f'¥{v:,.0f}'))
                         _ax.grid(axis='y', alpha=0.2, color='#1a3040')
                         for _sp in _ax.spines.values(): _sp.set_color('#1a3040')
@@ -9803,6 +9844,9 @@ if True:
                         # サマリーテーブル画像生成
                         import matplotlib.pyplot as _plt_t
                         import matplotlib.patches as _mpatch
+                        import matplotlib.font_manager as _fm_t
+                        _fp_t = _fm_t.FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')
+                        _plt_t.rcParams['font.family'] = _fp_t.get_name()
                         _n_rows = len(pp_rows) + 1  # セグメント行 + 加重平均行
                         _fig_h = max(1.2, _n_rows * 0.32 + 0.4)
                         _fig_t, _ax_t = _plt_t.subplots(figsize=(11.8, _fig_h))
@@ -9857,20 +9901,17 @@ if True:
                         _wa_n2 = sum(r['n'] for r in pp_rows)
                         _wa_r2 = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n2
                         _diff_p = (_wa_r2 - ltv_rev) / ltv_rev * 100
-                        # "NOTE" 部分（run[0]）と本文（run[1]以降）を分けて設定
+                        _note_body = (
+                            f"\xa0— 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
+                            f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
+                            f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。"
+                        )
                         if sh.has_text_frame and sh.text_frame.paragraphs:
-                            tf = sh.text_frame
-                            p = tf.paragraphs[0]
-                            note_body = (
-                                f" — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
-                                f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
-                                f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。"
-                            )
-                            if len(p.runs) >= 2:
-                                p.runs[0].text = 'NOTE\u00a0'
-                                p.runs[1].text = note_body
-                            elif len(p.runs) == 1:
-                                p.runs[0].text = 'NOTE\u00a0' + note_body
+                            p = sh.text_frame.paragraphs[0]
+                            for run in p.runs: run.text = ''
+                            if len(p.runs) >= 1: p.runs[0].text = 'NOTE'
+                            if len(p.runs) >= 2: p.runs[1].text = _note_body
+                            elif len(p.runs) == 1: p.runs[0].text = 'NOTE' + _note_body
 
                 # ── Slide 9〜: セグメント詳細 ──
                 for sv in sorted(seg_vals):
