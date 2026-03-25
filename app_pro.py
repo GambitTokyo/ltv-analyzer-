@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v199</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v200</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -4158,7 +4158,7 @@ if True:
             "tOkYjbd/mY+7Hn8UMjl/7xARERER1YTDEgX56anw8gswv864EA8RROg2Zry5zK9NFFq174j8jDRHdUtE"
             "ZCHcSwqZ5PqSA6lMhjGPPIh3fvsR7Xp0d2JkRERERESNg8OOR7xy/CgGTn0MvmFtkHX5AlLOnERuyhWE"
             "9+qLhyN/hKbgKpq1ag2RWIQTm9c5qlsiIgtncg3QGkyIbiGzSBj4BgXhhdkzcXDLNqyY+z2KruY7L0gi"
-            "IiIiogbMYTMKEvbuwvqvPoGmML+8wGTCv199hpTTJ+Dm6YUWrcNg0JXh4MplOB8b46huiYgquVRgxJZE"
+            "IiIiogbMYTMKEvbuwvqvPoGmML+8wGTCv200hpTTJ+Dm6YUWrcNg0JXh4MplOB8b46huiYgquVRgxJZE"
             "LU7EHqh0rffIEXh/0a8YMHYMNzskIiIiIrJC5OMfaqrrTqRyOeRuKpQWFsJkEqq/wQUpmpfv1VCW2/CX"
             "XYjlSgg6rd3tqNRquKnV0Go0MJnq/G1GVpgAQCwFBANc/ZFY6u6BPh/PtyhL3rIGHoUpuGf6o/Bp2aLS"
             "PRdPn8XyufORfiWp0jWDphgmoeH9vnLUzyc1DBxP18LxdC0cT9fC8XQtHM/q2fv86bClB7di0Olg0Onq"
@@ -10171,8 +10171,8 @@ if True:
         _fn_pp = f"LTV分析_{client_name or 'report'}.pptx"
         _pp_href = f'<a href="data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,{_pp_b64}" download="{_fn_pp}" class="dl-btn">.pptx</a>'
         _pp_html = _pp_href
-    except ImportError:
-        _pp_html = '<span class="dl-btn-err">.pptx 未対応</span>'
+    except ImportError as _ie:
+        _pp_html = f'<span class="dl-btn-err">.pptx 未対応: {str(_ie)[:80]}</span>'
     except Exception as e:
         import traceback as _tb
         _tb_str = _tb.format_exc().replace('\n', ' | ')[-300:]
