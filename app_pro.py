@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v196</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v197</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1721,11 +1721,40 @@ with _col_ltv:
     )
     st.plotly_chart(fig_ltv, use_container_width=True)
 
+# ── 日本語フォント動的探索ヘルパー ──
+def _find_jp_font_path():
+    """環境に依存せず日本語フォントパスを返す。見つからなければNone。"""
+    import os
+    _candidates = [
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Medium.ttc',
+        '/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf',
+        '/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf',
+        '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',
+    ]
+    for _p in _candidates:
+        if os.path.exists(_p):
+            return _p
+    try:
+        import matplotlib.font_manager as _fmx
+        _all = _fmx.findSystemFonts()
+        for _kw in ['CJK', 'ipagp', 'ipag', 'Japanese', 'Gothic']:
+            for _fp in _all:
+                if _kw.lower() in _fp.lower():
+                    return _fp
+    except Exception:
+        pass
+    return None
+
+_JP_FONT_PATH = _find_jp_font_path()
+
 # ── PPTX用バッファ：matplotlib で別途生成 ──
 try:
     import matplotlib.font_manager as fm
-    _jp_font = fm.FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')
-    plt.rcParams['font.family'] = _jp_font.get_name()
+    if _JP_FONT_PATH:
+        _jp_font = fm.FontProperties(fname=_JP_FONT_PATH)
+        plt.rcParams['font.family'] = _jp_font.get_name()
 except Exception:
     pass
 fig_ltv_pp, ax_ltv_pp = plt.subplots(figsize=(10, 3.5))
@@ -9708,8 +9737,8 @@ if True:
         # buf_ltvを日本語フォントで再生成
         import matplotlib.pyplot as _plt5
         import matplotlib.font_manager as _fm5
-        _fp5 = _fm5.FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')
-        _plt5.rcParams['font.family'] = _fp5.get_name()
+        _fp5 = _fm5.FontProperties(fname=_JP_FONT_PATH) if _JP_FONT_PATH else None
+        if _fp5: _plt5.rcParams['font.family'] = _fp5.get_name()
         _fig5, _ax5 = _plt5.subplots(figsize=(10, 3.5))
         _fig5.patch.set_facecolor('#111820'); _ax5.set_facecolor('#111820')
         _ax5.plot(t_range, rev_line, color='#56b4d3', lw=2, label='LTV（売上）')
@@ -9815,8 +9844,8 @@ if True:
                         import matplotlib.pyplot as _plt_bar
                         import matplotlib.ticker as _mticker
                         import matplotlib.font_manager as _fm_bar
-                        _fp_bar = _fm_bar.FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')
-                        _plt_bar.rcParams['font.family'] = _fp_bar.get_name()
+                        _fp_bar = _fm_bar.FontProperties(fname=_JP_FONT_PATH) if _JP_FONT_PATH else None
+                        if _fp_bar: _plt_bar.rcParams['font.family'] = _fp_bar.get_name()
                         _fig, _ax = _plt_bar.subplots(figsize=(10.7, 4.2))
                         _fig.patch.set_facecolor('#111820'); _ax.set_facecolor('#111820')
                         _segs = [r['seg'] for r in pp_rows]
@@ -9849,8 +9878,8 @@ if True:
                         import matplotlib.pyplot as _plt_t
                         import matplotlib.patches as _mpatch
                         import matplotlib.font_manager as _fm_t
-                        _fp_t = _fm_t.FontProperties(fname='/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc')
-                        _plt_t.rcParams['font.family'] = _fp_t.get_name()
+                        _fp_t = _fm_t.FontProperties(fname=_JP_FONT_PATH) if _JP_FONT_PATH else None
+                        if _fp_t: _plt_t.rcParams['font.family'] = _fp_t.get_name()
                         _n_rows = len(pp_rows) + 1  # セグメント行 + 加重平均行
                         _fig_h = max(1.2, _n_rows * 0.32 + 0.4)
                         _fig_t, _ax_t = _plt_t.subplots(figsize=(11.8, _fig_h))
