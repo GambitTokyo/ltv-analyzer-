@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v207</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v208</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -12469,7 +12469,7 @@ if True:
                     _set_table_row(tbl, r_idx + 1,
                         [label, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%'])
             elif sh.name == 'テキスト ボックス 3':
-                sh.top = int(4.85 * 914400)
+                sh.top = int(4.60 * 914400)
                 if sh.has_text_frame:
                     tf = sh.text_frame
                     k_type = '強い初期離脱型' if k < 0.7 else ('初期離脱型' if k < 1.0 else '逓増型')
@@ -12514,23 +12514,33 @@ if True:
                     _make_run4(_pp[2], f'k={k:.3f}（{k_type}）: 契約直後に大量離脱するパターンです。LTV∞は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。CAC投資判断には暫定LTV（現実的な期間）を使ってください。', color='#CCCCCC', size_pt=10)
 
                     # para3: LTV∞説明（bullet=•）本文 + 改行 + 年次データ
-                    _make_run4(_pp[3], f'LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。', color='#CCCCCC', size_pt=10)
-                    _add_br4(_pp[3])
-                    _make_run4(_pp[3], '1年時点', color='#56B4D3', size_pt=10)
-                    _make_run4(_pp[3], 'でLTV∞の', color='#CCCCCC', size_pt=10)
-                    _make_run4(_pp[3], f'{all_rows_pp[1][4]:.1f}%', bold=True, color='#A8DADC', size_pt=10)
-                    _make_run4(_pp[3], f'（¥{all_rows_pp[1][1]:,.0f}）、', color='#CCCCCC', size_pt=10)
-                    _make_run4(_pp[3], '2年時点', color='#56B4D3', size_pt=10)
-                    _make_run4(_pp[3], 'で', color='#CCCCCC', size_pt=10)
-                    _make_run4(_pp[3], f'{all_rows_pp[2][4]:.1f}%', bold=True, color='#A8DADC', size_pt=10)
-                    _make_run4(_pp[3], f'（¥{all_rows_pp[2][1]:,.0f}）、', color='#CCCCCC', size_pt=10)
-                    _make_run4(_pp[3], '3年時点', color='#56B4D3', size_pt=10)
-                    _make_run4(_pp[3], 'で', color='#CCCCCC', size_pt=10)
-                    _make_run4(_pp[3], f'{all_rows_pp[3][4]:.1f}%', bold=True, color='#A8DADC', size_pt=10)
-                    _make_run4(_pp[3], f'（¥{all_rows_pp[3][1]:,.0f}）に到達します。', color='#CCCCCC', size_pt=10)
+                    try:
+                        _make_run4(_pp[3], f'LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。', color='#CCCCCC', size_pt=10)
+                        _add_br4(_pp[3])
+                        _make_run4(_pp[3], '1年時点', color='#56B4D3', size_pt=10)
+                        _make_run4(_pp[3], 'でLTV∞の', color='#CCCCCC', size_pt=10)
+                        _make_run4(_pp[3], f'{all_rows_pp[1][4]:.1f}%', bold=True, color='#A8DADC', size_pt=10)
+                        _make_run4(_pp[3], f'（¥{all_rows_pp[1][1]:,.0f}）、', color='#CCCCCC', size_pt=10)
+                        _make_run4(_pp[3], '2年時点', color='#56B4D3', size_pt=10)
+                        _make_run4(_pp[3], 'で', color='#CCCCCC', size_pt=10)
+                        _make_run4(_pp[3], f'{all_rows_pp[2][4]:.1f}%', bold=True, color='#A8DADC', size_pt=10)
+                        _make_run4(_pp[3], f'（¥{all_rows_pp[2][1]:,.0f}）、', color='#CCCCCC', size_pt=10)
+                        _make_run4(_pp[3], '3年時点', color='#56B4D3', size_pt=10)
+                        _make_run4(_pp[3], 'で', color='#CCCCCC', size_pt=10)
+                        _make_run4(_pp[3], f'{all_rows_pp[3][4]:.1f}%', bold=True, color='#A8DADC', size_pt=10)
+                        _make_run4(_pp[3], f'（¥{all_rows_pp[3][1]:,.0f}）に到達します。', color='#CCCCCC', size_pt=10)
+                    except Exception: pass
 
-                    # para4: CAC回収期間（bullet=•）
-                    _make_run4(_pp[4], f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 ', color='#CCCCCC', size_pt=10)
+                    # para4: CAC回収期間（bullet=•）— 独立try/exceptで必ず書く
+                    try:
+                        _cac_rev_s = cac_recover_rev_str
+                        _cac_gp_s  = cac_recover_gp_str
+                        _make_run4(_pp[4], f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 ', color='#CCCCCC', size_pt=10)
+                        _make_run4(_pp[4], _cac_rev_s, bold=True, color='#A8DADC', size_pt=10)
+                        _make_run4(_pp[4], ' / 粗利ベース 約 ', color='#CCCCCC', size_pt=10)
+                        _make_run4(_pp[4], _cac_gp_s, bold=True, color='#56B4D3', size_pt=10)
+                    except Exception: pass
+
                     _make_run4(_pp[4], cac_recover_rev_str, bold=True, color='#A8DADC', size_pt=10)
                     _make_run4(_pp[4], ' / 粗利ベース 約 ', color='#CCCCCC', size_pt=10)
                     _make_run4(_pp[4], cac_recover_gp_str, bold=True, color='#56B4D3', size_pt=10)
@@ -12670,6 +12680,124 @@ if True:
                 avg_cac = sum(r['cac'] for r in pp_rows) / len(pp_rows)
                 premium = (best['ltv_r'] - avg_ltv) / avg_ltv * 100
                 cac_diff = best['cac'] - avg_cac
+
+                # ── Slide 7: LTV∞比較棒グラフ ──
+                s7 = _copy_slide(prs, 6)
+                for sh in s7.shapes:
+                    if sh.name == 'タイトル 4':
+                        _set_text(sh, f'{sc}: LTV∞')
+                    elif sh.name == 'テキスト プレースホルダー 5':
+                        cac_diff_str = (f"+¥{cac_diff:,.0f}高く設定可能"
+                                       if cac_diff >= 0 else f"¥{abs(cac_diff):,.0f}低め")
+                        if sh.has_text_frame:
+                            tf = sh.text_frame
+                            _lines = [
+                                f"TOP PICK　{best['seg']}",
+                                f"LTV∞(売上): ¥{best['ltv_r']:,.0f}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 ¥{best['cac']:,.0f}（全セグメント平均より{cac_diff_str}）"
+                            ]
+                            for i, para in enumerate(tf.paragraphs):
+                                for run in para.runs: run.text = ''
+                                if i < len(_lines) and para.runs:
+                                    para.runs[0].text = _lines[i]
+                    elif sh.name == 'コンテンツ プレースホルダー 7':
+                        # 棒グラフ: matplotlib(軸) + Pillow(日本語テキスト)
+                        import matplotlib
+                        matplotlib.use('Agg')
+                        import matplotlib.pyplot as _plt_bar
+                        import matplotlib.ticker as _mticker
+                        import numpy as _np_bar
+                        from PIL import Image as _PILImg, ImageDraw as _PILDraw, ImageFont as _PILFont
+                        _PIL_FP = '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf'
+                        try:
+                            _fp_pil = _PILFont.truetype(_PIL_FP, 18)
+                            _fp_pil_sm = _PILFont.truetype(_PIL_FP, 15)
+                        except Exception:
+                            _fp_pil = _PILFont.load_default(); _fp_pil_sm = _fp_pil
+                        _segs = [r['seg'] for r in pp_rows]
+                        _ltvs = [r['ltv_r'] for r in pp_rows]
+                        _cols7 = ['#56b4d3' if r['seg'] == best['seg'] else '#a8dadc' for r in pp_rows]
+                        _xs7 = _np_bar.arange(len(_segs))
+                        _DPI7 = 130
+                        _fig7, _ax7 = _plt_bar.subplots(figsize=(10.7, 4.2), dpi=_DPI7)
+                        _fig7.patch.set_facecolor('#111820'); _ax7.set_facecolor('#111820')
+                        _ax7.set_axisbelow(True)
+                        _ax7.grid(axis='y', alpha=0.2, color='#1a3040', zorder=0)
+                        _bars7 = _ax7.bar(_xs7, _ltvs, color=_cols7, width=0.55, zorder=2)
+                        _ax7.set_xticks(list(_xs7)); _ax7.set_xticklabels([' ']*len(_segs))
+                        _ax7.set_ylabel(' ')
+                        _ax7.tick_params(axis='y', colors='#888', labelsize=8)
+                        _ax7.yaxis.set_major_formatter(_mticker.FuncFormatter(lambda v,_: f'¥{v:,.0f}'))
+                        _ax7.set_ylim(min(_ltvs)*0.9, max(_ltvs)*1.10)
+                        for _sp7 in _ax7.spines.values(): _sp7.set_color('#1a3040')
+                        _fig7.tight_layout()
+                        _buf7r = io.BytesIO()
+                        _fig7.savefig(_buf7r, format='png', dpi=_DPI7, bbox_inches='tight', facecolor='#111820')
+                        _buf7r.seek(0)
+                        def _d2px7(ax, fig, x, y, dpi):
+                            disp = ax.transData.transform((x, y))
+                            return int(disp[0]), int(fig.get_size_inches()[1]*dpi - disp[1])
+                        _img7 = _PILImg.open(_buf7r).convert('RGBA')
+                        _iw7, _ih7 = _img7.size
+                        _ov7 = _PILImg.new('RGBA', (_iw7, _ih7), (0,0,0,0))
+                        _dr7 = _PILDraw.Draw(_ov7)
+                        for _b7, _seg7, _v7 in zip(_bars7, _segs, _ltvs):
+                            _cx7 = _b7.get_x() + _b7.get_width()/2
+                            _px7, _py7 = _d2px7(_ax7, _fig7, _cx7, _v7, _DPI7)
+                            _val_t = f'¥{_v7:,.0f}'
+                            _tw7 = _dr7.textlength(_val_t, font=_fp_pil_sm)
+                            _dr7.text((int(_px7-_tw7/2), _py7-26), _val_t, font=_fp_pil_sm, fill='#cccccc')
+                            _bpx7, _bpy7 = _d2px7(_ax7, _fig7, _cx7, _ax7.get_ylim()[0], _DPI7)
+                            _tw8 = _dr7.textlength(_seg7, font=_fp_pil_sm)
+                            _dr7.text((int(_px7-_tw8/2), _bpy7+4), _seg7, font=_fp_pil_sm, fill='#cccccc')
+                        _, _mpy7 = _d2px7(_ax7, _fig7, _ax7.get_xlim()[0], (_ax7.get_ylim()[0]+_ax7.get_ylim()[1])/2, _DPI7)
+                        _yl_t = 'LTV∞（¥）'
+                        _dr7.text((4, int(_mpy7-8)), _yl_t, font=_fp_pil_sm, fill='#888888')
+                        _plt_bar.close()
+                        _res7 = _PILImg.alpha_composite(_img7, _ov7).convert('RGB')
+                        _buf_bar = io.BytesIO(); _res7.save(_buf_bar, format='PNG'); _buf_bar.seek(0)
+                        _replace_image(s7, sh, _buf_bar)
+
+                # ── Slide 8: セグメントサマリー ──
+                s8 = _copy_slide(prs, 7)
+                for sh in s8.shapes:
+                    if sh.name == 'テキスト プレースホルダー 4' and sh.has_text_frame:
+                        _set_text(sh, f'セグメント分析結果のサマリー：{sc}')
+                    elif sh.shape_type == 19:
+                        _tbl8 = sh.table
+                        _wa_n = sum(r['n'] for r in pp_rows)
+                        _wa_r = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n
+                        _wa_g = sum(r['ltv_g']*r['n'] for r in pp_rows) / _wa_n
+                        _all_rows_t = pp_rows + [{'seg':'加重平均','n':_wa_n,'ltv_r':_wa_r,'ltv_g':_wa_g,
+                            'cac':_wa_g/cac_n,'k':None,'lam':None,'r2':None}]
+                        for _ri, _row in enumerate(_all_rows_t):
+                            if _ri + 1 >= len(_tbl8.rows): break
+                            _vals8 = [_row['seg'], f"{_row['n']:,}",
+                                f"¥{_row['ltv_r']:,.0f}", f"¥{_row['ltv_g']:,.0f}", f"¥{_row['cac']:,.0f}",
+                                f"{_row['k']:.3f}" if _row['k'] is not None else '—',
+                                f"{_row['lam']:.1f}" if _row['lam'] is not None else '—',
+                                f"{_row['r2']:.3f}" if _row['r2'] is not None else '—']
+                            for _ci, _v8 in enumerate(_vals8):
+                                if _ci >= len(_tbl8.columns): break
+                                _cell8 = _tbl8.rows[_ri+1].cells[_ci]
+                                _tf8 = _cell8.text_frame
+                                for _p8 in _tf8.paragraphs:
+                                    for _r8 in _p8.runs: _r8.text = ''
+                                if _tf8.paragraphs and _tf8.paragraphs[0].runs:
+                                    _tf8.paragraphs[0].runs[0].text = _v8
+                    elif sh.name == 'テキスト ボックス 9':
+                        _wa_n2 = sum(r['n'] for r in pp_rows)
+                        _wa_r2 = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n2
+                        _diff_p = (_wa_r2 - ltv_rev) / ltv_rev * 100
+                        _note_body = (f"\xa0— 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
+                            f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
+                            f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。")
+                        if sh.has_text_frame and sh.text_frame.paragraphs:
+                            p = sh.text_frame.paragraphs[0]
+                            for run in p.runs: run.text = ''
+                            if len(p.runs) >= 2:
+                                p.runs[0].text = 'NOTE'; p.runs[1].text = _note_body
+                            elif len(p.runs) == 1:
+                                p.runs[0].text = 'NOTE' + _note_body
 
 
                 # ── Slide 9〜: セグメント詳細 (TOP PICK優先) ──
