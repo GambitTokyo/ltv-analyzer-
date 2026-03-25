@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v215</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v216</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -13420,7 +13420,7 @@ if segment_cols_input.strip():
                 avg_ltv     = seg_df['LTV∞（売上）'].mean()
                 premium     = (best_seg['LTV∞（売上）'] - avg_ltv) / avg_ltv * 100
                 cac_best    = best_seg['CAC上限（粗利）']
-                cac_avg_seg = weighted_cac  # 顧客数加重平均CAC
+                cac_avg_seg = (seg_df['CAC上限（粗利）'] * seg_df['顧客数']).sum() / seg_df['顧客数'].sum()
                 cac_diff    = cac_best - cac_avg_seg
                 cac_str     = f"許容CAC上限 ¥{cac_best:,.0f}（全セグメント平均より¥{abs(cac_diff):,.0f}{'高く' if cac_diff >= 0 else '低く'}設定可能）"
                 st.markdown(f"""
