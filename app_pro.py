@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v198</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v199</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -9521,9 +9521,12 @@ if True:
             return new
 
         def _set_text(shape, text):
-            """shapeの最初のrun のテキストを設定"""
+            """shapeの全runをクリアして最初のrunにテキストを設定"""
             if not shape.has_text_frame: return
             tf = shape.text_frame
+            for _para in tf.paragraphs:
+                for _run in _para.runs:
+                    _run.text = ''
             if tf.paragraphs and tf.paragraphs[0].runs:
                 tf.paragraphs[0].runs[0].text = text
 
@@ -9717,19 +9720,71 @@ if True:
                 if sh.has_text_frame:
                     tf = sh.text_frame
                     k_type = '強い初期離脱型' if k < 0.7 else ('初期離脱型' if k < 1.0 else '逓増型')
-                    _s4_lines = [
-                        'このテーブルの読み方',
-                        f'λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。',
-                        f'k={k:.3f}（{k_type}）: 契約直後に大量離脱するパターンです。LTV\u221e は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。CAC投資判断には暫定LTV（現実的な期間）を使ってください。',
-                        f'LTV\u221e（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。\x0b1年時点でLTV\u221eの{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）、\xa02年時点で{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）、\xa03年時点で{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。',
-                        '',
-                        f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約\xa0{cac_recover_rev_str}\xa0/ 粗利ベース 約\xa0{cac_recover_gp_str}（契約から）',
-                    ]
-                    for i, para in enumerate(tf.paragraphs):
-                        for run in para.runs: run.text = ''
-                        if i < len(_s4_lines) and para.runs:
-                            para.runs[0].text = _s4_lines[i]
-                            para.runs[0].font.size = _Pt(10)
+                    from pptx.util import Pt as _Pt4, RGBColor as _RGB4
+                    from pptx.oxml.ns import qn as _qn4
+                    from lxml import etree as _et4
+                    import copy as _copy4
+
+                    def _make_run(para, text, bold=False, color=None, size=9):
+                        """パラグラフに新しいrunを追加する"""
+                        r = _et4.SubElement(para._p, _qn4('a:r'))
+                        rPr = _et4.SubElement(r, _qn4('a:rPr'), attrib={'lang':'ja-JP','altLang':'en-US','dirty':'0'})
+                        if bold:
+                            rPr.set('b', '1')
+                        if size:
+                            rPr.set('sz', str(int(size * 100)))
+                        if color:
+                            solidFill = _et4.SubElement(rPr, _qn4('a:solidFill'))
+                            srgb = _et4.SubElement(solidFill, _qn4('a:srgbClr'))
+                            srgb.set('val', color.replace('#',''))
+                        t = _et4.SubElement(r, _qn4('a:t'))
+                        t.text = text
+                        return r
+
+                    # テキストフレームの全段落をクリア
+                    for para in tf.paragraphs:
+                        for r in para._p.findall(_qn4('a:r')):
+                            para._p.remove(r)
+
+                    # 段落数を確認・調整（最低7段落必要）
+                    _needed = 7
+                    while len(tf.paragraphs) < _needed:
+                        _new_p = _et4.SubElement(tf._txBody, _qn4('a:p'))
+
+                    _paras = tf.paragraphs
+
+                    # 段落0: 「このテーブルの読み方」（小見出し）
+                    _make_run(_paras[0], 'このテーブルの読み方', bold=True, color='#3a6a7a', size=8)
+
+                    # 段落1: 空行（テーブルとの間隔）
+                    pass  # 空のまま
+
+                    # 段落2: λ説明
+                    _make_run(_paras[2], f'・λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）は中程度の継続期間で、1〜2年継続する顧客が多いビジネスです。', size=9)
+
+                    # 段落3: k説明
+                    _make_run(_paras[3], f'・k={k:.3f}（{k_type}）: 契約直後に大量離脱するパターンです。LTV∞ は大きく見えますが少数の超長期顧客の分が含まれており、99%到達まで長期間かかります。CAC投資判断には暫定LTV（現実的な期間）を使ってください。', size=9)
+
+                    # 段落4: LTV∞説明（1行で、年次データを色付きで）
+                    _make_run(_paras[4], f'・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。', size=9)
+                    _make_run(_paras[4], f'1年時点', color='#56b4d3', size=9)
+                    _make_run(_paras[4], f'でLTV∞の', size=9)
+                    _make_run(_paras[4], f'{all_rows_pp[1][4]:.1f}%（¥{all_rows_pp[1][1]:,.0f}）', bold=True, color='#a8dadc', size=9)
+                    _make_run(_paras[4], f'、', size=9)
+                    _make_run(_paras[4], f'2年時点', color='#56b4d3', size=9)
+                    _make_run(_paras[4], f'で', size=9)
+                    _make_run(_paras[4], f'{all_rows_pp[2][4]:.1f}%（¥{all_rows_pp[2][1]:,.0f}）', bold=True, color='#a8dadc', size=9)
+                    _make_run(_paras[4], f'、', size=9)
+                    _make_run(_paras[4], f'3年時点', color='#56b4d3', size=9)
+                    _make_run(_paras[4], f'で', size=9)
+                    _make_run(_paras[4], f'{all_rows_pp[3][4]:.1f}%（¥{all_rows_pp[3][1]:,.0f}）に到達します。', bold=True, color='#a8dadc', size=9)
+
+                    # 段落5: CAC説明（色付き）
+                    _make_run(_paras[5], f'・CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 ', size=9)
+                    _make_run(_paras[5], f'{cac_recover_rev_str}', bold=True, color='#a8dadc', size=9)
+                    _make_run(_paras[5], f' / 粗利ベース 約 ', size=9)
+                    _make_run(_paras[5], f'{cac_recover_gp_str}', bold=True, color='#56b4d3', size=9)
+                    _make_run(_paras[5], f'（契約から）', size=9)
 
         # ══════════════════════════════════════════════
         # Slide 5: 暫定LTVグラフ
@@ -9741,6 +9796,7 @@ if True:
         if _fp5: _plt5.rcParams['font.family'] = _fp5.get_name()
         _fig5, _ax5 = _plt5.subplots(figsize=(10, 3.5))
         _fig5.patch.set_facecolor('#111820'); _ax5.set_facecolor('#111820')
+        _fp5k = dict(fontproperties=_fp5) if _fp5 else {}
         _ax5.plot(t_range, rev_line, color='#56b4d3', lw=2, label='LTV（売上）')
         _ax5.plot(t_range, gp_line,  color='#a8dadc', lw=2, ls='--', label='LTV（粗利）')
         _ax5.plot(t_range, cac_line, color='#4a7a8a', lw=1.5, ls=':', label='CAC上限')
@@ -9748,13 +9804,16 @@ if True:
         _ax5.axvline(lam_actual, color='#a8dadc', lw=1.2, ls='--', alpha=0.7)
         _xtick_vals = [180, 365, 730, 1095, 1460, 1825]
         _ax5.set_xticks(_xtick_vals)
-        _ax5.set_xticklabels(['180日', '1年', '2年', '3年', '4年', '5年'])
+        _ax5.set_xticklabels(['180日', '1年', '2年', '3年', '4年', '5年'], **({k:v for k,v in {'fontproperties':_fp5}.items() if _fp5} if _fp5 else {}))
         _ax5.set_xlim(0, x_max + 50)
-        _ax5.set_xlabel('継続期間', color='#888', fontsize=9)
-        _ax5.set_ylabel('金額（円）', color='#888', fontsize=9)
+        _ax5.set_xlabel('継続期間', color='#888', fontsize=9, **_fp5k)
+        _ax5.set_ylabel('金額（円）', color='#888', fontsize=9, **_fp5k)
         _ax5.tick_params(colors='#888')
         _ax5.yaxis.set_major_formatter(_plt5.FuncFormatter(lambda v, _: f'¥{v:,.0f}'))
-        _ax5.legend(fontsize=8, framealpha=0.2, labelcolor='white', loc='upper left')
+        if _fp5:
+            _ax5.legend(fontsize=8, framealpha=0.2, labelcolor='white', loc='upper left', prop=_fp5)
+        else:
+            _ax5.legend(fontsize=8, framealpha=0.2, labelcolor='white', loc='upper left')
         _ax5.grid(True, alpha=0.2, color='#1a3040')
         for _sp5 in _ax5.spines.values(): _sp5.set_color('#1a3040')
         _fig5.tight_layout()
@@ -9832,7 +9891,7 @@ if True:
                         if sh.has_text_frame:
                             tf = sh.text_frame
                             lines = [
-                                f"Top Pick　{best['seg']}",
+                                f"TOP PICK　{best['seg']}",
                                 f"LTV∞(売上): ¥{best['ltv_r']:,.0f}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 ¥{best['cac']:,.0f}（全セグメント平均より{cac_diff_str}）"
                             ]
                             for i, para in enumerate(tf.paragraphs):
@@ -9852,16 +9911,19 @@ if True:
                         _ltvs = [r['ltv_r'] for r in pp_rows]
                         _cols = ['#56b4d3' if r['seg'] == best['seg'] else '#a8dadc' for r in pp_rows]
                         _xs = range(len(_segs))
-                        _bars = _ax.bar(_xs, _ltvs, color=_cols, width=0.55)
+                        _fp_bk = dict(fontproperties=_fp_bar) if _fp_bar else {}
+                        _ax.set_axisbelow(True)
+                        _ax.grid(axis='y', alpha=0.2, color='#1a3040', zorder=0)
+                        _bars = _ax.bar(_xs, _ltvs, color=_cols, width=0.55, zorder=2)
                         _ax.set_xticks(list(_xs))
-                        _ax.set_xticklabels(_segs, fontsize=8, color='#cccccc')
+                        _ax.set_xticklabels(_segs, fontsize=8, color='#cccccc', **_fp_bk)
                         for _b, _v in zip(_bars, _ltvs):
                             _ax.text(_b.get_x()+_b.get_width()/2, _b.get_height()+max(_ltvs)*0.01,
-                                    f'¥{_v:,.0f}', ha='center', va='bottom', fontsize=9, color='#cccccc')
-                        _ax.set_ylabel('LTV∞（¥）', color='#888', fontsize=9)
+                                    f'¥{_v:,.0f}', ha='center', va='bottom', fontsize=9, color='#cccccc',
+                                    **_fp_bk, zorder=3)
+                        _ax.set_ylabel('LTV∞（¥）', color='#888', fontsize=9, **_fp_bk)
                         _ax.tick_params(axis='y', colors='#888', labelsize=8)
                         _ax.yaxis.set_major_formatter(_mticker.FuncFormatter(lambda v,_: f'¥{v:,.0f}'))
-                        _ax.grid(axis='y', alpha=0.2, color='#1a3040')
                         for _sp in _ax.spines.values(): _sp.set_color('#1a3040')
                         _fig.tight_layout()
                         _buf_bar = io.BytesIO()
@@ -9873,7 +9935,9 @@ if True:
                 s8 = _copy_slide(prs, 7)
 
                 for sh in s8.shapes:
-                    if sh.name == 'コンテンツ プレースホルダー 6':
+                    if sh.name == 'テキスト プレースホルダー 4' and sh.has_text_frame:
+                        _set_text(sh, f'セグメント分析結果のサマリー：{sc}')
+                    elif sh.name == 'コンテンツ プレースホルダー 6':
                         # サマリーテーブル画像生成
                         import matplotlib.pyplot as _plt_t
                         import matplotlib.patches as _mpatch
@@ -9894,11 +9958,12 @@ if True:
                         _bg = _mpatch.FancyBboxPatch((0, 1-_hdr_h), 1, _hdr_h,
                             boxstyle='square,pad=0', facecolor='#0D1F2D', transform=_ax_t.transAxes)
                         _ax_t.add_patch(_bg)
+                        _fp_tk = dict(fontproperties=_fp_t) if _fp_t else {}
                         for _cx, _cw, _h in zip(_col_x, _norm_w, _hdrs):
                             _al = 'left' if _cx == 0 else 'right'
                             _tx = _cx + (0.01 if _al == 'left' else _cw - 0.01)
                             _ax_t.text(_tx, 1-_hdr_h/2, _h, transform=_ax_t.transAxes,
-                                      ha=_al, va='center', fontsize=7.5, color='#56B4D3', fontweight='bold')
+                                      ha=_al, va='center', fontsize=7.5, color='#56B4D3', fontweight='bold', **_fp_tk)
                         # データ行
                         _wa_n = sum(r['n'] for r in pp_rows)
                         _wa_r = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n
@@ -9924,7 +9989,7 @@ if True:
                                 _al2 = 'left' if _cx2 == 0 else 'right'
                                 _tx2 = _cx2 + (0.01 if _al2=='left' else _cw2-0.01)
                                 _ax_t.text(_tx2, _y+_rh/2, _v2, transform=_ax_t.transAxes,
-                                          ha=_al2, va='center', fontsize=7.5, color=_tc)
+                                          ha=_al2, va='center', fontsize=7.5, color=_tc, **_fp_tk)
                         _fig_t.tight_layout(pad=0)
                         _buf_t = io.BytesIO()
                         _fig_t.savefig(_buf_t, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
@@ -9970,12 +10035,19 @@ if True:
                         # タイトル更新
                         for sh in s9.shapes:
                             if sh.name == 'タイトル 8':
-                                # 全runをクリアしてから設定
+                                # 全runをクリアしてから設定（タイトルはsc: sv のみ）
                                 if sh.has_text_frame:
                                     for para in sh.text_frame.paragraphs:
                                         for run in para.runs: run.text = ''
                                     if sh.text_frame.paragraphs and sh.text_frame.paragraphs[0].runs:
                                         sh.text_frame.paragraphs[0].runs[0].text = f'{sc}: {str(sv)}'
+                            elif sh.name == 'テキスト ボックス 17':
+                                # TOP PICK ラベル（S9 Top Pickスライドのみ存在）
+                                if sh.has_text_frame:
+                                    for para in sh.text_frame.paragraphs:
+                                        for run in para.runs: run.text = ''
+                                    if sh.text_frame.paragraphs and sh.text_frame.paragraphs[0].runs:
+                                        sh.text_frame.paragraphs[0].runs[0].text = 'TOP PICK　'
                             elif sh.name == 'Picture 6':
                                 # Survival Curve
                                 import matplotlib.pyplot as _plt_sv
