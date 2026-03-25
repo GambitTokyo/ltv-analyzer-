@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v221</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v222</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -12567,71 +12567,90 @@ if True:
                     _make_run4(_pp[5], ' を用いてCAC上限を算出してください。λは多くの顧客が離脱するまでの期間の目安をデータが示した答えです。', color='#CCCCCC', size_pt=10)
         # ══════════════════════════════════════════════
         # ══════════════════════════════════════════════
-        # Slide 5: 暫定LTVグラフ
+        # Slide 5: 暫定LTVグラフ（元レポート完全再現版）
         # ══════════════════════════════════════════════
-        # matplotlib(軸) + Pillow(日本語テキスト合成)
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as _plt5
         import matplotlib.ticker as _mticker5
         from PIL import Image as _PILImg5, ImageDraw as _PILDraw5, ImageFont as _PILFont5
-        _PIL_FP5 = '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf'
+        _PIL_FP5 = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
         try:
-            _pf5 = _PILFont5.truetype(_PIL_FP5, 16)
-            _pf5s = _PILFont5.truetype(_PIL_FP5, 14)
+            _pf5_10 = _PILFont5.truetype(_PIL_FP5, 10)
+            _pf5_11 = _PILFont5.truetype(_PIL_FP5, 11)
+            _pf5_12 = _PILFont5.truetype(_PIL_FP5, 12)
         except Exception:
-            _pf5 = _PILFont5.load_default(); _pf5s = _pf5
+            _pf5_10 = _pf5_11 = _pf5_12 = _PILFont5.load_default()
         _DPI5 = 150
-        _fig5, _ax5 = _plt5.subplots(figsize=(10, 3.5), dpi=_DPI5)
+        _FW5, _FH5 = 898/_DPI5, 280/_DPI5  # 元グラフ画像アスペクト比に合わせる
+        _fig5, _ax5 = _plt5.subplots(figsize=(_FW5, _FH5), dpi=_DPI5)
         _fig5.patch.set_facecolor('#111820'); _ax5.set_facecolor('#111820')
-        _ax5.plot(t_range, rev_line, color='#56b4d3', lw=2)
-        _ax5.plot(t_range, gp_line,  color='#a8dadc', lw=2, ls='--')
-        _ax5.plot(t_range, cac_line, color='#4a7a8a', lw=1.5, ls=':')
-        _ax5.axhline(ltv_rev, color='#56b4d3', lw=0.8, ls=':', alpha=0.5)
-        _ax5.axvline(lam_actual, color='#a8dadc', lw=1.2, ls='--', alpha=0.7)
+        _ax5.plot(t_range, rev_line, color='#56b4d3', lw=1.8, ls='-',  zorder=3)
+        _ax5.plot(t_range, gp_line,  color='#a8dadc', lw=1.8, ls='--', zorder=3)
+        _ax5.plot(t_range, cac_line, color='#4a7a8a', lw=1.4, ls=':',  zorder=3)
+        _ax5.axhline(ltv_rev, color='#56b4d3', lw=0.8, ls=':', alpha=0.5, zorder=2)
+        _ax5.axvline(lam_actual, color='#a8dadc', lw=1.0, ls='--', alpha=0.7, zorder=2)
+        _ax5.set_xlim(0, x_max + 30)
+        _ax5.set_ylim(0, 160000)
+        _ax5.set_yticks([0, 50000, 100000, 150000])
+        _ax5.yaxis.set_major_formatter(_plt5.FuncFormatter(lambda v, _: f'{int(v):,}'.replace(',', '')))
         _ax5.set_xticks([180, 365, 730, 1095, 1460, 1825])
-        _ax5.set_xticklabels([' ']*6)
-        _ax5.set_xlim(0, x_max + 50)
-        _ax5.set_xlabel(' '); _ax5.set_ylabel(' ')
-        _ax5.tick_params(colors='#888')
-        _ax5.yaxis.set_major_formatter(_plt5.FuncFormatter(lambda v, _: f'¥{v:,.0f}'))
-        _ax5.grid(True, alpha=0.2, color='#1a3040')
+        _ax5.set_xticklabels(['']*6)
+        _ax5.tick_params(colors='#888888', labelsize=8, length=0)
+        _ax5.yaxis.set_tick_params(labelsize=8)
+        _ax5.grid(True, alpha=0.15, color='#1a3040', zorder=1)
         for _sp5 in _ax5.spines.values(): _sp5.set_color('#1a3040')
-        _fig5.tight_layout()
+        _fig5.subplots_adjust(left=0.12, right=0.87, top=0.84, bottom=0.18)
         _buf5r = io.BytesIO()
-        _fig5.savefig(_buf5r, format='png', dpi=_DPI5, bbox_inches='tight', facecolor='#111820')
+        _fig5.savefig(_buf5r, format='png', dpi=_DPI5, facecolor='#111820')
         _buf5r.seek(0)
 
-        def _d2px5(ax, fig, x, y, dpi):
+        def _d2px5(ax, fig, x, y):
             disp = ax.transData.transform((x, y))
-            return int(disp[0]), int(fig.get_size_inches()[1]*dpi - disp[1])
+            return int(disp[0]), int(fig.get_size_inches()[1]*_DPI5 - disp[1])
 
         _img5 = _PILImg5.open(_buf5r).convert('RGBA')
         _iw5, _ih5 = _img5.size
         _ov5 = _PILImg5.new('RGBA', (_iw5, _ih5), (0,0,0,0))
         _dr5 = _PILDraw5.Draw(_ov5)
 
+        # 凡例（線スタイルで描画）
+        _leg_y5, _leg_x5 = 5, int(_iw5 * 0.08)
+        for _lt5, _lc5, _ls5 in [('LTV（売上）','#56b4d3','-'),('LTV（粗利）','#a8dadc','--'),('CAC上限','#4a7a8a',':')]:
+            _lx1, _lx2 = _leg_x5, _leg_x5 + 22; _ly5 = _leg_y5 + 7
+            if _ls5 == '-':
+                _dr5.line([(_lx1,_ly5),(_lx2,_ly5)], fill=_lc5, width=2)
+            elif _ls5 == '--':
+                for _s5 in range(3): _dr5.line([(_lx1+_s5*8,_ly5),(_lx1+_s5*8+5,_ly5)], fill=_lc5, width=2)
+            elif _ls5 == ':':
+                for _d5 in range(5): _dr5.line([(_lx1+_d5*5,_ly5),(_lx1+_d5*5+2,_ly5)], fill=_lc5, width=2)
+            _dr5.text((_lx2+4, _leg_y5), _lt5, font=_pf5_11, fill='white')
+            _leg_x5 += int(_dr5.textlength(_lt5, font=_pf5_11)) + 30
+
         # X軸ラベル
-        for _xv, _xl in zip([180,365,730,1095,1460,1825], ['180日','1年','2年','3年','4年','5年']):
-            _px5, _py5 = _d2px5(_ax5, _fig5, _xv, _ax5.get_ylim()[0], _DPI5)
-            _tw5 = _dr5.textlength(_xl, font=_pf5s)
-            _dr5.text((int(_px5-_tw5/2), _py5+4), _xl, font=_pf5s, fill='#888888')
+        _ybot5 = _ax5.get_ylim()[0]
+        for _xv5, _xl5 in zip([180,365,730,1095,1460,1825], ['180日','1年','2年','3年','4年','5年']):
+            _px5, _py5 = _d2px5(_ax5, _fig5, _xv5, _ybot5)
+            _tw5 = _dr5.textlength(_xl5, font=_pf5_10)
+            _dr5.text((int(_px5-_tw5/2), _py5+3), _xl5, font=_pf5_10, fill='#888888')
 
-        # 凡例
-        _legend_items = [('LTV（売上）','#56b4d3'), ('LTV（粗利）','#a8dadc'), ('CAC上限','#4a7a8a'), (f'LTV∞ ¥{ltv_rev:,.0f}','#56b4d3')]
-        _lx, _ly = 70, 10
-        for _lt, _lc in _legend_items:
-            _dr5.rectangle([_lx, _ly+3, _lx+18, _ly+13], fill=_lc)
-            _dr5.text((_lx+22, _ly), _lt, font=_pf5s, fill='white')
-            _lx += int(_dr5.textlength(_lt, font=_pf5s)) + 50
+        # X軸タイトル「継続期間」
+        _cx5, _cy5 = _d2px5(_ax5, _fig5, (x_max+30)/2, _ybot5)
+        _xt5 = '継続期間'; _tw_xt5 = _dr5.textlength(_xt5, font=_pf5_12)
+        _dr5.text((int(_cx5-_tw_xt5/2), _cy5+16), _xt5, font=_pf5_12, fill='#888888')
 
-        # 軸ラベル
-        _, _mpy5 = _d2px5(_ax5, _fig5, _ax5.get_xlim()[0], (_ax5.get_ylim()[0]+_ax5.get_ylim()[1])/2, _DPI5)
-        _dr5.text((2, int(_mpy5-8)), '金額（円）', font=_pf5s, fill='#888888')
-        _cpx5, _cpy5 = _d2px5(_ax5, _fig5, (x_max+50)/2, _ax5.get_ylim()[0], _DPI5)
-        _xt5 = '継続期間'
-        _tw_xt5 = _dr5.textlength(_xt5, font=_pf5s)
-        _dr5.text((int(_cpx5-_tw_xt5/2), _cpy5+22), _xt5, font=_pf5s, fill='#888888')
+        # Y軸ラベル「金額（円）」縦書き
+        _, _my5 = _d2px5(_ax5, _fig5, _ax5.get_xlim()[0], (_ax5.get_ylim()[0]+_ax5.get_ylim()[1])/2)
+        for _i5, _ch5 in enumerate('金額（円）'):
+            _dr5.text((2, _my5-33+_i5*13), _ch5, font=_pf5_10, fill='#888888')
+
+        # λアノテーション
+        _lxp5, _lyp5 = _d2px5(_ax5, _fig5, lam_actual, _ax5.get_ylim()[1]*0.96)
+        _dr5.text((_lxp5+4, _lyp5-12), f'λ={int(lam_actual)}日', font=_pf5_10, fill='white')
+
+        # LTV∞右端ラベル
+        _rx5, _ry5 = _d2px5(_ax5, _fig5, x_max+25, ltv_rev)
+        _dr5.text((_rx5-2, _ry5-9), f'LTV∞ ¥{ltv_rev:,.0f}', font=_pf5_10, fill='#56b4d3')
 
         _plt5.close()
         _res5 = _PILImg5.alpha_composite(_img5, _ov5).convert('RGB')
@@ -12641,15 +12660,18 @@ if True:
         s5 = prs.slides[4]
         for sh in s5.shapes:
             if sh.name == 'コンテンツ プレースホルダー 7':
-                # グラフサイズをPPTXから読み取った値に拡大
-                from pptx.util import Inches as _In5, Pt as _Pt5
                 sh.left   = int(0.629 * 914400)
                 sh.top    = int(1.857 * 914400)
                 sh.width  = int(12.075 * 914400)
                 sh.height = int(3.765 * 914400)
                 _replace_image(s5, sh, _buf5)
             elif sh.name == 'タイトル 5' and sh.has_text_frame:
-                _set_text(sh, '暫定 LTV — 観測期間別の推移グラフ')
+                tf = sh.text_frame
+                for _p5 in tf.paragraphs:
+                    if _p5.runs:
+                        _p5.runs[0].text = '暫定 LTV — 観測期間別の推移グラフ'
+                        for _r5 in _p5.runs[1:]: _r5.text = ''
+                        break
 
         # ══════════════════════════════════════════════
         # Slide 6〜: セグメント別
