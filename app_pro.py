@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v206</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v207</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -12469,7 +12469,7 @@ if True:
                     _set_table_row(tbl, r_idx + 1,
                         [label, f'¥{lr:,.0f}', f'¥{lg:,.0f}', f'¥{lc:,.0f}', f'{pct:.1f}%'])
             elif sh.name == 'テキスト ボックス 3':
-                sh.top = int(5.05 * 914400)
+                sh.top = int(4.85 * 914400)
                 if sh.has_text_frame:
                     tf = sh.text_frame
                     k_type = '強い初期離脱型' if k < 0.7 else ('初期離脱型' if k < 1.0 else '逓増型')
@@ -12541,42 +12541,78 @@ if True:
                     _make_run4(_pp[5], f'λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}', bold=True, color='#A8DADC', size_pt=10)
                     _make_run4(_pp[5], ' を用いてCAC上限を算出してください。λは多くの顧客が離脱するまでの期間の目安をデータが示した答えです。', color='#CCCCCC', size_pt=10)
         # ══════════════════════════════════════════════
+        # ══════════════════════════════════════════════
         # Slide 5: 暫定LTVグラフ
         # ══════════════════════════════════════════════
-        # buf_ltvを日本語フォントで再生成
+        # matplotlib(軸) + Pillow(日本語テキスト合成)
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as _plt5
-        import matplotlib.font_manager as _fm5
-        if _JP_FONT_PATH: _fm5.fontManager.addfont(_JP_FONT_PATH)
-        if _JP_FONT_NAME:
-            _plt5.rcParams['font.family'] = _JP_FONT_NAME
-            _plt5.rcParams['axes.unicode_minus'] = False
-        _fp5 = _fm5.FontProperties(fname=_JP_FONT_PATH) if _JP_FONT_PATH else None
-        _fig5, _ax5 = _plt5.subplots(figsize=(10, 3.5))
+        import matplotlib.ticker as _mticker5
+        from PIL import Image as _PILImg5, ImageDraw as _PILDraw5, ImageFont as _PILFont5
+        _PIL_FP5 = '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf'
+        try:
+            _pf5 = _PILFont5.truetype(_PIL_FP5, 16)
+            _pf5s = _PILFont5.truetype(_PIL_FP5, 14)
+        except Exception:
+            _pf5 = _PILFont5.load_default(); _pf5s = _pf5
+        _DPI5 = 150
+        _fig5, _ax5 = _plt5.subplots(figsize=(10, 3.5), dpi=_DPI5)
         _fig5.patch.set_facecolor('#111820'); _ax5.set_facecolor('#111820')
-        _ax5.plot(t_range, rev_line, color='#56b4d3', lw=2, label='LTV（売上）')
-        _ax5.plot(t_range, gp_line,  color='#a8dadc', lw=2, ls='--', label='LTV（粗利）')
-        _ax5.plot(t_range, cac_line, color='#4a7a8a', lw=1.5, ls=':', label='CAC上限')
-        _ax5.axhline(ltv_rev, color='#56b4d3', lw=0.8, ls=':', alpha=0.5, label=f'LTV∞ ¥{ltv_rev:,.0f}')
+        _ax5.plot(t_range, rev_line, color='#56b4d3', lw=2)
+        _ax5.plot(t_range, gp_line,  color='#a8dadc', lw=2, ls='--')
+        _ax5.plot(t_range, cac_line, color='#4a7a8a', lw=1.5, ls=':')
+        _ax5.axhline(ltv_rev, color='#56b4d3', lw=0.8, ls=':', alpha=0.5)
         _ax5.axvline(lam_actual, color='#a8dadc', lw=1.2, ls='--', alpha=0.7)
         _ax5.set_xticks([180, 365, 730, 1095, 1460, 1825])
-        _ax5.set_xticklabels(['180日', '1年', '2年', '3年', '4年', '5年'],
-            **({'fontproperties': _fp5} if _fp5 else {'fontsize': 9}))
+        _ax5.set_xticklabels([' ']*6)
         _ax5.set_xlim(0, x_max + 50)
-        _ax5.set_xlabel('継続期間', color='#888', **({'fontproperties': _fp5} if _fp5 else {'fontsize': 9}))
-        _ax5.set_ylabel('金額（円）', color='#888', **({'fontproperties': _fp5} if _fp5 else {'fontsize': 9}))
+        _ax5.set_xlabel(' '); _ax5.set_ylabel(' ')
         _ax5.tick_params(colors='#888')
         _ax5.yaxis.set_major_formatter(_plt5.FuncFormatter(lambda v, _: f'¥{v:,.0f}'))
-        _ax5.legend(framealpha=0.2, labelcolor='white', loc='upper left',
-            **({'prop': _fp5} if _fp5 else {'fontsize': 8}))
         _ax5.grid(True, alpha=0.2, color='#1a3040')
         for _sp5 in _ax5.spines.values(): _sp5.set_color('#1a3040')
         _fig5.tight_layout()
-        _buf5 = io.BytesIO()
-        _fig5.savefig(_buf5, format='png', dpi=150, bbox_inches='tight', facecolor='#111820')
-        _buf5.seek(0); _plt5.close()
+        _buf5r = io.BytesIO()
+        _fig5.savefig(_buf5r, format='png', dpi=_DPI5, bbox_inches='tight', facecolor='#111820')
+        _buf5r.seek(0)
 
+        def _d2px5(ax, fig, x, y, dpi):
+            disp = ax.transData.transform((x, y))
+            return int(disp[0]), int(fig.get_size_inches()[1]*dpi - disp[1])
+
+        _img5 = _PILImg5.open(_buf5r).convert('RGBA')
+        _iw5, _ih5 = _img5.size
+        _ov5 = _PILImg5.new('RGBA', (_iw5, _ih5), (0,0,0,0))
+        _dr5 = _PILDraw5.Draw(_ov5)
+
+        # X軸ラベル
+        for _xv, _xl in zip([180,365,730,1095,1460,1825], ['180日','1年','2年','3年','4年','5年']):
+            _px5, _py5 = _d2px5(_ax5, _fig5, _xv, _ax5.get_ylim()[0], _DPI5)
+            _tw5 = _dr5.textlength(_xl, font=_pf5s)
+            _dr5.text((int(_px5-_tw5/2), _py5+4), _xl, font=_pf5s, fill='#888888')
+
+        # 凡例
+        _legend_items = [('LTV（売上）','#56b4d3'), ('LTV（粗利）','#a8dadc'), ('CAC上限','#4a7a8a'), (f'LTV∞ ¥{ltv_rev:,.0f}','#56b4d3')]
+        _lx, _ly = 70, 10
+        for _lt, _lc in _legend_items:
+            _dr5.rectangle([_lx, _ly+3, _lx+18, _ly+13], fill=_lc)
+            _dr5.text((_lx+22, _ly), _lt, font=_pf5s, fill='white')
+            _lx += int(_dr5.textlength(_lt, font=_pf5s)) + 50
+
+        # 軸ラベル
+        _, _mpy5 = _d2px5(_ax5, _fig5, _ax5.get_xlim()[0], (_ax5.get_ylim()[0]+_ax5.get_ylim()[1])/2, _DPI5)
+        _dr5.text((2, int(_mpy5-8)), '金額（円）', font=_pf5s, fill='#888888')
+        _cpx5, _cpy5 = _d2px5(_ax5, _fig5, (x_max+50)/2, _ax5.get_ylim()[0], _DPI5)
+        _xt5 = '継続期間'
+        _tw_xt5 = _dr5.textlength(_xt5, font=_pf5s)
+        _dr5.text((int(_cpx5-_tw_xt5/2), _cpy5+22), _xt5, font=_pf5s, fill='#888888')
+
+        _plt5.close()
+        _res5 = _PILImg5.alpha_composite(_img5, _ov5).convert('RGB')
+        _buf5 = io.BytesIO()
+        _res5.save(_buf5, format='PNG')
+        _buf5.seek(0)
         s5 = prs.slides[4]
         for sh in s5.shapes:
             if sh.name == 'コンテンツ プレースホルダー 6':
@@ -12635,116 +12671,6 @@ if True:
                 premium = (best['ltv_r'] - avg_ltv) / avg_ltv * 100
                 cac_diff = best['cac'] - avg_cac
 
-                # ── Slide 7: LTV∞比較棒グラフ（常に複製）──
-                s7 = _copy_slide(prs, 6)
-
-                for sh in s7.shapes:
-                    if sh.name == 'タイトル 4':
-                        _set_text(sh, f'{sc}: LTV∞')
-                    elif sh.name == 'テキスト プレースホルダー 5':
-                        cac_diff_str = (f"+¥{cac_diff:,.0f}高く設定可能"
-                                       if cac_diff >= 0 else f"¥{abs(cac_diff):,.0f}低め")
-                        if sh.has_text_frame:
-                            tf = sh.text_frame
-                            lines = [
-                                f"TOP PICK　{best['seg']}",
-                                f"LTV∞(売上): ¥{best['ltv_r']:,.0f}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 ¥{best['cac']:,.0f}（全セグメント平均より{cac_diff_str}）"
-                            ]
-                            for i, para in enumerate(tf.paragraphs):
-                                for run in para.runs: run.text = ''
-                                if i < len(lines) and para.runs:
-                                    para.runs[0].text = lines[i]
-                    elif sh.name == 'コンテンツ プレースホルダー 7':
-                        # 棒グラフ生成（日本語フォント設定）
-                        import matplotlib
-                        matplotlib.use('Agg')
-                        import matplotlib.pyplot as _plt_bar
-                        import matplotlib.ticker as _mticker
-                        import matplotlib.font_manager as _fm_bar
-                        if _JP_FONT_PATH: _fm_bar.fontManager.addfont(_JP_FONT_PATH)
-                        if _JP_FONT_NAME:
-                            _plt_bar.rcParams['font.family'] = _JP_FONT_NAME
-                            _plt_bar.rcParams['axes.unicode_minus'] = False
-                        _fp_bar = _fm_bar.FontProperties(fname=_JP_FONT_PATH) if _JP_FONT_PATH else None
-                        _fig, _ax = _plt_bar.subplots(figsize=(10.7, 4.2))
-                        _fig.patch.set_facecolor('#111820'); _ax.set_facecolor('#111820')
-                        _segs = [r['seg'] for r in pp_rows]
-                        _ltvs = [r['ltv_r'] for r in pp_rows]
-                        _cols = ['#56b4d3' if r['seg'] == best['seg'] else '#a8dadc' for r in pp_rows]
-                        _xs = range(len(_segs))
-                        _ax.set_axisbelow(True)
-                        _ax.grid(axis='y', alpha=0.2, color='#1a3040', zorder=0)
-                        _bars = _ax.bar(_xs, _ltvs, color=_cols, width=0.55, zorder=2)
-                        _ax.set_xticks(list(_xs))
-                        _ax.set_xticklabels(_segs, color='#cccccc',
-                            **({'fontproperties': _fp_bar} if _fp_bar else {'fontsize': 8}))
-                        for _b, _v in zip(_bars, _ltvs):
-                            _ax.text(_b.get_x()+_b.get_width()/2, _b.get_height()+max(_ltvs)*0.01,
-                                    f'¥{_v:,.0f}', ha='center', va='bottom', color='#cccccc', zorder=3,
-                                    **({'fontproperties': _fp_bar} if _fp_bar else {'fontsize': 9}))
-                        _ax.set_ylabel('LTV∞（¥）', color='#888',
-                            **({'fontproperties': _fp_bar} if _fp_bar else {'fontsize': 9}))
-                        _ax.tick_params(axis='y', colors='#888', labelsize=8)
-                        _ax.yaxis.set_major_formatter(_mticker.FuncFormatter(lambda v,_: f'¥{v:,.0f}'))
-                        for _sp in _ax.spines.values(): _sp.set_color('#1a3040')
-                        _fig.tight_layout()
-                        _buf_bar = io.BytesIO()
-                        _fig.savefig(_buf_bar, format='png', dpi=130, bbox_inches='tight', facecolor='#111820')
-                        _buf_bar.seek(0); _plt_bar.close()
-                        _replace_image(s7, sh, _buf_bar)
-
-                # ── Slide 8: セグメントサマリー（常に複製）──
-                s8 = _copy_slide(prs, 7)
-
-                for sh in s8.shapes:
-                    if sh.name == 'テキスト プレースホルダー 4' and sh.has_text_frame:
-                        _set_text(sh, f'セグメント分析結果のサマリー：{sc}')
-                    elif sh.shape_type == 19:  # TABLE（コンテンツ プレースホルダー 7）
-                        # テンプレートのテーブルに直接書き込む
-                        _tbl8 = sh.table
-                        _wa_n = sum(r['n'] for r in pp_rows)
-                        _wa_r = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n
-                        _wa_g = sum(r['ltv_g']*r['n'] for r in pp_rows) / _wa_n
-                        _all_rows_t = pp_rows + [{'seg':'加重平均','n':_wa_n,'ltv_r':_wa_r,'ltv_g':_wa_g,
-                            'cac':_wa_g/cac_n,'k':None,'lam':None,'r2':None}]
-                        for _ri, _row in enumerate(_all_rows_t):
-                            if _ri + 1 >= len(_tbl8.rows): break
-                            _vals8 = [
-                                _row['seg'],
-                                f"{_row['n']:,}",
-                                f"¥{_row['ltv_r']:,.0f}",
-                                f"¥{_row['ltv_g']:,.0f}",
-                                f"¥{_row['cac']:,.0f}",
-                                f"{_row['k']:.3f}" if _row['k'] is not None else '—',
-                                f"{_row['lam']:.1f}" if _row['lam'] is not None else '—',
-                                f"{_row['r2']:.3f}" if _row['r2'] is not None else '—',
-                            ]
-                            for _ci, _v8 in enumerate(_vals8):
-                                if _ci >= len(_tbl8.columns): break
-                                _cell8 = _tbl8.rows[_ri + 1].cells[_ci]
-                                _tf8 = _cell8.text_frame
-                                for _p8 in _tf8.paragraphs:
-                                    for _r8 in _p8.runs: _r8.text = ''
-                                if _tf8.paragraphs and _tf8.paragraphs[0].runs:
-                                    _tf8.paragraphs[0].runs[0].text = _v8
-                    elif sh.name == 'テキスト ボックス 9':
-                        _wa_n2 = sum(r['n'] for r in pp_rows)
-                        _wa_r2 = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n2
-                        _diff_p = (_wa_r2 - ltv_rev) / ltv_rev * 100
-                        _note_body = (
-                            f"\xa0— 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。"
-                            f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
-                            f"広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。"
-                        )
-                        if sh.has_text_frame and sh.text_frame.paragraphs:
-                            p = sh.text_frame.paragraphs[0]
-                            for run in p.runs: run.text = ''
-                            # 新テンプレートは2run: run[0]=NOTE(bold,#3A6A7A), run[1]=本文(#888888)
-                            if len(p.runs) >= 2:
-                                p.runs[0].text = 'NOTE'
-                                p.runs[1].text = _note_body
-                            elif len(p.runs) == 1:
-                                p.runs[0].text = 'NOTE' + _note_body
 
                 # ── Slide 9〜: セグメント詳細 (TOP PICK優先) ──
                 _sv_order = sorted(seg_vals, key=lambda x: (0 if str(x) == best['seg'] else 1, str(x)))
@@ -12764,8 +12690,8 @@ if True:
                         lam_sv_disp = lam_sv + ltv_offset_days if business_type == '都度購入型' else lam_sv
                         is_best_sv = str(sv) == best['seg']
 
-                        # Top Pickはindex=8、それ以外はindex=9をコピー
-                        tmpl_idx = 8 if is_best_sv else 9
+                        # TOP PICK=index11（テキスト ボックス 17あり）、通常=index8
+                        tmpl_idx = 11 if is_best_sv else 8
                         s9 = _copy_slide(prs, tmpl_idx)
 
                         # タイトル更新
@@ -12871,12 +12797,10 @@ if True:
 
                 first_sc = False
 
-            # テンプレートの元スライド7〜10（index 6〜9）を削除
-            # ループで複製済みなので不要
+            # テンプレートの元スライド7〜12（index 6〜11）を削除
+            # セグメント詳細は末尾に複製済み
             _sldIdLst = prs.slides._sldIdLst
-            # 削除対象：セグメント処理前の元スライド（先頭から6〜9番目）
-            # 複製は末尾に追加されているので、index 6〜9を削除
-            _ids_to_remove = list(_sldIdLst)[6:10]
+            _ids_to_remove = list(_sldIdLst)[6:12]
             for _sldId in _ids_to_remove:
                 _rId = _sldId.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
                 try:
@@ -12886,8 +12810,7 @@ if True:
                 _sldIdLst.remove(_sldId)
 
         else:
-            # セグメントなし：Slide7〜10をPRSから削除
-            # 末尾から削除
+            # セグメントなし：Slide7〜12を全削除
             sldIdLst = prs.slides._sldIdLst
             while len(prs.slides) > 6:
                 last_sldId = list(sldIdLst)[-1]
