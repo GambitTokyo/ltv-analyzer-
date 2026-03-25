@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v219</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v220</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -12771,51 +12771,96 @@ if True:
                         _set_text(sh, f'セグメント分析結果のサマリー：{sc}')
                     elif sh.shape_type == 19:
                         _tbl8 = sh.table
+                        from pptx.oxml.ns import qn as _qn8
+                        from lxml import etree as _et8
+                        import copy as _copy8
+
                         # 全pp_rowsで加重平均を計算（全セグメント対象）
                         _wa_n = sum(r['n'] for r in pp_rows)
                         _wa_r = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n
                         _wa_g = sum(r['ltv_g']*r['n'] for r in pp_rows) / _wa_n
                         _wa_row = {'seg':'加重平均','n':_wa_n,'ltv_r':_wa_r,'ltv_g':_wa_g,
                             'cac':_wa_g/cac_n,'k':None,'lam':None,'r2':None}
-                        # 表示は上位10件+加重平均
                         _top10 = pp_rows[:10]
                         _all_rows_t = _top10 + [_wa_row]
 
-                        # テーブル行を必要数に調整（ヘッダ除く）
-                        from pptx.oxml.ns import qn as _qn8
-                        import copy as _copy8
+                        # テーブル行を必要数に調整
                         _tbl8_el = _tbl8._tbl
-                        _existing_rows = len(_tbl8.rows)
-                        _needed_rows = len(_all_rows_t) + 1  # +1はヘッダ
-                        # 足りない行を複製して追加
-                        if _existing_rows < _needed_rows:
-                            _tmpl_row = _tbl8_el.findall(_qn8('a:tr'))[-1]
-                            for _ in range(_needed_rows - _existing_rows):
-                                _new_row = _copy8.deepcopy(_tmpl_row)
-                                _tbl8_el.append(_new_row)
-                        # 余分な行を非表示（空白化）
-                        _cur_rows = len(_tbl8.rows)
+                        _needed = len(_all_rows_t) + 1
+                        while len(_tbl8.rows) < _needed:
+                            _tmpl_r = _tbl8_el.findall(_qn8('a:tr'))[-1]
+                            _tbl8_el.append(_copy8.deepcopy(_tmpl_r))
+
+                        # セルスタイル適用ヘルパー
+                        def _set_cell8(cell, text, bg_hex, txt_hex, align='r'):
+                            tc = cell._tc
+                            tcPr = tc.find(_qn8('a:tcPr'))
+                            if tcPr is None:
+                                tcPr = _et8.SubElement(tc, _qn8('a:tcPr'))
+                            # 背景色
+                            sf = tcPr.find(_qn8('a:solidFill'))
+                            if sf is None:
+                                sf = _et8.SubElement(tcPr, _qn8('a:solidFill'))
+                            sc = sf.find(_qn8('a:srgbClr'))
+                            if sc is None:
+                                sc = _et8.SubElement(sf, _qn8('a:srgbClr'))
+                            sc.set('val', bg_hex.replace('#',''))
+                            # テキスト
+                            tf = cell.text_frame
+                            for p in tf.paragraphs:
+                                pPr = p._p.find(_qn8('a:pPr'))
+                                if pPr is None:
+                                    pPr = _et8.SubElement(p._p, _qn8('a:pPr'))
+                                pPr.set('algn', 'l' if align=='l' else 'r')
+                                for r in p.runs: r.text = ''
+                                if p.runs:
+                                    r = p.runs[0]
+                                    r.text = text
+                                    rPr = r._r.find(_qn8('a:rPr'))
+                                    if rPr is None:
+                                        rPr = _et8.SubElement(r._r, _qn8('a:rPr'))
+                                    rPr.set('lang','ja-JP'); rPr.set('altLang','en-US'); rPr.set('sz','1000')
+                                    sf2 = rPr.find(_qn8('a:solidFill'))
+                                    if sf2 is None:
+                                        sf2 = _et8.SubElement(rPr, _qn8('a:solidFill'))
+                                    sc2 = sf2.find(_qn8('a:srgbClr'))
+                                    if sc2 is None:
+                                        sc2 = _et8.SubElement(sf2, _qn8('a:srgbClr'))
+                                    sc2.set('val', txt_hex.replace('#',''))
+                                    # フォント
+                                    for _fn in ['a:latin','a:ea']:
+                                        fn_el = rPr.find(_qn8(_fn))
+                                        if fn_el is None:
+                                            fn_el = _et8.SubElement(rPr, _qn8(_fn))
+                                        fn_el.set('typeface','BIZ UDPGothic')
+
                         for _ri, _row in enumerate(_all_rows_t):
-                            if _ri + 1 >= len(_tbl8.rows): break
+                            _tr_idx = _ri + 1
+                            if _tr_idx >= len(_tbl8.rows): break
+                            _is_wa = (_row['seg'] == '加重平均')
                             _vals8 = [_row['seg'], f"{_row['n']:,}",
                                 f"¥{_row['ltv_r']:,.0f}", f"¥{_row['ltv_g']:,.0f}", f"¥{_row['cac']:,.0f}",
                                 f"{_row['k']:.3f}" if _row['k'] is not None else '—',
                                 f"{_row['lam']:.1f}" if _row['lam'] is not None else '—',
                                 f"{_row['r2']:.3f}" if _row['r2'] is not None else '—']
+
+                            if _is_wa:
+                                _bg = '#0D1F2D'; _tc = '#A8DADC'
+                            elif _ri < 5:
+                                _bg = '#0D1520' if _ri % 2 == 0 else '#0A1018'; _tc = '#C8D0D8'
+                            else:
+                                _bg = '#0D1F2D'; _tc = '#C8D0D8'
+
                             for _ci, _v8 in enumerate(_vals8):
                                 if _ci >= len(_tbl8.columns): break
-                                _cell8 = _tbl8.rows[_ri+1].cells[_ci]
-                                _tf8 = _cell8.text_frame
-                                for _p8 in _tf8.paragraphs:
-                                    for _r8 in _p8.runs: _r8.text = ''
-                                if _tf8.paragraphs and _tf8.paragraphs[0].runs:
-                                    _tf8.paragraphs[0].runs[0].text = _v8
+                                _aln = 'l' if _ci == 0 else 'r'
+                                _set_cell8(_tbl8.rows[_tr_idx].cells[_ci], _v8, _bg, _tc, _aln)
                     elif sh.name == 'テキスト ボックス 9':
                         _wa_n2 = sum(r['n'] for r in pp_rows)
                         _wa_r2 = sum(r['ltv_r']*r['n'] for r in pp_rows) / _wa_n2
                         _diff_p = (_wa_r2 - ltv_rev) / ltv_rev * 100
-                        _note_body = (f"\xa0— テーブルは上位10セグメントを表示。加重平均行は全{len(pp_rows)}セグメントを顧客数で重み付けした値です。"
-                            f"全体LTV∞（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
+                        _note_body = (f"\xa0— テーブルは最大上位10項目を表示。加重平均行は全{len(pp_rows)}項目を顧客数で重み付けした値です。"
+                            f"全体LTV\u221e（¥{ltv_rev:,.0f}）との差（{_diff_p:+.1f}%）は統計的に正常な現象です。"
                             f"詳細スライドには全セグメントを掲載しています。")
                         if sh.has_text_frame and sh.text_frame.paragraphs:
                             p = sh.text_frame.paragraphs[0]
