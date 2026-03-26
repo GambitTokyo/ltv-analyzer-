@@ -129,7 +129,7 @@ def _set_note_text(sh, note_text):
         if rPr0 is not None:
             for sf in rPr0.findall(f'{{{A}}}solidFill'): rPr0.remove(sf)
             sf = etree.Element(f'{{{A}}}solidFill')
-            c = etree.SubElement(sf, f'{{{A}}}srgbClr'); c.set('val', '56B4D3')
+            c = etree.SubElement(sf, f'{{{A}}}srgbClr'); c.set('val', '3A6A7A')
             rPr0.insert(0, sf)
         runs[1].text = body
         rPr1 = runs[1]._r.find(f'{{{A}}}rPr')
@@ -235,15 +235,16 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
     ax.set_xlabel('継続期間', color='#888', fontsize=8, fontproperties=fp)
     ax.set_ylabel('金額（円）', color='#888', fontsize=8, fontproperties=fp)
     ax.legend(
-        [Line2D([0],[0],color='#56b4d3',lw=1.8,marker='o',ms=3),
-         Line2D([0],[0],color='#a8dadc',lw=1.8,ls='--',marker='o',ms=3),
-         Line2D([0],[0],color='#4a7a8a',lw=1.4,ls=':')],
+        [Line2D([0],[0],color='#56b4d3',lw=1.2,marker='o',ms=2),
+         Line2D([0],[0],color='#a8dadc',lw=1.2,ls='--',marker='o',ms=2),
+         Line2D([0],[0],color='#4a7a8a',lw=1.0,ls=':')],
         ['LTV（売上）','LTV（粗利）','CAC上限'],
-        loc='upper left', frameon=False, fontsize=5, labelcolor='white', ncol=3, bbox_to_anchor=(0.0,1.12), prop=fp)
-    ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='white', fontsize=7, fontproperties=fp, annotation_clip=False)
-    ax.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=7, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
-    fig.subplots_adjust(left=0.12, right=0.84, top=0.82, bottom=0.16)
-    buf = io.BytesIO(); fig.savefig(buf, format='png', dpi=150, facecolor=BG, bbox_inches='tight'); buf.seek(0); plt.close(fig)
+        loc='upper left', frameon=False, fontsize=6, labelcolor='white', ncol=3,
+        bbox_to_anchor=(0.02, 0.98), borderaxespad=0, prop=fp)
+    ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='white', fontsize=6, fontproperties=fp, annotation_clip=False)
+    ax.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=6, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
+    fig.subplots_adjust(left=0.12, right=0.84, top=0.95, bottom=0.16)
+    buf = io.BytesIO(); fig.savefig(buf, format='png', dpi=150, facecolor=BG); buf.seek(0); plt.close(fig)
     return buf
 
 # ── S7/S13 棒グラフ：数値ラベル+X軸数値+加重平均ライン数値 ──
