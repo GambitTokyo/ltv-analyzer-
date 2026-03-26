@@ -256,14 +256,15 @@ def _make_bar_graph(pp_rows, best, avg_ltv):
     segs = [r['seg'] for r in pp_rows][::-1]
     vals = [r['ltv_r'] for r in pp_rows][::-1]
     colors = ['#56b4d3' if pp_rows[::-1][i]['seg']==best['seg'] else '#2a4a5a' for i in range(len(pp_rows))]
-    bars = ax.barh(segs, vals, color=colors, height=0.6)
+    # 加重平均ラインを先に描画（背面）
+    ax.axvline(avg_ltv, color='#a8dadc', lw=1, ls='--', alpha=0.7, zorder=1)
+    ax.text(avg_ltv, len(segs)-0.3, f'Avg ¥{avg_ltv:,.0f}', color='#a8dadc', fontsize=7, ha='center', va='bottom', fontproperties=fp, zorder=5)
+    # 棒グラフを後に描画（最前面）
+    bars = ax.barh(segs, vals, color=colors, height=0.6, zorder=3)
     # 棒内に数値ラベル（右寄せ）
     for bar, val in zip(bars, vals):
         ax.text(bar.get_width() - max(vals)*0.02, bar.get_y() + bar.get_height()/2,
-                f'¥{val:,.0f}', va='center', ha='right', color='white', fontsize=7, fontproperties=fp)
-    # 加重平均ライン + 数値
-    ax.axvline(avg_ltv, color='#a8dadc', lw=1, ls='--', alpha=0.7)
-    ax.text(avg_ltv, len(segs)-0.3, f'Avg ¥{avg_ltv:,.0f}', color='#a8dadc', fontsize=7, ha='center', va='bottom', fontproperties=fp)
+                f'¥{val:,.0f}', va='center', ha='right', color='white', fontsize=7, fontproperties=fp, zorder=4)
     ax.tick_params(colors='#888', labelsize=8)
     for l in ax.get_yticklabels(): l.set_fontproperties(fp)
     # X軸: 数値表記（60,000形式）
