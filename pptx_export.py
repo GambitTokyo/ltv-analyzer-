@@ -127,10 +127,10 @@ def _set_note_text(sh, note_text):
         runs[0].text = prefix
         rPr0 = runs[0]._r.find(f'{{{A}}}rPr')
         if rPr0 is not None:
-            # NOTE = 明るい水色、太字（cap=allはそのまま→英語のNOTEには問題なし）
             for sf in rPr0.findall(f'{{{A}}}solidFill'): rPr0.remove(sf)
-            sf = etree.SubElement(rPr0, f'{{{A}}}solidFill')
+            sf = etree.Element(f'{{{A}}}solidFill')
             c = etree.SubElement(sf, f'{{{A}}}srgbClr'); c.set('val', '56B4D3')
+            rPr0.insert(0, sf)
         runs[1].text = body
         rPr1 = runs[1]._r.find(f'{{{A}}}rPr')
         if rPr1 is not None:
@@ -138,9 +138,9 @@ def _set_note_text(sh, note_text):
             if 'cap' in rPr1.attrib: del rPr1.attrib['cap']
             rPr1.set('lang', 'ja-JP')
             for sf in rPr1.findall(f'{{{A}}}solidFill'): rPr1.remove(sf)
-            sf = etree.SubElement(rPr1, f'{{{A}}}solidFill')
+            sf = etree.Element(f'{{{A}}}solidFill')
             c = etree.SubElement(sf, f'{{{A}}}srgbClr'); c.set('val', '888888')
-            # フォント指定を削除→マスター設定（メイリオ）に従う
+            rPr1.insert(0, sf)
             for latin in rPr1.findall(f'{{{A}}}latin'): rPr1.remove(latin)
             for ea in rPr1.findall(f'{{{A}}}ea'): rPr1.remove(ea)
             for eff in rPr1.findall(f'{{{A}}}effectLst'): rPr1.remove(eff)
@@ -238,8 +238,8 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
         [Line2D([0],[0],color='#56b4d3',lw=1.8,marker='o',ms=3),
          Line2D([0],[0],color='#a8dadc',lw=1.8,ls='--',marker='o',ms=3),
          Line2D([0],[0],color='#4a7a8a',lw=1.4,ls=':')],
-        ['LTV（売上）','LTV（粗利）','CAC Ceiling'],
-        loc='upper left', frameon=False, fontsize=7, labelcolor='white', ncol=3, bbox_to_anchor=(0.0,1.15), prop=fp)
+        ['LTV（売上）','LTV（粗利）','CAC上限'],
+        loc='upper left', frameon=False, fontsize=5, labelcolor='white', ncol=3, bbox_to_anchor=(0.0,1.12), prop=fp)
     ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='white', fontsize=7, fontproperties=fp, annotation_clip=False)
     ax.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=7, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
     fig.subplots_adjust(left=0.12, right=0.84, top=0.82, bottom=0.16)
