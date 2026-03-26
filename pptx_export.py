@@ -199,12 +199,27 @@ def generate_pptx(
     buf1, buf2,
     # メタ情報
     df, client_name, analyst_name, billing_cycle_display,
-    k_summary, r2_summary, k_insight, r2_comment, cac_label,
+    k_summary, r2_summary, cac_label,
     cac_recover_rev_str, cac_recover_gp_str,
     # セグメント
     segment_cols_input,
     _compute_km_df, _fit_weibull_df, ltv_inf, fmt_horizon,
 ):
+    # k_insight / r2_comment を内部計算
+    if k < 0.7:
+        k_insight = f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
+    elif k < 1.0:
+        k_insight = f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
+    elif k < 1.5:
+        k_insight = f"k={k:.3f}（逓増型・中程度）: 継続期間が長いほど離脱リスクが増す。1年超の顧客へのエンゲージメント強化が鍵。"
+    else:
+        k_insight = f"k={k:.3f}（強い逓増型）: 長期顧客ほど急速に離脱。VIP施策・継続特典による長期繋ぎ止めが急務。"
+    if r2 >= 0.95:
+        r2_comment = f"R²={r2:.3f}: 非常に高精度。LTV∞推定値の信頼性は高い。"
+    elif r2 >= 0.85:
+        r2_comment = f"R²={r2:.3f}: 許容範囲内。推定値に±15%程度の幅を見込んで意思決定を。"
+    else:
+        r2_comment = f"R²={r2:.3f}: やや低め。データ件数不足または複数の離脱パターンが混在している可能性あり。"
     prs = Presentation(tmpl_path)
 
     # ── データ期間 ──
@@ -301,9 +316,44 @@ def generate_pptx(
                     f'¥{rev_99:,.0f}', f'¥{gp_99:,.0f}',
                     f'¥{gp_99/cac_n:,.0f}', '99.0%'])
 
+    # S4テーブル読み方テキストを動的生成
+    lam_years = lam_actual / 365
+    if k < 0.7:
+        k_desc = f"k={k:.3f}（初期離脱型）: 契約直後に大量離脱するパターンです。LTV∞は大きく見えますが到達に時間がかかります。"
+    elif k < 1.0:
+        k_desc = f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いですが初期にやや多めです。"
+    elif k < 1.5:
+        k_desc = f"k={k:.3f}（逓増型）: 継続期間が長いほど離脱リスクが増すパターンです。"
+    else:
+        k_desc = f"k={k:.3f}（強い逓増型）: 長期顧客ほど急速に離脱するパターンです。"
+
+    if lam_actual < 180:
+        lam_desc = "短い継続期間"
+    elif lam_actual < 365:
+        lam_desc = "半年〜1年程度の継続期間"
+    elif lam_actual < 730:
+        lam_desc = "中程度の継続期間で、1〜2年継続する顧客が多いビジネス"
+    else:
+        lam_desc = "長期継続型のビジネス"
+
+    s4_guide = (f"このテーブルの読み方\n"
+                f"λ={round(lam_actual):,}日（約{lam_years:.1f}年）は{lam_desc}です。\n"
+                f"{k_desc}\n"
+                f"LTV∞到達率の列でCAC回収に必要な期間を確認してください。")
+
     for sh in s4.shapes:
         if sh.shape_type == 19:
             _write_table(sh.table, None, rows_s4[:-1], rows_s4[-1])
+        elif sh.name == 'テキスト ボックス 3' and sh.has_text_frame:
+            # 余分なparagraphを削除してからテキストをセット
+            tf = sh.text_frame
+            txBody = tf._txBody
+            a_ns = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+            paras = txBody.findall(f'{{{a_ns}}}p')
+            for p in paras[1:]:
+                txBody.remove(p)
+            if tf.paragraphs and tf.paragraphs[0].runs:
+                tf.paragraphs[0].runs[0].text = s4_guide
 
     # ════════════════════════════════════════
     # S5: LTV推移グラフ
@@ -503,17 +553,24 @@ def generate_pptx(
                         buf_wb.seek(0); _replace_image(sx, sh, buf_wb)
                     elif sh.shape_type == 19:
                         _write_table(sh.table, None, rows_sx[:-1], rows_sx[-1])
+                    elif sh.name == 'テキスト ボックス 17' and sh.has_text_frame:
+                        # TOP PICKラベル: 先頭セグメントのみ表示、それ以外は消去
+                        if ri == 0:
+                            _set_text(sh, f'TOP PICK　{row["seg"]}')
+                        else:
+                            _set_text(sh, '')
 
-        # テンプレートのS7〜S10を削除（複製済み）
-        from pptx.oxml.ns import qn as _qn
-        for _ in range(4):
-            sldIdLst = prs.slides._sldIdLst
-            last = sldIdLst[-1]
-            rId = last.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
-            if rId:
-                try: prs.part.drop_rel(rId)
-                except: pass
-            sldIdLst.remove(last)
+        # テンプレートのS7〜S10（idx 6-9）を削除（複製済み）
+        # 逆順で削除しないとインデックスがずれる
+        sldIdLst = prs.slides._sldIdLst
+        for idx in [9, 8, 7, 6]:
+            if idx < len(sldIdLst):
+                entry = sldIdLst[idx]
+                rId = entry.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+                if rId:
+                    try: prs.part.drop_rel(rId)
+                    except: pass
+                sldIdLst.remove(entry)
 
     # 保存
     buf_out = io.BytesIO()
