@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v237</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v238</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1697,9 +1697,9 @@ lam_int = round(lam_actual)
 _col_ltv, = st.columns([1])
 with _col_ltv:
     fig_ltv = go.Figure()
-    fig_ltv.add_trace(go.Scatter(x=t_range, y=rev_line, name='LTV（売上）', mode='lines', line=dict(color='#56b4d3', width=2)))
-    fig_ltv.add_trace(go.Scatter(x=t_range, y=gp_line,  name='LTV（粗利）', mode='lines', line=dict(color='#a8dadc', width=2, dash='dash')))
-    fig_ltv.add_trace(go.Scatter(x=t_range, y=cac_line, name='CAC上限',    mode='lines', line=dict(color='#4a7a8a', width=1.5, dash='dot')))
+    fig_ltv.add_trace(go.Scatter(x=t_range, y=rev_line, name='LTV（売上）', mode='lines+markers', line=dict(color='#56b4d3', width=2), marker=dict(size=3, symbol='circle')))
+    fig_ltv.add_trace(go.Scatter(x=t_range, y=gp_line,  name='LTV（粗利）', mode='lines+markers', line=dict(color='#a8dadc', width=2, dash='dash'), marker=dict(size=3, symbol='circle')))
+    fig_ltv.add_trace(go.Scatter(x=t_range, y=cac_line, name='CAC上限',    mode='lines+markers', line=dict(color='#4a7a8a', width=1.5, dash='dot'), marker=dict(size=2, symbol='circle')))
     fig_ltv.add_hline(y=ltv_rev, line_dash='dot', line_color='#56b4d3', line_width=1, opacity=0.4,
         annotation_text=f'LTV∞ ¥{ltv_rev:,.0f}', annotation_position='right',
         annotation_font=dict(color='#56b4d3', size=10))
@@ -2772,7 +2772,6 @@ if segment_cols_input.strip():
             fig_height = max(300, n_seg * 35 + 100)
 
             fig_plotly = go.Figure()
-            # 横棒: x=値, y=セグメント名、下から上に表示するため逆順
             seg_names = seg_df['セグメント'].astype(str).tolist()[::-1]
             seg_vals  = seg_df['LTV∞（売上）'].tolist()[::-1]
             bar_colors_rev = bar_colors[::-1]
@@ -2782,7 +2781,10 @@ if segment_cols_input.strip():
                 orientation='h',
                 marker=dict(color=bar_colors_rev),
                 text=[f'¥{v:,.0f}' for v in seg_vals],
-                textposition='outside' if n_seg <= 15 else 'none',
+                textposition='inside',
+                insidetextanchor='end',
+                textfont=dict(color='white', size=10),
+                hovertemplate='%{y}: ¥%{x:,.0f}<extra></extra>',
             ))
             fig_plotly.update_yaxes(
                 tickfont=dict(color='#aaa', size=10 if n_seg <= 20 else 8),
@@ -2795,6 +2797,7 @@ if segment_cols_input.strip():
                 gridcolor='#1a3040',
                 tickprefix='¥',
                 tickformat=',',
+                showgrid=True,
             )
             fig_plotly.update_layout(
                 title_text='',
@@ -2802,7 +2805,7 @@ if segment_cols_input.strip():
                 plot_bgcolor='#111820',
                 height=fig_height,
                 showlegend=False,
-                margin=dict(t=30, b=40, l=120, r=80),
+                margin=dict(t=30, b=40, l=120, r=30),
                 font=dict(color='#ccc', size=12),
             )
             st.plotly_chart(fig_plotly, use_container_width=True)
