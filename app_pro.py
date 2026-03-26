@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v241</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v242</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1672,7 +1672,7 @@ plt.close()
 # Horizon table
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title' style='margin-bottom:-1rem;'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
 
 horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 
@@ -1726,9 +1726,9 @@ with _col_ltv:
     tick_text = ['180日', '1年', '2年', '3年', '4年', '5年']
     fig_ltv.update_layout(
         paper_bgcolor='#111820', plot_bgcolor='#111820',
-        height=340, margin=dict(t=60, b=50, l=70, r=120),
+        height=300, margin=dict(t=40, b=50, l=70, r=120),
         font=dict(color='#ccc', size=10),
-        legend=dict(orientation='h', y=1.12, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
+        legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
         xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals, ticktext=tick_text, tickfont=dict(color='#888'), range=[0, x_max + 50]),
         yaxis=dict(title='金額（円）', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
     )
@@ -3046,7 +3046,7 @@ if segment_cols_input.strip():
                             st.caption(f"Weibull直線化プロット：R²={r2_s:.3f}（1.0に近いほど精度高い）")
 
                         # ── 暫定LTVテーブル（全体と同仕様）──
-                        st.markdown("<div class='section-title' style='font-size:0.75rem; margin-top:16px; border-bottom:none;'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='font-size:0.75rem; color:#7ab4c4; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin-top:16px; margin-bottom:6px;'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
 
                         # グラフ
                         lam_s_actual = lam_s_disp  # 表示用λ（オフセット込み済み）
@@ -3103,7 +3103,7 @@ if segment_cols_input.strip():
                             paper_bgcolor='#111820', plot_bgcolor='#111820',
                             height=280, margin=dict(t=40, b=50, l=70, r=120),
                             font=dict(color='#ccc', size=10),
-                            legend=dict(orientation='h', y=0.98, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
+                            legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
                             xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals_s, ticktext=tick_text_s, tickfont=dict(color='#888')),
                             yaxis=dict(title='金額（円）', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
                         )
