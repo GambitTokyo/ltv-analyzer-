@@ -242,7 +242,7 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
         loc='upper left', frameon=False, fontsize=8, labelcolor='white', ncol=3,
         bbox_to_anchor=(0.02, 0.98), borderaxespad=0)
     for t in leg.get_texts(): t.set_fontproperties(fp)
-    ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='#a8dadc', fontsize=8, fontproperties=fp, ha='center', annotation_clip=False)
+    ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='#a8dadc', fontsize=8, fontproperties=fp, ha='center', annotation_clip=False, bbox=dict(boxstyle='square,pad=0.15', facecolor=BG, edgecolor='none'))
     ax.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=8, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
     fig.subplots_adjust(left=0.08, right=0.88, top=0.95, bottom=0.14)
     buf = io.BytesIO(); fig.savefig(buf, format='png', dpi=120, facecolor=BG); buf.seek(0); plt.close(fig)
