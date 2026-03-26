@@ -43,10 +43,12 @@ def _replace_image(sld, sh, buf):
 def _write_table(tbl, hdr, rows, footer=None):
     data=rows+([footer] if footer else [])
     need=1+len(data)
+    if need < 2: need = 2  # 最低ヘッダー+1行は保持
     tr=copy.deepcopy(tbl.rows[1]._tr) if len(tbl.rows)>1 else None
     while len(tbl.rows)<need and tr: tbl._tbl.append(copy.deepcopy(tr))
-    while len(tbl.rows)>need: tbl._tbl.remove(tbl.rows[-1]._tr)
+    while len(tbl.rows)>need and len(tbl.rows)>1: tbl._tbl.remove(tbl.rows[len(tbl.rows)-1]._tr)
     for ri,rd in enumerate(data):
+        if ri+1 >= len(tbl.rows): break
         row=tbl.rows[ri+1]
         for ci,v in enumerate(rd):
             if ci>=len(row.cells): break

@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v242</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v243</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1716,7 +1716,7 @@ with _col_ltv:
     fig_ltv.add_hline(y=ltv_rev, line_dash='dot', line_color='#56b4d3', line_width=1, opacity=0.4,
         annotation_text=f'LTV∞ ¥{ltv_rev:,.0f}', annotation_position='right',
         annotation_font=dict(color='#56b4d3', size=10))
-    fig_ltv.add_shape(type='line', x0=lam_actual, x1=lam_actual, y0=0, y1=1, yref='paper',
+    fig_ltv.add_shape(type='line', x0=lam_actual, x1=lam_actual, y0=0, y1=ltv_rev,
         line=dict(color='#a8dadc', width=1.5, dash='dash'), layer='above')
     fig_ltv.add_annotation(x=lam_actual, y=0.85 if k < 1.0 else 0.35, yref='paper',
         text=f'λ＝{lam_int}日', showarrow=False,
@@ -3071,7 +3071,7 @@ if segment_cols_input.strip():
                         fig_hor_s.add_trace(go.Scatter(x=t_range_s, y=cac_line_s, name='CAC上限',    mode='lines', line=dict(color='#4a7a8a', width=1.5, dash='dot')))
                         fig_hor_s.add_hline(y=ltv_inf_s_offset, line_dash='dot', line_color='#56b4d3', line_width=1, opacity=0.4,
                             annotation_text=f'LTV∞ ¥{ltv_inf_s_offset:,.0f}', annotation_position='right', annotation_font=dict(color='#56b4d3', size=10))
-                        fig_hor_s.add_shape(type='line', x0=lam_s_actual, x1=lam_s_actual, y0=0, y1=1, yref='paper',
+                        fig_hor_s.add_shape(type='line', x0=lam_s_actual, x1=lam_s_actual, y0=0, y1=ltv_inf_s_offset,
                             line=dict(color='#a8dadc', width=1.5, dash='dash'), layer='above')
                         fig_hor_s.add_annotation(x=lam_s_actual, y=0.85 if k_s < 1.0 else 0.35, yref='paper',
                             text=f'λ＝{lam_s_int}日', showarrow=False, font=dict(color='#a8dadc', size=10),
