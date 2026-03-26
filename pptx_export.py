@@ -211,7 +211,7 @@ def _set_s4_guide(sh, g):
 # ── グラフ（S5: 日本語に戻す） ──
 def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x_max):
     fp = _fp()
-    fig, ax = plt.subplots(figsize=(898/150, 380/150), dpi=150)
+    fig, ax = plt.subplots(figsize=(10, 4), dpi=120)
     fig.patch.set_facecolor(BG); ax.set_facecolor(BG)
     marker_days = sorted(set(d for d in [180, 365, 1095, 1825, round(lam_actual)] if d <= max(t_range)))
     def _fy(line, day):
@@ -226,25 +226,26 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
     ax.axvline(lam_actual, color='#a8dadc', lw=1.0, ls='--', alpha=0.7, ymax=0.85)
     ax.set_xlim(0, x_max+30); ax.set_ylim(0, ltv_rev*1.15)
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v,_:f'{int(v):,}'))
-    ax.set_xticks([180,365,730,1095,1460,1825])
-    ax.set_xticklabels(['180日','1年','2年','3年','4年','5年'], fontproperties=fp, color='#888', fontsize=7)
-    ax.tick_params(colors='#888', labelsize=7, length=0)
+    ax.set_xticks([180,365,1095,1825])
+    ax.set_xticklabels(['180日','1年','3年','5年'], fontproperties=fp, color='#888', fontsize=8)
+    ax.tick_params(colors='#888', labelsize=8, length=0)
     for l in ax.get_yticklabels(): l.set_color('#888')
     ax.grid(True, alpha=0.15, color='#1a3040')
     for s in ax.spines.values(): s.set_color('#1a3040')
-    ax.set_xlabel('継続期間', color='#888', fontsize=8, fontproperties=fp)
-    ax.set_ylabel('金額（円）', color='#888', fontsize=8, fontproperties=fp)
-    ax.legend(
+    ax.set_xlabel('継続期間', color='#888', fontsize=9, fontproperties=fp)
+    ax.set_ylabel('金額（円）', color='#888', fontsize=9, fontproperties=fp)
+    leg = ax.legend(
         [Line2D([0],[0],color='#56b4d3',lw=1.2,marker='o',ms=2),
          Line2D([0],[0],color='#a8dadc',lw=1.2,ls='--',marker='o',ms=2),
          Line2D([0],[0],color='#4a7a8a',lw=1.0,ls=':')],
         ['LTV（売上）','LTV（粗利）','CAC上限'],
-        loc='upper left', frameon=False, fontsize=6, labelcolor='white', ncol=3,
-        bbox_to_anchor=(0.02, 0.98), borderaxespad=0, prop=fp)
-    ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='white', fontsize=6, fontproperties=fp, annotation_clip=False)
-    ax.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=6, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
-    fig.subplots_adjust(left=0.12, right=0.84, top=0.95, bottom=0.16)
-    buf = io.BytesIO(); fig.savefig(buf, format='png', dpi=150, facecolor=BG); buf.seek(0); plt.close(fig)
+        loc='upper left', frameon=False, fontsize=8, labelcolor='white', ncol=3,
+        bbox_to_anchor=(0.02, 0.98), borderaxespad=0)
+    for t in leg.get_texts(): t.set_fontproperties(fp)
+    ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='white', fontsize=8, fontproperties=fp, annotation_clip=False)
+    ax.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=8, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
+    fig.subplots_adjust(left=0.08, right=0.88, top=0.95, bottom=0.14)
+    buf = io.BytesIO(); fig.savefig(buf, format='png', dpi=120, facecolor=BG); buf.seek(0); plt.close(fig)
     return buf
 
 # ── S7/S13 棒グラフ：数値ラベル+X軸数値+加重平均ライン数値 ──
