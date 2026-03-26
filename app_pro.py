@@ -981,7 +981,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v235</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v236</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2243,6 +2243,24 @@ if True:
 
         _billing_disp = billing_cycle_display if 'billing_cycle_display' in dir() else billing_cycle.split('←')[0].strip()
 
+        # S4ガイドデータを組み立て
+        _lam_display = lam + ltv_offset_days if business_type == "都度購入型" else lam
+        _s4_guide = {
+            'lam_desc': lam_desc,
+            'k_desc': k_desc,
+            'ltv_rev': ltv_rev,
+            'pct_1y': pct_1y, 'ltv_1y': ltv_1y,
+            'pct_2y': pct_2y, 'ltv_2y': ltv_2y,
+            'pct_3y': pct_3y, 'ltv_3y': ltv_3y,
+            'cac_upper': cac_upper,
+            'cac_recover_rev_str': cac_recover_rev_str,
+            'cac_recover_gp_str': cac_recover_gp_str,
+            'lam_actual_round': round(_lam_display),
+            'lam_years': _lam_display / 365,
+            'lam_gp': lam_gp,
+            'lam_meaning': "リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == "都度購入型" else "多くの顧客が離脱するまでの期間の目安",
+        }
+
         pptx_buf = generate_pptx(
             tmpl_path=_TMPL_PATH,
             k=k, lam=lam, lam_actual=lam_actual, r2=r2,
@@ -2270,6 +2288,7 @@ if True:
             _fit_weibull_df=_fit_weibull_df,
             ltv_inf=ltv_inf,
             fmt_horizon=fmt_horizon,
+            s4_guide_data=_s4_guide,
         )
 
         import base64 as _b64
