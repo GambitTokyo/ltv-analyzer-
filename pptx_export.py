@@ -287,6 +287,10 @@ def generate_pptx(
     k_summary, r2_summary, cac_label, cac_recover_rev_str, cac_recover_gp_str,
     segment_cols_input, _compute_km_df, _fit_weibull_df, ltv_inf, fmt_horizon,
     s4_guide_data=None,
+    report_title=None,
+    arpu_0_dorm=None,
+    arpu_long=None,
+    outlier_label='除外なし',
 ):
     if k<0.7: ki=f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
     elif k<1.0: ki=f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
@@ -302,15 +306,16 @@ def generate_pptx(
     _ds = pd_mod.concat(_dc).dropna().min().strftime('%Y/%m/%d')
     _de = pd_mod.concat(_dc).dropna().max().strftime('%Y/%m/%d')
     for sh in prs.slides[0].shapes:
-        if sh.name=='TextBox 5': _set_text(sh, client_name or '')
+        if sh.name=='TextBox 4': _set_text(sh, report_title or 'Kaplan–Meier × Weibull Model')
+        elif sh.name=='TextBox 5': _set_text(sh, client_name or '')
         elif sh.name=='TextBox 6': _set_text(sh, date.today().strftime('%Y年%m月%d日'))
         elif sh.name=='TextBox 7': _set_text(sh, analyst_name or '')
     s2=prs.slides[1]
     for sh in s2.shapes:
         if sh.name=='テキスト プレースホルダー 6' and sh.has_text_frame:
             tf=sh.text_frame
-            i1=f"データ期間: {_ds} – {_de}　|　顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　継続中: {(df['event']==0).sum():,}件　|　平均日次 ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
-            i2=f"異常値の処理：除外なし　|　{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}"
+            i1=f"データ期間: {_ds} – {_de}　|　顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　継続中: {(df['event']==0).sum():,}件　|　Daily ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
+            i2=f"異常値の処理：{outlier_label}　|　{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}"
             if len(tf.paragraphs)>=1:
                 for r in tf.paragraphs[0].runs: r.text=''
                 if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=i1
@@ -337,7 +342,10 @@ def generate_pptx(
     s4=prs.slides[3]; rows_s4=[]
     for h in horizons:
         if business_type=='都度購入型':
-            dp=dormancy_days or 180; lr=ltv_horizon_spot(k,lam,arpu_daily,h,dp); lg=ltv_horizon_spot(k,lam,arpu_daily*gpm,h,dp)
+            dp=dormancy_days or 180
+            _a0 = arpu_0_dorm if arpu_0_dorm is not None else arpu_daily
+            _al = arpu_long if arpu_long is not None else arpu_daily
+            lr=ltv_horizon_spot(k,lam,_a0,_al,h,dp); lg=ltv_horizon_spot(k,lam,_a0*gpm,_al*gpm,h,dp)
         else:
             lr=ltv_horizon_offset(k,lam,arpu_daily,h,ltv_offset_days); lg=ltv_horizon_offset(k,lam,gp_daily,h,ltv_offset_days)
         label=f'{h}日' if h<365 else f'{h//365}年（{h:,}日）'

@@ -970,7 +970,7 @@ with st.sidebar:
 
     st.markdown("")
     st.markdown("### レポート情報")
-    report_title = st.text_input("レポートタイトル", "", placeholder="例：月額SaaS顧客LTV分析")
+    report_title = st.text_input("レポートタイトル", "", placeholder="月額SaaS顧客LTV分析など")
     client_name  = st.text_input("クライアント名", "", placeholder="会社・ブランド・商品/サービスなど")
     analyst_name = st.text_input("作成者", "", placeholder="氏名・チーム・部署・組織など")
 
@@ -982,7 +982,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v255</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v258</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2032,7 +2032,7 @@ prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル
 【分析結果】
 ・ビジネスタイプ: {business_type} / 休眠判定: {dormancy_label}
 ・顧客数: {len(df):,}件（解約済み: {churned_count:,}件 / 継続中: {active_count:,}件 / 解約率: {churn_rate:.1f}%）
-・平均日次ARPU（売上）: ¥{arpu_daily:,.2f} / 平均日次GP（粗利）: ¥{gp_daily:,.2f} / GPM: {gpm:.1%}
+・Daily ARPU（売上）: ¥{arpu_daily:,.2f} / Daily GP（粗利）: ¥{gp_daily:,.2f} / GPM: {gpm:.1%}
 ・LTV∞（売上ベース）: ¥{ltv_rev:,.0f} / LTV∞（粗利ベース）: ¥{ltv_val:,.0f}
 ・CAC上限（{cac_label}）: ¥{cac_upper:,.0f}
 ・Weibull k（形状）: {k:.4f} → {k_pattern}
@@ -2104,9 +2104,9 @@ if True:
             ('【分析結果】', ''),
             ('顧客数（総数）', len(df)),
             ('うち解約済み', int(df['event'].sum())),
-            ('平均日次ARPU（売上ベース・¥）', round(arpu_daily, 2)),
+            ('Daily ARPU（売上ベース・¥）', round(arpu_daily, 2)),
             ('粗利率（GPM）', f'{gpm:.1%}'),
-            ('平均日次GP（粗利ベース・¥）', round(gp_daily, 2)),
+            ('Daily GP（粗利ベース・¥）', round(gp_daily, 2)),
             ('LTV∞ 売上ベース（¥）', round(ltv_rev, 0)),
             ('LTV∞ 粗利ベース（CAC算出用）（¥）', round(ltv_val, 0)),
             (f'CAC上限（{cac_label}）（¥）', round(cac_upper, 0)),
@@ -2275,6 +2275,12 @@ if True:
             'lam_meaning': "リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == "都度購入型" else "多くの顧客が離脱するまでの期間の目安",
         }
 
+        # 異常値処理の表示文字列
+        _outlier_label = "除外なし" if iqr_multiplier == 0.0 else {
+            3.0: "上位約0.2〜1%除外", 2.5: "上位約0.5〜2%除外",
+            2.0: "上位約1〜3%除外", 1.5: "上位約3〜5%除外",
+        }.get(iqr_multiplier, f"IQR×{iqr_multiplier}")
+
         pptx_buf = generate_pptx(
             tmpl_path=_TMPL_PATH,
             k=k, lam=lam, lam_actual=lam_actual, r2=r2,
@@ -2303,6 +2309,10 @@ if True:
             ltv_inf=ltv_inf,
             fmt_horizon=fmt_horizon,
             s4_guide_data=_s4_guide,
+            report_title=report_title,
+            arpu_0_dorm=arpu_0_dorm if 'arpu_0_dorm' in dir() else arpu_daily,
+            arpu_long=arpu_long if 'arpu_long' in dir() else arpu_daily,
+            outlier_label=_outlier_label,
         )
 
         import base64 as _b64
@@ -2360,7 +2370,7 @@ if True:
             ['R²（フィット精度）', f'{r2:.4f}  →  {" 良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
             ['顧客数', f'{len(df):,}件'],
             ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
-            ['平均日次ARPU（売上）', f'¥{arpu_daily:,.2f}'],
+            ['Daily ARPU（売上）', f'¥{arpu_daily:,.2f}'],
             ['GPM（粗利率）', f'{gpm:.1%}'],
             ['ビジネスタイプ', business_type],
             ['休眠判定', dormancy_label],
@@ -2389,7 +2399,7 @@ if True:
         # AI Prompts
         pdata_pdf = (
             f"顧客数: {len(df):,}件（解約済み: {df['event'].sum():,}件）\n"
-            f"平均日次ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
+            f"Daily ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
             f"LTV∞ 売上ベース: ¥{ltv_rev:,.0f} / 粗利ベース: ¥{ltv_val:,.0f}\n"
             f"CAC上限 ({cac_label}): ¥{cac_upper:,.0f}\n"
             f"Weibull k={k:.4f} / λ={lam_display:.1f}日 / R²={r2:.4f}"
@@ -3180,7 +3190,7 @@ else:
 # ══════════════════════════════════════════════════════════════
 
 with st.expander("読み込んだデータを確認"):
-    st.write(f"有効データ: {len(df):,}件 ／ 解約: {df['event'].sum():,}件 ／ 継続中: {(df['event']==0).sum():,}件 ／ 平均日次ARPU: ¥{arpu_daily:,.2f}")
+    st.write(f"有効データ: {len(df):,}件 ／ 解約: {df['event'].sum():,}件 ／ 継続中: {(df['event']==0).sum():,}件 ／ Daily ARPU: ¥{arpu_daily:,.2f}")
     st.dataframe(
         df[['customer_id','start_date','end_date','duration','event','arpu_daily']].head(30),
         hide_index=True
