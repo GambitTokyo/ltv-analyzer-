@@ -314,8 +314,14 @@ def generate_pptx(
     for sh in s2.shapes:
         if sh.name=='テキスト プレースホルダー 6' and sh.has_text_frame:
             tf=sh.text_frame
-            i1=f"データ期間: {_ds} – {_de}　|　顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　継続中: {(df['event']==0).sum():,}件　|　Daily ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
-            i2=f"異常値の処理：{outlier_label}　|　{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}"
+            # 1行目：データ期間 | 顧客数 | 解約済み | 継続中 | 異常値の処理
+            i1=f"データ期間: {_ds} – {_de}　|　顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　継続中: {(df['event']==0).sum():,}件　|　異常値の処理：{outlier_label}"
+            # 2行目：ビジネスタイプ | 請求サイクル/休眠判定 | 日割り(サブスクのみ) | Daily ARPU | GPM
+            if business_type == '都度購入型':
+                _dorm_disp = f'{dormancy_days}日' if dormancy_days else '180日'
+                i2=f"{business_type}　|　休眠判定: {_dorm_disp}　|　Daily ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
+            else:
+                i2=f"{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}　|　Daily ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
             if len(tf.paragraphs)>=1:
                 for r in tf.paragraphs[0].runs: r.text=''
                 if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=i1
