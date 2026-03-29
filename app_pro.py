@@ -834,17 +834,13 @@ with st.sidebar:
         "外れ値カット強度",
         options=[0.0, 3.0, 2.5, 2.0, 1.5],
         value=0.0,
-        format_func=lambda x: "除外なし" if x == 0.0 else {
-            3.0: "極端な外れ値のみ除外",
-            2.5: "明らかな外れ値を除外",
-            2.0: "外れ値を幅広く除外",
-            1.5: "外れ値を積極的に除外",
-        }[x]
+        format_func=lambda x: "除外なし" if x == 0.0 else f"IQR × {x:.1f}"
     )
     outlier_removal = iqr_multiplier > 0.0
     st.caption(
-        "累計金額の上位外れ値をIQR（四分位範囲）の倍率で除外します。"
-        "除外なし以外を選択した場合、下位1%（¥0・極端な低額）も同時に除外されます。"
+        "累計金額の上位外れ値をIQR（75パーセンタイル − 25パーセンタイル）基準で除外します。"
+        "倍率が小さいほど基準が厳しくなり、除外件数が増えます。"
+        "IQR × 1.5以上を選択した場合、下位1%（¥0・極端な低額）も同時に除外されます。"
     )
 
     st.markdown("### ビジネスタイプ")
@@ -982,7 +978,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v264</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v266</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1371,7 +1367,8 @@ try:
             _parts.append(f"上位{n_outlier_upper:,}件（IQR×{iqr_multiplier}超）")
         if n_outlier_lower > 0:
             _parts.append(f"下位{n_outlier_lower:,}件（累計金額1%未満）")
-        st.info(f"{n_outlier:,}件を異常値として除外しました（{'、'.join(_parts)}）。")
+        _pct = n_outlier / (n_outlier + len(df)) * 100
+        st.info(f"{n_outlier:,}件を異常値として除外しました（{'、'.join(_parts)}）。除外率 {_pct:.1f}%、残り {len(df):,}件で分析します。")
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0 and n_outlier == 0:
         st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
 
@@ -2286,10 +2283,7 @@ if True:
         }
 
         # 異常値処理の表示文字列
-        _outlier_label = "除外なし" if iqr_multiplier == 0.0 else {
-            3.0: "極端な外れ値のみ除外", 2.5: "明らかな外れ値を除外",
-            2.0: "外れ値を幅広く除外", 1.5: "外れ値を積極的に除外",
-        }.get(iqr_multiplier, f"IQR×{iqr_multiplier}")
+        _outlier_label = "除外なし" if iqr_multiplier == 0.0 else f"IQR × {iqr_multiplier:.1f}"
 
         pptx_buf = generate_pptx(
             tmpl_path=_TMPL_PATH,
