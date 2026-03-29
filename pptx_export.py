@@ -43,7 +43,24 @@ def _set_text(sh, txt):
     tf = sh.text_frame
     for p in tf.paragraphs:
         for r in p.runs: r.text = ''
-    if tf.paragraphs and tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text = txt
+    if tf.paragraphs and tf.paragraphs[0].runs:
+        tf.paragraphs[0].runs[0].text = txt
+    elif tf.paragraphs and txt:
+        # runがない場合: endParaRPrの書式を引き継いでrunを新規作成
+        p0 = tf.paragraphs[0]._p
+        epr = p0.find(f'{{{A}}}endParaRPr')
+        import copy as _cp
+        r = etree.SubElement(p0, f'{{{A}}}r')
+        if epr is not None:
+            rPr = _cp.deepcopy(epr)
+            rPr.tag = f'{{{A}}}rPr'
+            r.insert(0, rPr)
+        t = etree.SubElement(r, f'{{{A}}}t')
+        t.text = txt
+        # runをendParaRPrの前に移動
+        if epr is not None:
+            p0.remove(r)
+            p0.insert(list(p0).index(epr), r)
 
 def _replace_image(sld, sh, buf):
     blip = sh._element.find('.//' + qn('a:blip'))
