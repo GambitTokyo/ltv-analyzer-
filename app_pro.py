@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v269</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v271</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1445,6 +1445,16 @@ try:
     _sc2.metric("除外件数", f"{n_outlier:,}")
     _sc3.metric("除外率", f"{n_outlier / (n_outlier + len(df)) * 100 if (n_outlier + len(df)) > 0 else 0:.1f}%")
     _sc4.metric("分析対象", f"{len(df):,}")
+    # 分布統計
+    _mode_val = _rev_data.mode().iloc[0] if len(_rev_data.mode()) > 0 else 0
+    _sd1, _sd2, _sd3, _sd4, _sd5, _sd6, _sd7 = st.columns(7)
+    _sd1.metric("平均値", f"¥{_rev_data.mean():,.0f}")
+    _sd2.metric("最頻値", f"¥{_mode_val:,.0f}")
+    _sd3.metric("最小値", f"¥{_rev_data.min():,.0f}")
+    _sd4.metric("25%ile", f"¥{_rev_data.quantile(0.25):,.0f}")
+    _sd5.metric("50%ile", f"¥{_rev_data.quantile(0.50):,.0f}")
+    _sd6.metric("75%ile", f"¥{_rev_data.quantile(0.75):,.0f}")
+    _sd7.metric("最大値", f"¥{_rev_data.max():,.0f}")
     st.plotly_chart(_hist_fig, use_container_width=True)
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0 and n_outlier == 0:
         st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
