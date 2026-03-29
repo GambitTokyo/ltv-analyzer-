@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v273</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v275</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1405,7 +1405,7 @@ try:
         yref='paper', line=dict(color='rgba(160,160,160,0.45)', width=1.5, dash='dot'),
     ))
     _cutline_annots.append(dict(
-        x=_mean_val, y=0.95, yref='paper', text='平均',
+        x=_mean_val, y=1.02, yref='paper', text='平均値',
         showarrow=False, font=dict(color='rgba(160,160,160,0.6)', size=10), xanchor='left',
     ))
     _cutline_shapes.append(dict(
@@ -1413,7 +1413,7 @@ try:
         yref='paper', line=dict(color='rgba(160,160,160,0.45)', width=1.5, dash='dot'),
     ))
     _cutline_annots.append(dict(
-        x=_median_val, y=0.90, yref='paper', text='中央値',
+        x=_median_val, y=1.02, yref='paper', text='中央値',
         showarrow=False, font=dict(color='rgba(160,160,160,0.6)', size=10), xanchor='right',
     ))
     # カットライン（後に追加＝前面に配置）
@@ -1424,8 +1424,10 @@ try:
             yref='paper', line=dict(color=_cut_color, width=2, dash='dash'),
         ))
         _cutline_annots.append(dict(
-            x=_upper_val, y=1.02, yref='paper', text=f'上位{outlier_upper_pct:.1f}%<br>¥{_upper_val:,.0f}',
+            x=_upper_val, y=0.55, yref='paper',
+            text=f'上位{outlier_upper_pct:.1f}%<br>¥{_upper_val:,.0f}',
             showarrow=False, font=dict(color=_cut_color, size=11), xanchor='left',
+            bgcolor='#0A0E14', borderpad=3,
         ))
     if outlier_lower_pct > 0:
         _lower_val = _rev_data.quantile(outlier_lower_pct / 100.0)
@@ -1434,8 +1436,10 @@ try:
             yref='paper', line=dict(color=_cut_color, width=2, dash='dash'),
         ))
         _cutline_annots.append(dict(
-            x=_lower_val, y=1.02, yref='paper', text=f'下位{outlier_lower_pct:.1f}%<br>¥{_lower_val:,.0f}',
+            x=_lower_val, y=0.55, yref='paper',
+            text=f'下位{outlier_lower_pct:.1f}%<br>¥{_lower_val:,.0f}',
             showarrow=False, font=dict(color=_cut_color, size=11), xanchor='left',
+            bgcolor='#0A0E14', borderpad=3,
         ))
     _hist_fig.update_layout(
         template='plotly_dark',
