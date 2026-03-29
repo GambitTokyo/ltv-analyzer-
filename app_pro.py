@@ -1389,40 +1389,53 @@ try:
     # ヒストグラム（除外前の全データ）
     _hist_fig.add_trace(go.Histogram(
         x=_rev_data, nbinsx=80,
-        marker_color='rgba(78, 205, 196, 0.5)',
-        marker_line=dict(color='rgba(78, 205, 196, 0.8)', width=0.5),
+        marker_color='rgba(180, 180, 180, 0.45)',
+        marker_line=dict(color='rgba(200, 200, 200, 0.6)', width=0.5),
         name='売上分布',
     ))
-    # カットライン表示
+    # カットライン表示（st.info青系 #6CB4EE に統一）
+    _cut_color = '#6CB4EE'
     _cutline_shapes = []
     _cutline_annots = []
     if outlier_upper_pct > 0:
         _upper_val = _rev_data.quantile(1.0 - outlier_upper_pct / 100.0)
         _cutline_shapes.append(dict(
             type='line', x0=_upper_val, x1=_upper_val, y0=0, y1=1,
-            yref='paper', line=dict(color='#FF6B6B', width=2, dash='dash'),
+            yref='paper', line=dict(color=_cut_color, width=2, dash='dash'),
         ))
         _cutline_annots.append(dict(
             x=_upper_val, y=1.02, yref='paper', text=f'上位{outlier_upper_pct:.1f}%<br>¥{_upper_val:,.0f}',
-            showarrow=False, font=dict(color='#FF6B6B', size=11), xanchor='left',
+            showarrow=False, font=dict(color=_cut_color, size=11), xanchor='left',
         ))
     if outlier_lower_pct > 0:
         _lower_val = _rev_data.quantile(outlier_lower_pct / 100.0)
-        _cutline_shapes.append(dict(
-            type='line', x0=_lower_val, x1=_lower_val, y0=0, y1=1,
-            yref='paper', line=dict(color='#FFA94D', width=2, dash='dash'),
-        ))
-        _cutline_annots.append(dict(
-            x=_lower_val, y=1.02, yref='paper', text=f'下位{outlier_lower_pct:.1f}%<br>¥{_lower_val:,.0f}',
-            showarrow=False, font=dict(color='#FFA94D', size=11), xanchor='right',
-        ))
+        # 下位カットラインがY軸と重ならないよう、値が極小の場合はスキップ
+        _x_range = _rev_data.max() - _rev_data.min()
+        if _lower_val > _rev_data.min() + _x_range * 0.005:
+            _cutline_shapes.append(dict(
+                type='line', x0=_lower_val, x1=_lower_val, y0=0, y1=1,
+                yref='paper', line=dict(color=_cut_color, width=2, dash='dash'),
+            ))
+            _cutline_annots.append(dict(
+                x=_lower_val, y=1.02, yref='paper', text=f'下位{outlier_lower_pct:.1f}%<br>¥{_lower_val:,.0f}',
+                showarrow=False, font=dict(color=_cut_color, size=11), xanchor='left',
+            ))
     _hist_fig.update_layout(
         template='plotly_dark',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        title=dict(text='顧客別 累計売上の分布', font=dict(size=14)),
-        xaxis=dict(title='累計売上 (¥)', tickformat=',', gridcolor='rgba(255,255,255,0.08)'),
-        yaxis=dict(title='顧客数', gridcolor='rgba(255,255,255,0.08)'),
+        title=dict(text='累計売上の分布', font=dict(size=14)),
+        xaxis=dict(
+            title='累計売上 (¥)', tickformat=',',
+            gridcolor='rgba(255,255,255,0.06)',
+            zeroline=False,
+        ),
+        yaxis=dict(
+            title='顧客数',
+            gridcolor='rgba(255,255,255,0.06)',
+            zeroline=False,
+            layer='below traces',
+        ),
         shapes=_cutline_shapes,
         annotations=_cutline_annots,
         margin=dict(l=50, r=30, t=60, b=40),
