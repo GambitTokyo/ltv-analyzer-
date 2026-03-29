@@ -830,17 +830,23 @@ with st.sidebar:
         st.session_state.sample_label = None
 
     st.markdown("### 異常値処理")
-    iqr_multiplier = st.select_slider(
-        "外れ値カット強度",
-        options=[0.0, 3.0, 2.5, 2.0, 1.5],
-        value=0.0,
-        format_func=lambda x: "除外なし" if x == 0.0 else f"IQR × {x:.1f}"
-    )
-    outlier_removal = iqr_multiplier > 0.0
+    _oc1, _oc2 = st.columns(2)
+    with _oc1:
+        outlier_upper_pct = st.number_input(
+            "上位除外 (%)", min_value=0.0, max_value=20.0,
+            value=0.0, step=0.5, format="%.1f",
+            help="累計金額の上位○%を除外します。0%で除外なし。"
+        )
+    with _oc2:
+        outlier_lower_pct = st.number_input(
+            "下位除外 (%)", min_value=0.0, max_value=20.0,
+            value=0.0, step=0.5, format="%.1f",
+            help="累計金額の下位○%を除外します。0%で除外なし。"
+        )
+    outlier_removal = (outlier_upper_pct > 0) or (outlier_lower_pct > 0)
     st.caption(
-        "累計金額の上位外れ値をIQR（75パーセンタイル − 25パーセンタイル）基準で除外します。"
-        "倍率が小さいほど基準が厳しくなり、除外件数が増えます。"
-        "除外なし以外を選択した場合、下位1%（¥0・極端な低額）も同時に除外されます。"
+        "売上分布のヒストグラムとカットラインが分析結果の手前に表示されます。"
+        "分布を確認してから除外率を調整してください。"
     )
 
     st.markdown("### ビジネスタイプ")
@@ -978,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v267</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v268</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1270,16 +1276,22 @@ try:
     n_outlier = 0
     n_outlier_upper = 0
     n_outlier_lower = 0
+    # 除外前の分布データを保持（ヒストグラム表示用）
+    _rev_before_outlier = df['revenue_total'].copy()
     if outlier_removal:
         before = len(df)
-        # 累計売上：上位のみIQR×倍率でカット（下位は別カウント）
-        q1_r = df['revenue_total'].quantile(0.25)
-        q3_r = df['revenue_total'].quantile(0.75)
-        upper_r = q3_r + iqr_multiplier * (q3_r - q1_r)
-        n_outlier_upper = (df['revenue_total'] > upper_r).sum()
-        # 下位1%（¥0・極端な低額）
-        lower_r = df['revenue_total'].quantile(0.01)
-        n_outlier_lower = (df['revenue_total'] < lower_r).sum()
+        # 上位パーセンタイル除外
+        if outlier_upper_pct > 0:
+            upper_r = df['revenue_total'].quantile(1.0 - outlier_upper_pct / 100.0)
+            n_outlier_upper = (df['revenue_total'] > upper_r).sum()
+        else:
+            upper_r = df['revenue_total'].max() + 1  # 除外なし
+        # 下位パーセンタイル除外
+        if outlier_lower_pct > 0:
+            lower_r = df['revenue_total'].quantile(outlier_lower_pct / 100.0)
+            n_outlier_lower = (df['revenue_total'] < lower_r).sum()
+        else:
+            lower_r = df['revenue_total'].min() - 1  # 除外なし
         df = df[(df['revenue_total'] >= lower_r) & (df['revenue_total'] <= upper_r)]
         n_outlier = before - len(df)
 
@@ -1364,11 +1376,66 @@ try:
     if n_outlier > 0:
         _parts = []
         if n_outlier_upper > 0:
-            _parts.append(f"上位{n_outlier_upper:,}件（IQR×{iqr_multiplier}超）")
+            _parts.append(f"上位{n_outlier_upper:,}件（上位{outlier_upper_pct:.1f}%）")
         if n_outlier_lower > 0:
-            _parts.append(f"下位{n_outlier_lower:,}件（累計金額1%未満）")
+            _parts.append(f"下位{n_outlier_lower:,}件（下位{outlier_lower_pct:.1f}%）")
         _pct = n_outlier / (n_outlier + len(df)) * 100
         st.info(f"{n_outlier:,}件を異常値として除外しました（{'、'.join(_parts)}）。除外率 {_pct:.1f}%、残り {len(df):,}件で分析します。")
+
+    # ── 売上分布ヒストグラム ──
+    import plotly.graph_objects as go
+    _rev_data = _rev_before_outlier
+    _hist_fig = go.Figure()
+    # ヒストグラム（除外前の全データ）
+    _hist_fig.add_trace(go.Histogram(
+        x=_rev_data, nbinsx=80,
+        marker_color='rgba(78, 205, 196, 0.5)',
+        marker_line=dict(color='rgba(78, 205, 196, 0.8)', width=0.5),
+        name='売上分布',
+    ))
+    # カットライン表示
+    _cutline_shapes = []
+    _cutline_annots = []
+    if outlier_upper_pct > 0:
+        _upper_val = _rev_data.quantile(1.0 - outlier_upper_pct / 100.0)
+        _cutline_shapes.append(dict(
+            type='line', x0=_upper_val, x1=_upper_val, y0=0, y1=1,
+            yref='paper', line=dict(color='#FF6B6B', width=2, dash='dash'),
+        ))
+        _cutline_annots.append(dict(
+            x=_upper_val, y=1.02, yref='paper', text=f'上位{outlier_upper_pct:.1f}%<br>¥{_upper_val:,.0f}',
+            showarrow=False, font=dict(color='#FF6B6B', size=11), xanchor='left',
+        ))
+    if outlier_lower_pct > 0:
+        _lower_val = _rev_data.quantile(outlier_lower_pct / 100.0)
+        _cutline_shapes.append(dict(
+            type='line', x0=_lower_val, x1=_lower_val, y0=0, y1=1,
+            yref='paper', line=dict(color='#FFA94D', width=2, dash='dash'),
+        ))
+        _cutline_annots.append(dict(
+            x=_lower_val, y=1.02, yref='paper', text=f'下位{outlier_lower_pct:.1f}%<br>¥{_lower_val:,.0f}',
+            showarrow=False, font=dict(color='#FFA94D', size=11), xanchor='right',
+        ))
+    _hist_fig.update_layout(
+        template='plotly_dark',
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        title=dict(text='顧客別 累計売上の分布', font=dict(size=14)),
+        xaxis=dict(title='累計売上 (¥)', tickformat=',', gridcolor='rgba(255,255,255,0.08)'),
+        yaxis=dict(title='顧客数', gridcolor='rgba(255,255,255,0.08)'),
+        shapes=_cutline_shapes,
+        annotations=_cutline_annots,
+        margin=dict(l=50, r=30, t=60, b=40),
+        height=300,
+        showlegend=False,
+    )
+    # サマリー指標
+    _sc1, _sc2, _sc3, _sc4 = st.columns(4)
+    _sc1.metric("全顧客数", f"{len(_rev_data):,}")
+    _sc2.metric("除外件数", f"{n_outlier:,}")
+    _sc3.metric("除外率", f"{n_outlier / (n_outlier + len(df)) * 100 if (n_outlier + len(df)) > 0 else 0:.1f}%")
+    _sc4.metric("分析対象", f"{len(df):,}")
+    st.plotly_chart(_hist_fig, use_container_width=True)
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0 and n_outlier == 0:
         st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
 
@@ -2283,7 +2350,12 @@ if True:
         }
 
         # 異常値処理の表示文字列
-        _outlier_label = "除外なし" if iqr_multiplier == 0.0 else f"IQR × {iqr_multiplier:.1f}"
+        _outlier_parts = []
+        if outlier_upper_pct > 0:
+            _outlier_parts.append(f"上位{outlier_upper_pct:.1f}%")
+        if outlier_lower_pct > 0:
+            _outlier_parts.append(f"下位{outlier_lower_pct:.1f}%")
+        _outlier_label = '、'.join(_outlier_parts) if _outlier_parts else "除外なし"
 
         pptx_buf = generate_pptx(
             tmpl_path=_TMPL_PATH,
