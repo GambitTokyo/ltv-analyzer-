@@ -1445,16 +1445,26 @@ try:
     _sc2.metric("除外件数", f"{n_outlier:,}")
     _sc3.metric("除外率", f"{n_outlier / (n_outlier + len(df)) * 100 if (n_outlier + len(df)) > 0 else 0:.1f}%")
     _sc4.metric("分析対象", f"{len(df):,}")
-    # 分布統計
+    # 分布統計（小フォントで1行表示）
     _mode_val = _rev_data.mode().iloc[0] if len(_rev_data.mode()) > 0 else 0
-    _sd1, _sd2, _sd3, _sd4, _sd5, _sd6, _sd7 = st.columns(7)
-    _sd1.metric("平均値", f"¥{_rev_data.mean():,.0f}")
-    _sd2.metric("最頻値", f"¥{_mode_val:,.0f}")
-    _sd3.metric("最小値", f"¥{_rev_data.min():,.0f}")
-    _sd4.metric("25%ile", f"¥{_rev_data.quantile(0.25):,.0f}")
-    _sd5.metric("50%ile", f"¥{_rev_data.quantile(0.50):,.0f}")
-    _sd6.metric("75%ile", f"¥{_rev_data.quantile(0.75):,.0f}")
-    _sd7.metric("最大値", f"¥{_rev_data.max():,.0f}")
+    _stats_items = [
+        ("平均", f"¥{_rev_data.mean():,.0f}"),
+        ("最頻値", f"¥{_mode_val:,.0f}"),
+        ("最小", f"¥{_rev_data.min():,.0f}"),
+        ("25%ile", f"¥{_rev_data.quantile(0.25):,.0f}"),
+        ("50%ile", f"¥{_rev_data.quantile(0.50):,.0f}"),
+        ("75%ile", f"¥{_rev_data.quantile(0.75):,.0f}"),
+        ("最大", f"¥{_rev_data.max():,.0f}"),
+    ]
+    _stats_html = ''.join(
+        f'<span style="margin-right:1.5em;"><span style="color:#888;font-size:0.72rem;">{lbl}</span>'
+        f'<br><span style="color:#ccc;font-size:0.82rem;">{val}</span></span>'
+        for lbl, val in _stats_items
+    )
+    st.markdown(
+        f'<div style="display:flex;flex-wrap:nowrap;gap:0;padding:4px 0 8px 0;">{_stats_html}</div>',
+        unsafe_allow_html=True,
+    )
     st.plotly_chart(_hist_fig, use_container_width=True)
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0 and n_outlier == 0:
         st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
