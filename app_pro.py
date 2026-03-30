@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v279</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v280</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2476,40 +2476,151 @@ if True:
 if True:
     try:
         from reportlab.lib.pagesizes import A4
-        from reportlab.lib import colors
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import cm
+        from reportlab.lib import colors as rl_colors
+        from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer,
+                                         Image as RLImage, Table as RLTable,
+                                         TableStyle, PageBreak, KeepTogether)
+        from reportlab.lib.styles import ParagraphStyle
+        from reportlab.lib.units import cm, mm
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.cidfonts import UnicodeCIDFont
         pdfmetrics.registerFont(UnicodeCIDFont('HeiseiMin-W3'))
 
+        # ── デザイントークン ──
+        _BG       = rl_colors.HexColor('#0E1117')
+        _BG2      = rl_colors.HexColor('#161B22')
+        _BG3      = rl_colors.HexColor('#1C2333')
+        _ACCENT   = rl_colors.HexColor('#56b4d3')
+        _ACCENT2  = rl_colors.HexColor('#a8dadc')
+        _TEXT     = rl_colors.HexColor('#c8ccd0')
+        _TEXT_DIM = rl_colors.HexColor('#6e7681')
+        _GRID     = rl_colors.HexColor('#2a3040')
+        _WHITE    = rl_colors.HexColor('#e6edf3')
+        _GOLD     = rl_colors.HexColor('#c8b89a')
+
+        CONTENT_W = 16.5 * cm  # グラフ・テーブル統一幅
+        COL_GAP   = 0.4 * cm
+        HALF_W    = (CONTENT_W - COL_GAP) / 2
+
         pdf_buf = io.BytesIO()
         doc = SimpleDocTemplate(pdf_buf, pagesize=A4,
-                                leftMargin=2*cm, rightMargin=2*cm,
-                                topMargin=2*cm, bottomMargin=2*cm)
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle('T', fontName='HeiseiMin-W3', fontSize=18, spaceAfter=6,
-                                     textColor=colors.HexColor('#56b4d3'))
-        h2_style    = ParagraphStyle('H2', fontName='HeiseiMin-W3', fontSize=13, spaceAfter=4,
-                                     textColor=colors.HexColor('#111111'), spaceBefore=14)
-        body_style  = ParagraphStyle('B', fontName='HeiseiMin-W3', fontSize=9,
-                                     textColor=colors.HexColor('#333333'), spaceAfter=3)
+                                leftMargin=2 * cm, rightMargin=2 * cm,
+                                topMargin=1.5 * cm, bottomMargin=1.5 * cm)
+
+        # ── スタイル ──
+        s_title  = ParagraphStyle('T',  fontName='HeiseiMin-W3', fontSize=20, leading=26,
+                                   textColor=_ACCENT, spaceAfter=4)
+        s_sub    = ParagraphStyle('Su', fontName='HeiseiMin-W3', fontSize=11, leading=15,
+                                   textColor=_TEXT_DIM, spaceAfter=2)
+        s_chap   = ParagraphStyle('Ch', fontName='HeiseiMin-W3', fontSize=14, leading=20,
+                                   textColor=_ACCENT, spaceBefore=0, spaceAfter=8)
+        s_h3     = ParagraphStyle('H3', fontName='HeiseiMin-W3', fontSize=10, leading=14,
+                                   textColor=_ACCENT2, spaceBefore=10, spaceAfter=4)
+        s_body   = ParagraphStyle('B',  fontName='HeiseiMin-W3', fontSize=9, leading=13,
+                                   textColor=_TEXT, spaceAfter=3)
+        s_small  = ParagraphStyle('Sm', fontName='HeiseiMin-W3', fontSize=7.5, leading=11,
+                                   textColor=_TEXT_DIM, spaceAfter=2)
+        s_label  = ParagraphStyle('Lb', fontName='HeiseiMin-W3', fontSize=8, leading=12,
+                                   textColor=_ACCENT, spaceAfter=2, spaceBefore=6)
+        s_prompt = ParagraphStyle('Pr', fontName='HeiseiMin-W3', fontSize=7.5, leading=11,
+                                   textColor=_TEXT, spaceAfter=1, leftIndent=8, rightIndent=8)
+        s_rec    = ParagraphStyle('Rc', fontName='HeiseiMin-W3', fontSize=9, leading=13,
+                                   textColor=_ACCENT, backColor=_BG3,
+                                   borderPadding=8, spaceAfter=6, spaceBefore=8,
+                                   leftIndent=8, rightIndent=8)
+
+        # テーブルスタイルヘルパー
+        def _dark_tbl_style(has_title_col=True):
+            s = [
+                ('BACKGROUND',    (0, 0), (-1, 0), _BG3),
+                ('TEXTCOLOR',     (0, 0), (-1, 0), _ACCENT),
+                ('TEXTCOLOR',     (0, 1), (-1, -1), _TEXT),
+                ('FONTNAME',      (0, 0), (-1, -1), 'HeiseiMin-W3'),
+                ('FONTSIZE',      (0, 0), (-1, -1), 8),
+                ('ROWBACKGROUNDS',(0, 1), (-1, -1), [_BG, _BG2]),
+                ('GRID',          (0, 0), (-1, -1), 0.3, _GRID),
+                ('LEFTPADDING',   (0, 0), (-1, -1), 6),
+                ('RIGHTPADDING',  (0, 0), (-1, -1), 6),
+                ('TOPPADDING',    (0, 0), (-1, -1), 4),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+            ]
+            if has_title_col:
+                s.append(('TEXTCOLOR', (0, 1), (0, -1), _GOLD))
+            return TableStyle(s)
 
         story = []
-        story.append(Paragraph('LTV Analysis Report', title_style))
-        if client_name: story.append(Paragraph(f'クライアント: {client_name}', body_style))
-        story.append(Spacer(1, 0.3*cm))
 
-        story.append(Paragraph('分析結果サマリー', h2_style))
-        tdata = [
+        # ═══════════════════════════════════════════════════════════
+        # Chapter 1: 表紙
+        # ═══════════════════════════════════════════════════════════
+        story.append(Spacer(1, 3 * cm))
+        story.append(Paragraph('LTV Analysis Report', s_title))
+        if report_title:
+            story.append(Paragraph(report_title, s_sub))
+        if client_name:
+            story.append(Paragraph(f'クライアント: {client_name}', s_sub))
+        if analyst_name:
+            story.append(Paragraph(f'アナリスト: {analyst_name}', s_sub))
+        story.append(Spacer(1, 0.8 * cm))
+
+        # 表紙サマリーKPI（アプリの5列メトリックに近づけたテーブル）
+        _kpi_data = [
+            [f'¥{ltv_rev:,.0f}', f'¥{cac_upper:,.0f}', f'{k:.3f}',
+             f'{lam_display:.0f}日', f'{r2:.3f}'],
+            ['LTV∞（売上）', f'CAC上限（{cac_label}）', 'Weibull k',
+             'Weibull λ', 'R²'],
+        ]
+        _kpi_cw = [CONTENT_W / 5] * 5
+        _kpi_t = RLTable(_kpi_data, colWidths=_kpi_cw, rowHeights=[28, 16])
+        _kpi_t.setStyle(TableStyle([
+            ('BACKGROUND',  (0, 0), (-1, -1), _BG2),
+            ('TEXTCOLOR',   (0, 0), (-1, 0), _WHITE),
+            ('TEXTCOLOR',   (0, 1), (-1, 1), _ACCENT),
+            ('FONTNAME',    (0, 0), (-1, -1), 'HeiseiMin-W3'),
+            ('FONTSIZE',    (0, 0), (-1, 0), 13),
+            ('FONTSIZE',    (0, 1), (-1, 1), 7.5),
+            ('ALIGN',       (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN',      (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID',        (0, 0), (-1, -1), 0.3, _GRID),
+            ('TOPPADDING',  (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING',(0, 0), (-1, -1), 4),
+        ]))
+        story.append(_kpi_t)
+        story.append(Spacer(1, 1 * cm))
+
+        # 表紙の概要テキスト
+        _k_desc_pdf = "初期離脱型（k<1）" if k < 1 else "逓増離脱型（k≧1）"
+        story.append(Paragraph(
+            f'Weibull分析の結果、このビジネスは{_k_desc_pdf}に分類されます。'
+            f'λ={lam_display:.0f}日（約{lam_display/365:.1f}年）を平均継続期間の目安として、'
+            f'LTV∞（売上ベース）は¥{ltv_rev:,.0f}と推定されました。',
+            s_body
+        ))
+        story.append(Spacer(1, 0.5 * cm))
+        story.append(Paragraph(
+            f'ビジネスタイプ: {business_type}　/　'
+            f'休眠判定: {dormancy_label}　/　'
+            f'顧客数: {len(df):,}件　/　'
+            f'Daily ARPU: ¥{arpu_daily:,.2f}　/　GPM: {gpm:.1%}',
+            s_small
+        ))
+
+        # ═══════════════════════════════════════════════════════════
+        # Chapter 2: 分析結果サマリー
+        # ═══════════════════════════════════════════════════════════
+        story.append(PageBreak())
+        story.append(Paragraph('分析結果サマリー', s_chap))
+        story.append(Spacer(1, 0.3 * cm))
+
+        _sum_data = [
             ['指標', '値'],
             ['LTV∞（売上ベース）', f'¥{ltv_rev:,.0f}'],
             ['LTV∞（粗利ベース・CAC算出用）', f'¥{ltv_val:,.0f}'],
             [f'CAC上限（粗利ベース・{cac_label}）', f'¥{cac_upper:,.0f}'],
-            ['Weibull k（形状パラメータ）', f'{k:.4f}  →  {"k<1: 初期離脱型" if k < 1 else "k>1: 逓増離脱型"}'],
-            ['Weibull λ（尺度パラメータ）', f'{lam + ltv_offset_days if business_type == "都度購入型" else lam:.1f}日（約{(lam + ltv_offset_days if business_type == "都度購入型" else lam)/365:.1f}年）'],
-            ['R²（フィット精度）', f'{r2:.4f}  →  {" 良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
+            ['Weibull k（形状パラメータ）', f'{k:.4f}　→　{_k_desc_pdf}'],
+            ['Weibull λ（尺度パラメータ）', f'{lam_display:.1f}日（約{lam_display/365:.1f}年）'],
+            ['R²（フィット精度）', f'{r2:.4f}　→　{"良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
             ['顧客数', f'{len(df):,}件'],
             ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
             ['Daily ARPU（売上）', f'¥{arpu_daily:,.2f}'],
@@ -2517,28 +2628,304 @@ if True:
             ['ビジネスタイプ', business_type],
             ['休眠判定', dormancy_label],
         ]
-        t = Table(tdata, colWidths=[9*cm, 6*cm])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1a1a1a')),
-            ('TEXTCOLOR',  (0,0), (-1,0), colors.HexColor('#c8b89a')),
-            ('TEXTCOLOR',  (0,1), (-1,-1), colors.HexColor('#cccccc')),
-            ('FONTNAME',   (0,0), (-1,-1), 'HeiseiMin-W3'),
-            ('FONTSIZE',   (0,0), (-1,-1), 9),
-            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor('#111111'), colors.HexColor('#161616')]),
-            ('GRID', (0,0), (-1,-1), 0.3, colors.HexColor('#333333')),
-            ('LEFTPADDING', (0,0), (-1,-1), 8),
-        ]))
-        story.append(t)
+        _val_cw = CONTENT_W - 9 * cm
+        _sum_t = RLTable(_sum_data, colWidths=[9 * cm, _val_cw])
+        _sum_t.setStyle(_dark_tbl_style(has_title_col=True))
+        story.append(_sum_t)
 
-        story.append(Paragraph('Survival Curve', h2_style))
+        # ═══════════════════════════════════════════════════════════
+        # Chapter 3: モデル信頼性
+        # ═══════════════════════════════════════════════════════════
+        story.append(PageBreak())
+        story.append(Paragraph('モデル信頼性', s_chap))
+        story.append(Spacer(1, 0.3 * cm))
+
+        story.append(Paragraph('Survival Curve（生存曲線）', s_h3))
         buf1.seek(0)
-        story.append(Image(buf1, width=13*cm, height=7.5*cm))
+        story.append(RLImage(buf1, width=CONTENT_W, height=CONTENT_W * 0.48))
+        story.append(Spacer(1, 0.8 * cm))
 
-        story.append(Paragraph('Weibull Linearization Plot', h2_style))
+        story.append(Paragraph('Weibull Linearization Plot（直線化プロット）', s_h3))
         buf2.seek(0)
-        story.append(Image(buf2, width=13*cm, height=7.5*cm))
+        story.append(RLImage(buf2, width=CONTENT_W, height=CONTENT_W * 0.48))
 
-        # AI Prompts
+        # ═══════════════════════════════════════════════════════════
+        # Chapter 4: 暫定LTV — 観測期間別
+        # ═══════════════════════════════════════════════════════════
+        story.append(PageBreak())
+        story.append(Paragraph('暫定 LTV — 観測期間別', s_chap))
+        story.append(Spacer(1, 0.3 * cm))
+
+        # LTV推移グラフ（matplotlib dark）
+        import matplotlib.pyplot as plt_pdf
+        import numpy as np_pdf
+
+        fig_ltv_pdf, ax_lp = plt_pdf.subplots(figsize=(10, 4.5))
+        fig_ltv_pdf.patch.set_facecolor('#0E1117')
+        ax_lp.set_facecolor('#0E1117')
+
+        ax_lp.plot(t_range, rev_line, color='#56b4d3', lw=2, label='LTV（売上）')
+        ax_lp.plot(t_range, gp_line,  color='#a8dadc', lw=2, ls='--', label='LTV（粗利）')
+        ax_lp.plot(t_range, cac_line, color='#4a7a8a', lw=1.5, ls=':', label='CAC上限')
+        ax_lp.axhline(y=ltv_rev, color='#56b4d3', lw=1, ls=':', alpha=0.4)
+        ax_lp.axvline(x=lam_actual, color='#a8dadc', lw=1.5, ls='--', alpha=0.5)
+
+        # マーカー
+        _marker_days_pdf = sorted(set([180, 365, 730, 1095, 1825]))
+        for _td, _tc, _tl in [(rev_line, '#56b4d3', 'rev'), (gp_line, '#a8dadc', 'gp')]:
+            _mx = [d for d in _marker_days_pdf if d <= max(t_range)]
+            _my = [_td[min(range(len(t_range)), key=lambda i: abs(t_range[i] - d))] for d in _mx]
+            ax_lp.scatter(_mx, _my, color=_tc, s=25, zorder=5)
+
+        ax_lp.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(max(t_range)*0.7, ltv_rev),
+                       fontsize=8, color='#56b4d3', va='bottom')
+        ax_lp.annotate(f'λ={round(lam_actual)}日', xy=(lam_actual, max(rev_line)*0.5),
+                       fontsize=8, color='#a8dadc', ha='center',
+                       bbox=dict(boxstyle='round,pad=0.2', fc='#0E1117', ec='none'))
+
+        _tick_v = [180, 365, 730, 1095, 1460, 1825]
+        _tick_l = ['180日', '1年', '2年', '3年', '4年', '5年']
+        ax_lp.set_xticks([v for v in _tick_v if v <= max(t_range)])
+        ax_lp.set_xticklabels([l for v, l in zip(_tick_v, _tick_l) if v <= max(t_range)])
+
+        if _JP_FONT_NAME:
+            ax_lp.set_xlabel('継続期間', fontsize=9, color='#888',
+                            fontfamily=_JP_FONT_NAME)
+            ax_lp.set_ylabel('金額（円）', fontsize=9, color='#888',
+                            fontfamily=_JP_FONT_NAME)
+        else:
+            ax_lp.set_xlabel('Days', fontsize=9, color='#888')
+            ax_lp.set_ylabel('Amount', fontsize=9, color='#888')
+
+        ax_lp.tick_params(colors='#888', labelsize=8)
+        ax_lp.yaxis.set_major_formatter(plt_pdf.FuncFormatter(lambda x, _: f'¥{x:,.0f}'))
+        ax_lp.grid(True, alpha=0.15, color='#2a3040')
+        ax_lp.legend(fontsize=8, facecolor='#0E1117', edgecolor='#2a3040',
+                    labelcolor='#ccc', loc='upper left')
+        for spine in ax_lp.spines.values():
+            spine.set_color('#2a3040')
+
+        fig_ltv_pdf.tight_layout()
+        buf_ltv_pdf = io.BytesIO()
+        fig_ltv_pdf.savefig(buf_ltv_pdf, format='png', dpi=150,
+                           facecolor='#0E1117', bbox_inches='tight')
+        buf_ltv_pdf.seek(0)
+        plt_pdf.close(fig_ltv_pdf)
+
+        story.append(RLImage(buf_ltv_pdf, width=CONTENT_W, height=CONTENT_W * 0.42))
+        story.append(Spacer(1, 0.6 * cm))
+
+        # 暫定LTVテーブル
+        story.append(Paragraph('暫定LTVテーブル', s_h3))
+        _ltv_hdr = ['ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率']
+        _ltv_tdata = [_ltv_hdr]
+        for row in tbl_rows:
+            _ltv_tdata.append([
+                row['ホライズン'], row['LTV（売上）'], row['LTV（粗利）'],
+                row['CAC上限'], row['LTV∞到達率'],
+            ])
+        # LTV∞行追加
+        _ltv_tdata.append([
+            'LTV∞', f'¥{ltv_rev:,.0f}', f'¥{ltv_val:,.0f}',
+            f'¥{cac_upper:,.0f}', '100.0%',
+        ])
+        # 99%到達行
+        _ltv_tdata.append([
+            f'99%到達 {fmt_horizon(days_99)}', '', '', '', '99.0%',
+        ])
+
+        _title_cw = 3.5 * cm
+        _data_cw  = (CONTENT_W - _title_cw) / 4
+        _ltv_t = RLTable(_ltv_tdata, colWidths=[_title_cw] + [_data_cw] * 4)
+        _ltv_t.setStyle(_dark_tbl_style(has_title_col=True))
+        story.append(_ltv_t)
+
+        # ═══════════════════════════════════════════════════════════
+        # Chapter 5+6: セグメント別分析
+        # ═══════════════════════════════════════════════════════════
+        if segment_cols_input.strip():
+            seg_cols_pdf = [c.strip() for c in segment_cols_input.split(',')
+                           if c.strip() and c.strip() in df.columns]
+            for sc in seg_cols_pdf:
+                story.append(PageBreak())
+                story.append(Paragraph(f'セグメント別 LTV∞ 分析：{sc}', s_chap))
+                story.append(Spacer(1, 0.3 * cm))
+
+                seg_vals = df[sc].dropna().unique()
+                pdf_rows = [['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）',
+                             'CAC上限', 'k', 'R²']]
+                best_pdf = None
+                avg_ltv_pdf = []
+                for sv in sorted(seg_vals):
+                    df_s = df[df[sc] == sv]
+                    if len(df_s) < 10 or df_s['event'].sum() < 5:
+                        continue
+                    try:
+                        km_s = _compute_km_df(df_s)
+                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
+                        if k_s is None:
+                            continue
+                        arpu_s = (df_s['revenue_total'].sum() / df_s['duration'].sum()
+                                  if billing_cycle == '日次（都度購入）'
+                                  else df_s['arpu_daily'].mean())
+                        gp_s = arpu_s * gpm
+                        ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
+                        ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
+                        pdf_rows.append([str(sv), f'{len(df_s):,}',
+                                        f'¥{ltv_r:,.0f}', f'¥{ltv_g:,.0f}',
+                                        f'¥{ltv_g/cac_n:,.0f}',
+                                        f'{k_s:.3f}', f'{r2_s:.3f}'])
+                        avg_ltv_pdf.append(ltv_r)
+                        if best_pdf is None or ltv_r > best_pdf['ltv_r']:
+                            best_pdf = {'seg': str(sv), 'ltv_r': ltv_r,
+                                       'ltv_g': ltv_g, 'cac': ltv_g / cac_n}
+                    except Exception:
+                        continue
+
+                # サマリーテーブル（上位10件）
+                pdf_rows_show = ([pdf_rows[0]] +
+                                sorted(pdf_rows[1:],
+                                       key=lambda x: float(x[2].replace('¥', '').replace(',', '')),
+                                       reverse=True)[:10])
+                _seg_title_cw = 3 * cm
+                _seg_data_cw = (CONTENT_W - _seg_title_cw) / 6
+                t_seg = RLTable(pdf_rows_show,
+                               colWidths=[_seg_title_cw] + [_seg_data_cw] * 6)
+                t_seg.setStyle(_dark_tbl_style(has_title_col=True))
+                story.append(t_seg)
+                story.append(Spacer(1, 0.4 * cm))
+
+                # 推奨セグメント
+                if best_pdf and avg_ltv_pdf:
+                    avg_pp = sum(avg_ltv_pdf) / len(avg_ltv_pdf)
+                    prem = (best_pdf['ltv_r'] - avg_pp) / avg_pp * 100
+                    story.append(Paragraph(
+                        f"★ 優先獲得推奨：{best_pdf['seg']}　"
+                        f"LTV∞（売上）¥{best_pdf['ltv_r']:,.0f}（全平均比+{prem:.1f}%）　"
+                        f"CAC上限（粗利）¥{best_pdf['cac']:,.0f}",
+                        s_rec
+                    ))
+
+                # ── セグメント詳細 ──
+                story.append(PageBreak())
+                story.append(Paragraph(f'セグメント詳細（{sc}）', s_chap))
+                story.append(Spacer(1, 0.3 * cm))
+
+                for sv in sorted(seg_vals):
+                    df_sv2 = df[df[sc] == sv]
+                    if len(df_sv2) < 10 or df_sv2['event'].sum() < 5:
+                        continue
+                    try:
+                        km_sv2 = _compute_km_df(df_sv2)
+                        k_sv2, lam_sv2, r2_sv2, _ = _fit_weibull_df(km_sv2)
+                        if k_sv2 is None:
+                            continue
+                        arpu_sv2 = (df_sv2['revenue_total'].sum() / df_sv2['duration'].sum()
+                                    if billing_cycle == '日次（都度購入）'
+                                    else df_sv2['arpu_daily'].mean())
+                        ltv_inf_sv2 = lam_sv2 * gamma(1 + 1 / k_sv2) * arpu_sv2
+
+                        story.append(Paragraph(
+                            f'{str(sv)}　（{len(df_sv2):,}件 / LTV∞ ¥{ltv_inf_sv2:,.0f} '
+                            f'/ k={k_sv2:.3f} / λ={lam_sv2:.1f}日 / R²={r2_sv2:.3f}）',
+                            s_label
+                        ))
+
+                        # 2グラフ横並び（dark theme）
+                        import matplotlib.pyplot as plt_pdf_seg
+                        import numpy as np_pdf_seg
+                        fig_2g, (ax_g1, ax_g2) = plt_pdf_seg.subplots(1, 2, figsize=(12, 4))
+                        fig_2g.patch.set_facecolor('#0E1117')
+                        ax_g1.set_facecolor('#0E1117')
+                        ax_g2.set_facecolor('#0E1117')
+
+                        # 左：生存曲線
+                        ax_g1.step(km_sv2['t'], km_sv2['S'], color='#56b4d3', lw=1.5,
+                                  label='KM Curve')
+                        t_r2 = km_sv2['t'].values
+                        ax_g1.plot(t_r2,
+                                  [float(weibull_s(t, k_sv2, lam_sv2)) for t in t_r2],
+                                  '--', color='#a8dadc', lw=1.2, label='Weibull Fit')
+                        ax_g1.set_xlabel('Days', fontsize=9, color='#888')
+                        ax_g1.set_ylabel('S(t)', fontsize=9, color='#888')
+                        ax_g1.tick_params(colors='#888', labelsize=8)
+                        ax_g1.legend(fontsize=7, facecolor='#0E1117', edgecolor='#2a3040',
+                                    labelcolor='#ccc')
+                        ax_g1.grid(True, alpha=0.15, color='#2a3040')
+                        ax_g1.set_title(f'Survival: {str(sv)}', fontsize=9, color='#ccc')
+                        for sp in ax_g1.spines.values():
+                            sp.set_color('#2a3040')
+
+                        # 右：Weibull直線化
+                        km_fit_p = km_sv2[km_sv2['S'] > 0]
+                        ln_t_p = np_pdf_seg.log(km_fit_p['t'].values.astype(float) + 1e-10)
+                        ln_neg_p = np_pdf_seg.log(
+                            -np_pdf_seg.log(km_fit_p['S'].values.astype(float) + 1e-15))
+                        valid_p = np_pdf_seg.isfinite(ln_t_p) & np_pdf_seg.isfinite(ln_neg_p)
+                        ln_t_p, ln_neg_p = ln_t_p[valid_p], ln_neg_p[valid_p]
+                        if len(ln_t_p) > 1:
+                            slope_p, int_p, _, _, _ = __import__('scipy').stats.linregress(
+                                ln_t_p, ln_neg_p)
+                            x_lp2 = np_pdf_seg.linspace(ln_t_p.min(), ln_t_p.max(), 100)
+                            ax_g2.scatter(ln_t_p, ln_neg_p, color='#56b4d3', s=12, alpha=0.7)
+                            ax_g2.plot(x_lp2, slope_p * x_lp2 + int_p, '--',
+                                      color='#a8dadc', lw=1.5, label=f'R²={r2_sv2:.3f}')
+                            ax_g2.annotate(f'y={slope_p:.3f}x+{int_p:.3f}',
+                                          xy=(0.05, 0.93), xycoords='axes fraction',
+                                          fontsize=7, color='#888')
+                        ax_g2.set_xlabel('ln(t)', fontsize=9, color='#888')
+                        ax_g2.set_ylabel('ln(−ln(S(t)))', fontsize=9, color='#888')
+                        ax_g2.tick_params(colors='#888', labelsize=8)
+                        ax_g2.legend(fontsize=7, facecolor='#0E1117', edgecolor='#2a3040',
+                                    labelcolor='#ccc')
+                        ax_g2.grid(True, alpha=0.15, color='#2a3040')
+                        ax_g2.set_title(f'Weibull Lin.: {str(sv)}', fontsize=9, color='#ccc')
+                        for sp in ax_g2.spines.values():
+                            sp.set_color('#2a3040')
+
+                        fig_2g.tight_layout(pad=1.5)
+                        buf_2g = io.BytesIO()
+                        fig_2g.savefig(buf_2g, format='png', dpi=120,
+                                      facecolor='#0E1117', bbox_inches='tight')
+                        buf_2g.seek(0)
+                        plt_pdf_seg.close(fig_2g)
+
+                        # 横並び：左グラフ左端 = 単一グラフ左端、右グラフ右端 = 単一グラフ右端
+                        story.append(RLImage(buf_2g, width=CONTENT_W,
+                                            height=CONTENT_W * 0.33))
+                        story.append(Spacer(1, 0.3 * cm))
+
+                        # 暫定LTVテーブル
+                        hor_data2 = [['ホライズン', '暫定LTV（売上）', 'LTV∞比',
+                                     'CAC上限（粗利）']]
+                        for h in horizons:
+                            lh_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, h)
+                            label_h = f'{h}日' if h < 365 else f'{h // 365}年'
+                            hor_data2.append([
+                                label_h, f'¥{lh_sv2:,.0f}',
+                                f'{lh_sv2 / ltv_inf_sv2 * 100:.1f}%',
+                                f'¥{lh_sv2 * gpm / cac_n:,.0f}',
+                            ])
+                        _seg_ltv_title_cw = 3 * cm
+                        _seg_ltv_data_cw = (CONTENT_W - _seg_ltv_title_cw) / 3
+                        t_sv2 = RLTable(hor_data2,
+                                       colWidths=[_seg_ltv_title_cw] + [_seg_ltv_data_cw] * 3)
+                        t_sv2.setStyle(_dark_tbl_style(has_title_col=True))
+                        story.append(t_sv2)
+                        story.append(Spacer(1, 0.8 * cm))
+                    except Exception:
+                        continue
+
+        # ═══════════════════════════════════════════════════════════
+        # Chapter 7: AIプロンプト
+        # ═══════════════════════════════════════════════════════════
+        story.append(PageBreak())
+        story.append(Paragraph('AIへの質問プロンプト', s_chap))
+        story.append(Paragraph(
+            '以下のプロンプトをClaude / ChatGPT / Gemini にコピペしてご活用ください。',
+            s_body))
+        story.append(Spacer(1, 0.3 * cm))
+
         pdata_pdf = (
             f"顧客数: {len(df):,}件（解約済み: {df['event'].sum():,}件）\n"
             f"Daily ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
@@ -2546,13 +2933,6 @@ if True:
             f"CAC上限 ({cac_label}): ¥{cac_upper:,.0f}\n"
             f"Weibull k={k:.4f} / λ={lam_display:.1f}日 / R²={r2:.4f}"
         )
-        prompt_style = ParagraphStyle('P', fontName='HeiseiMin-W3', fontSize=8,
-                                      textColor=colors.HexColor('#111111'),
-                                      spaceAfter=2, leading=12,
-                                      leftIndent=8, rightIndent=8)
-        label_style = ParagraphStyle('L', fontName='HeiseiMin-W3', fontSize=8,
-                                     textColor=colors.HexColor('#1d6fa4'), spaceAfter=2, spaceBefore=10)
-
         prompts_pdf = [
             ('AIプロンプト① 結果の読み方',
              f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n\n【質問】\n"
@@ -2570,173 +2950,30 @@ if True:
              f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n\n【質問】\n"
              f"1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？\n"
              f"2. R²={r2:.4f}は十分ですか？改善するにはどうすればよいですか？\n"
-             f"3. Weibullモデルの仮定が成立していない可能性はありますか？どうチェックすればよいですか？\n"
-             f"4. {"解約日ベースで分析していますが、解約データの欠損や遅延がある場合にLTV推定にどんな影響が出ますか？" if dormancy_days is None else f"休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？最適な判定日数を決める感度分析の手順を教えてください。"}"),
+             f"3. Weibullモデルの仮定が成立していない可能性はありますか？\n"
+             f"4. {'解約日ベースの分析ですが、解約データの欠損や遅延がある場合のLTV推定への影響は？' if dormancy_days is None else f'休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？'}"),
         ]
-
-        # セグメント別セクション
-        if segment_cols_input.strip():
-            seg_cols_pdf = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
-            for sc in seg_cols_pdf:
-                story.append(Paragraph(f'セグメント別 LTV∞ 分析：{sc}', h2_style))
-                seg_vals = df[sc].dropna().unique()
-                pdf_rows = [['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', 'k', 'R²']]
-                best_pdf = None
-                avg_ltv_pdf = []
-                for sv in sorted(seg_vals):
-                    df_s = df[df[sc] == sv]
-                    if len(df_s) < 10 or df_s['event'].sum() < 5:
-                        continue
-                    try:
-                        km_s = _compute_km_df(df_s)
-                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
-                        if k_s is None: continue
-                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
-                        gp_s   = arpu_s * gpm
-                        ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
-                        ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
-                        pdf_rows.append([str(sv), f'{len(df_s):,}', f'¥{ltv_r:,.0f}', f'¥{ltv_g:,.0f}', f'¥{ltv_g/cac_n:,.0f}', f'{k_s:.3f}', f'{r2_s:.3f}'])
-                        avg_ltv_pdf.append(ltv_r)
-                        if best_pdf is None or ltv_r > best_pdf['ltv_r']:
-                            best_pdf = {'seg': str(sv), 'ltv_r': ltv_r, 'ltv_g': ltv_g, 'cac': ltv_g/cac_n}
-                    except Exception:
-                        continue
-                # テーブル（上位10件）
-                pdf_rows_show = [pdf_rows[0]] + sorted(pdf_rows[1:], key=lambda x: float(x[2].replace('¥','').replace(',','')), reverse=True)[:10]
-                t_seg = Table(pdf_rows_show, colWidths=[3*cm, 1.8*cm, 2.5*cm, 2.5*cm, 2.5*cm, 1.5*cm, 1.5*cm])
-                t_seg.setStyle(TableStyle([
-                    ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1a1a1a')),
-                    ('TEXTCOLOR',  (0,0), (-1,0), colors.HexColor('#56b4d3')),
-                    ('TEXTCOLOR',  (0,1), (-1,-1), colors.HexColor('#111111')),
-                    ('FONTNAME',   (0,0), (-1,-1), 'HeiseiMin-W3'),
-                    ('FONTSIZE',   (0,0), (-1,-1), 8),
-                    ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor('#f5f5f5'), colors.HexColor('#ffffff')]),
-                    ('GRID', (0,0), (-1,-1), 0.3, colors.HexColor('#cccccc')),
-                    ('LEFTPADDING', (0,0), (-1,-1), 6),
-                ]))
-                story.append(t_seg)
-                # 推奨セグメント + 暫定LTV + 生存曲線
-                if best_pdf and avg_ltv_pdf:
-                    avg_pp = sum(avg_ltv_pdf) / len(avg_ltv_pdf)
-                    prem = (best_pdf['ltv_r'] - avg_pp) / avg_pp * 100
-                    rec_style = ParagraphStyle('R', fontName='HeiseiMin-W3', fontSize=9,
-                                               textColor=colors.HexColor('#111111'),
-                                               backColor=colors.HexColor('#e8f4fb'),
-                                               borderPadding=8, spaceAfter=4, spaceBefore=6,
-                                               leftIndent=8, rightIndent=8)
-                    story.append(Paragraph(
-                        f"優先獲得推奨：{best_pdf['seg']}　"
-                        f"LTV∞（売上）¥{best_pdf['ltv_r']:,.0f}（全平均比+{prem:.1f}%）　"
-                        f"CAC上限（粗利）¥{best_pdf['cac']:,.0f}",
-                        rec_style
-                    ))
-
-
-                # 全セグメントの詳細分析（2グラフ横並び）
-                story.append(Paragraph(f'全セグメント詳細（{sc}）', h2_style))
-                for sv in sorted(seg_vals):
-                    df_sv2 = df[df[sc] == sv]
-                    if len(df_sv2) < 10 or df_sv2['event'].sum() < 5:
-                        continue
-                    try:
-                        km_sv2 = _compute_km_df(df_sv2)
-                        k_sv2, lam_sv2, r2_sv2, _ = _fit_weibull_df(km_sv2)
-                        if k_sv2 is None: continue
-                        arpu_sv2 = df_sv2['revenue_total'].sum() / df_sv2['duration'].sum() if billing_cycle == '日次（都度購入）' else df_sv2['arpu_daily'].mean()
-                        ltv_inf_sv2 = lam_sv2 * __import__('scipy').special.gamma(1 + 1/k_sv2) * arpu_sv2
-
-                        story.append(Paragraph(
-                            f'{str(sv)}　（{len(df_sv2):,}件 / LTV∞ ¥{ltv_inf_sv2:,.0f} / k={k_sv2:.3f} / λ={lam_sv2:.1f}日 / R²={r2_sv2:.3f}）',
-                            label_style
-                        ))
-
-                        # 生存曲線＋Weibull直線化プロット（横並び）
-                        import matplotlib.pyplot as plt_pdf_all
-                        import numpy as np_pdf_all
-                        fig_2g, (ax_g1, ax_g2) = plt_pdf_all.subplots(1, 2, figsize=(14, 4.5))
-                        fig_2g.patch.set_facecolor('white')
-
-                        # 左：生存曲線
-                        ax_g1.step(km_sv2['t'], km_sv2['S'], color='#1d6fa4', lw=1.5, label='KM Curve (Observed)')
-                        t_r2 = km_sv2['t'].values
-                        ax_g1.plot(t_r2, [float(weibull_s(t, k_sv2, lam_sv2)) for t in t_r2],
-                                  '--', color='#56b4d3', lw=1.2, label=f'Weibull Fit')
-                        ax_g1.set_xlabel('Days', fontsize=9)
-                        ax_g1.set_ylabel('Survival Rate S(t)', fontsize=9)
-                        ax_g1.tick_params(labelsize=8)
-                        ax_g1.legend(fontsize=8)
-                        ax_g1.grid(True, alpha=0.3)
-                        ax_g1.set_title(f'Survival Curve: {str(sv)}', fontsize=10)
-
-                        # 右：Weibull直線化プロット
-                        km_fit_p = km_sv2[km_sv2['S'] > 0]
-                        ln_t_p = np_pdf_all.log(km_fit_p['t'].values.astype(float) + 1e-10)
-                        ln_neg_p = np_pdf_all.log(-np_pdf_all.log(km_fit_p['S'].values.astype(float) + 1e-15))
-                        valid_p = np_pdf_all.isfinite(ln_t_p) & np_pdf_all.isfinite(ln_neg_p)
-                        ln_t_p, ln_neg_p = ln_t_p[valid_p], ln_neg_p[valid_p]
-                        slope_p, int_p, _, _, _ = __import__('scipy').stats.linregress(ln_t_p, ln_neg_p)
-                        x_lp = np_pdf_all.linspace(ln_t_p.min(), ln_t_p.max(), 100)
-                        ax_g2.scatter(ln_t_p, ln_neg_p, color='#1d6fa4', s=18, alpha=0.75, label='Observed')
-                        ax_g2.plot(x_lp, slope_p * x_lp + int_p, '--', color='#56b4d3', lw=1.5, label=f'R²={r2_sv2:.3f}')
-                        ax_g2.annotate(f'y = {slope_p:.4f}x + {int_p:.4f}', xy=(0.05, 0.93), xycoords='axes fraction', fontsize=8)
-                        ax_g2.set_xlabel('ln(t)', fontsize=9)
-                        ax_g2.set_ylabel('ln(−ln(S(t)))', fontsize=9)
-                        ax_g2.tick_params(labelsize=8)
-                        ax_g2.legend(fontsize=8)
-                        ax_g2.grid(True, alpha=0.3)
-                        ax_g2.set_title(f'Weibull Linearization Plot: {str(sv)}', fontsize=10)
-
-                        fig_2g.tight_layout()
-                        buf_2g = io.BytesIO()
-                        fig_2g.savefig(buf_2g, format='png', dpi=100, bbox_inches='tight')
-                        buf_2g.seek(0)
-                        plt_pdf_all.close()
-                        story.append(Image(buf_2g, width=16*cm, height=5.5*cm))
-
-                        # 暫定LTVテーブル
-                        hor_data2 = [['ホライズン', '暫定LTV（売上）', 'LTV∞比', 'CAC上限（粗利）']]
-                        for h in horizons:
-                            lh_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, h)
-                            label_h = f'{h}日' if h < 365 else f'{h//365}年'
-                            hor_data2.append([label_h, f'¥{lh_sv2:,.0f}', f'{lh_sv2/ltv_inf_sv2*100:.1f}%', f'¥{lh_sv2*gpm/cac_n:,.0f}'])
-                        t_sv2 = Table(hor_data2, colWidths=[3*cm, 4*cm, 3*cm, 4*cm])
-                        t_sv2.setStyle(TableStyle([
-                            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#1a1a1a')),
-                            ('TEXTCOLOR',  (0,0), (-1,0), colors.HexColor('#56b4d3')),
-                            ('TEXTCOLOR',  (0,1), (-1,-1), colors.HexColor('#111111')),
-                            ('FONTNAME',   (0,0), (-1,-1), 'HeiseiMin-W3'),
-                            ('FONTSIZE',   (0,0), (-1,-1), 7),
-                            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.HexColor('#f5f5f5'), colors.HexColor('#ffffff')]),
-                            ('GRID', (0,0), (-1,-1), 0.3, colors.HexColor('#cccccc')),
-                            ('LEFTPADDING', (0,0), (-1,-1), 4),
-                        ]))
-                        story.append(t_sv2)
-                        story.append(Spacer(1, 0.4*cm))
-                    except Exception:
-                        continue
-
-                story.append(Spacer(1, 0.3*cm))
-
-
-        story.append(Paragraph('AIへの質問プロンプト', h2_style))
-        story.append(Paragraph('以下のプロンプトをClaude / ChatGPT / Gemini にコピペしてご活用ください。', body_style))
         for label, prompt_text in prompts_pdf:
-            story.append(Paragraph(label, label_style))
+            story.append(Paragraph(label, s_label))
             for line in prompt_text.split('\n'):
-                story.append(Paragraph(line if line else ' ', prompt_style))
-            story.append(Spacer(1, 0.2*cm))
+                story.append(Paragraph(line if line else ' ', s_prompt))
+            story.append(Spacer(1, 0.4 * cm))
 
         doc.build(story)
         pdf_buf.seek(0)
         import base64 as _b64
         _pdf_b64 = _b64.b64encode(pdf_buf.read()).decode()
         _fn_pdf = f"LTV分析_{client_name or 'report'}.pdf"
-        _pdf_href = f'<a href="data:application/pdf;base64,{_pdf_b64}" download="{_fn_pdf}" class="dl-btn">.pdf</a>'
+        _pdf_href = (f'<a href="data:application/pdf;base64,{_pdf_b64}" '
+                     f'download="{_fn_pdf}" class="dl-btn">.pdf</a>')
         _pdf_html = _pdf_href
     except ImportError:
         _pdf_html = '<span class="dl-btn-err">.pdf 未対応</span>'
     except Exception as e:
-        _pdf_html = f'<span class="dl-btn-err">.pdf エラー</span>'
+        import traceback as _tb_pdf
+        _tb_pdf_str = _tb_pdf.format_exc().replace('\n', ' | ')[-300:]
+        _pdf_html = (f'<span class="dl-btn-err">.pdf エラー: {str(e)[:150]}'
+                     f'<br><small style="font-size:0.6rem;opacity:0.7">{_tb_pdf_str}</small></span>')
 
 # ── 3ボタンまとめて表示 ───────────────────────────────────────
 st.markdown(f"""
