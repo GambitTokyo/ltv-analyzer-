@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v283</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v284</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2544,6 +2544,8 @@ if True:
                 ('TOPPADDING',    (0, 0), (-1, -1), 4),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
                 ('VALIGN',        (0, 0), (-1, -1), 'MIDDLE'),
+                ('ALIGN',         (0, 0), (0, -1), 'LEFT'),
+                ('ALIGN',         (1, 0), (-1, -1), 'RIGHT'),
             ]
             if has_title_col:
                 s.append(('TEXTCOLOR', (0, 1), (0, -1), _GOLD))
@@ -2560,13 +2562,11 @@ if True:
         story.append(Paragraph('LTV Analysis Report', s_sub))
         story.append(Spacer(1, 1.5 * cm))
         import datetime as _dt_pdf
-        _cover_info_parts = []
         if client_name:
-            _cover_info_parts.append(client_name)
-        _cover_info_parts.append(_dt_pdf.date.today().strftime("%Y年%m月%d日"))
+            story.append(Paragraph(client_name, s_body))
+        story.append(Paragraph(_dt_pdf.date.today().strftime("%Y年%m月%d日"), s_body))
         if analyst_name:
-            _cover_info_parts.append(analyst_name)
-        story.append(Paragraph('　'.join(_cover_info_parts), s_body))
+            story.append(Paragraph(analyst_name, s_body))
 
         # ═══════════════════════════════════════════════════════════
         # Chapter 2: 分析結果サマリー
@@ -2722,7 +2722,7 @@ if True:
             f'99%到達 {fmt_horizon(days_99)}', '', '', '', '99.0%',
         ])
 
-        _title_cw = 3.5 * cm
+        _title_cw = 5.5 * cm
         _data_cw  = (CONTENT_W - _title_cw) / 4
         _ltv_t = RLTable(_ltv_tdata, colWidths=[_title_cw] + [_data_cw] * 4)
         _ltv_t.setStyle(_dark_tbl_style(has_title_col=True))
@@ -2988,8 +2988,6 @@ if True:
                         # 2項目ごとに改ページ
                         if _seg_detail_count % 2 == 0:
                             story.append(PageBreak())
-                            story.append(Paragraph(f'セグメント詳細（{sc}）— 続き', s_chap))
-                            story.append(Spacer(1, 0.3 * cm))
                     except Exception:
                         continue
 
