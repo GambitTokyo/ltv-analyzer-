@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v282</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v283</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2555,68 +2555,31 @@ if True:
         # Chapter 1: 表紙
         # ═══════════════════════════════════════════════════════════
         story.append(Spacer(1, 4 * cm))
-        story.append(Paragraph('LTV Analysis Report', s_title))
         _cover_sub = report_title if report_title else 'Kaplan–Meier × Weibull Model'
-        story.append(Paragraph(_cover_sub, s_sub))
+        story.append(Paragraph(_cover_sub, s_title))
+        story.append(Paragraph('LTV Analysis Report', s_sub))
         story.append(Spacer(1, 1.5 * cm))
-        if client_name:
-            story.append(Paragraph(f'クライアント名: {client_name}', s_body))
         import datetime as _dt_pdf
-        story.append(Paragraph(f'分析日: {_dt_pdf.date.today().strftime("%Y年%m月%d日")}', s_body))
+        _cover_info_parts = []
+        if client_name:
+            _cover_info_parts.append(client_name)
+        _cover_info_parts.append(_dt_pdf.date.today().strftime("%Y年%m月%d日"))
         if analyst_name:
-            story.append(Paragraph(f'分析者: {analyst_name}', s_body))
+            _cover_info_parts.append(analyst_name)
+        story.append(Paragraph('　'.join(_cover_info_parts), s_body))
 
         # ═══════════════════════════════════════════════════════════
         # Chapter 2: 分析結果サマリー
         # ═══════════════════════════════════════════════════════════
         story.append(PageBreak())
         story.append(Paragraph('分析結果サマリー', s_chap))
-
-        # データ情報ヘッダー
-        _billing_disp_pdf = billing_cycle_display if 'billing_cycle_display' in dir() else ''
-        _prorate_disp = '解約時の日割り計算: ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else ''
-        _data_info = (
-            f'顧客数: {len(df):,}件 | 解約済み: {int(df["event"].sum()):,}件 | '
-            f'継続中: {int((df["event"]==0).sum()):,}件 | '
-            f'Daily ARPU: ¥{arpu_daily:,.2f} | GPM: {gpm:.0%}'
-        )
-        story.append(Paragraph(_data_info, s_small))
-        _biz_info = f'{business_type} | {_billing_disp_pdf}'
-        if _prorate_disp:
-            _biz_info += f' | {_prorate_disp}'
-        story.append(Paragraph(_biz_info, s_small))
-        story.append(Spacer(1, 0.4 * cm))
-
-        # 6列KPIカード（添付PDFデザイン準拠）
-        _k_desc_pdf = "初期離脱型（k<1）" if k < 1 else "逓増離脱型（k≧1）"
-        _kpi_data = [
-            [f'¥{ltv_rev:,.0f}', f'¥{cac_upper:,.0f}', f'{k:.3f}',
-             f'{lam_display:.0f}日', f'{r2:.3f}', f'¥{ltv_val:,.0f}'],
-            ['LTV∞（売上）', f'CAC上限（粗利）', 'k（形状パラメータ）',
-             'λ（尺度パラメータ）', 'R²（フィット精度）', 'LTV∞（粗利）'],
-        ]
-        _kpi_cw = [CONTENT_W / 6] * 6
-        _kpi_t = RLTable(_kpi_data, colWidths=_kpi_cw, rowHeights=[28, 16])
-        _kpi_t.setStyle(TableStyle([
-            ('BACKGROUND',  (0, 0), (-1, -1), _BG2),
-            ('TEXTCOLOR',   (0, 0), (-1, 0), _WHITE),
-            ('TEXTCOLOR',   (0, 1), (-1, 1), _ACCENT),
-            ('FONTNAME',    (0, 0), (-1, -1), 'HeiseiMin-W3'),
-            ('FONTSIZE',    (0, 0), (-1, 0), 12),
-            ('FONTSIZE',    (0, 1), (-1, 1), 7),
-            ('ALIGN',       (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN',      (0, 0), (-1, -1), 'MIDDLE'),
-            ('GRID',        (0, 0), (-1, -1), 0.3, _GRID),
-            ('TOPPADDING',  (0, 0), (-1, -1), 4),
-            ('BOTTOMPADDING',(0, 0), (-1, -1), 4),
-        ]))
-        story.append(_kpi_t)
-        story.append(Spacer(1, 0.5 * cm))
+        story.append(Spacer(1, 0.3 * cm))
 
         # 結論テキスト
+        _k_desc_pdf = "初期離脱型（k<1）" if k < 1 else "逓増離脱型（k≧1）"
         story.append(Paragraph('結論', s_h3))
         story.append(Paragraph(summary_text, s_body))
-        story.append(Spacer(1, 0.5 * cm))
+        story.append(Spacer(1, 0.8 * cm))
 
         # サマリーテーブル（異常値除外行追加）
         _outlier_parts_pdf = []
@@ -2918,6 +2881,7 @@ if True:
                 story.append(Paragraph(f'セグメント詳細（{sc}）', s_chap))
                 story.append(Spacer(1, 0.3 * cm))
 
+                _seg_detail_count = 0
                 for sv in sorted(seg_vals):
                     df_sv2 = df[df[sc] == sv]
                     if len(df_sv2) < 10 or df_sv2['event'].sum() < 5:
@@ -3020,51 +2984,14 @@ if True:
                         t_sv2.setStyle(_dark_tbl_style(has_title_col=True))
                         story.append(t_sv2)
                         story.append(Spacer(1, 0.8 * cm))
+                        _seg_detail_count += 1
+                        # 2項目ごとに改ページ
+                        if _seg_detail_count % 2 == 0:
+                            story.append(PageBreak())
+                            story.append(Paragraph(f'セグメント詳細（{sc}）— 続き', s_chap))
+                            story.append(Spacer(1, 0.3 * cm))
                     except Exception:
                         continue
-
-        # ═══════════════════════════════════════════════════════════
-        # Chapter 7: AIプロンプト
-        # ═══════════════════════════════════════════════════════════
-        story.append(PageBreak())
-        story.append(Paragraph('AIへの質問プロンプト', s_chap))
-        story.append(Paragraph(
-            '以下のプロンプトをClaude / ChatGPT / Gemini にコピペしてご活用ください。',
-            s_body))
-        story.append(Spacer(1, 0.3 * cm))
-
-        pdata_pdf = (
-            f"顧客数: {len(df):,}件（解約済み: {df['event'].sum():,}件）\n"
-            f"Daily ARPU（売上）: ¥{arpu_daily:,.2f} / GPM: {gpm:.0%}\n"
-            f"LTV∞ 売上ベース: ¥{ltv_rev:,.0f} / 粗利ベース: ¥{ltv_val:,.0f}\n"
-            f"CAC上限 ({cac_label}): ¥{cac_upper:,.0f}\n"
-            f"Weibull k={k:.4f} / λ={lam_display:.1f}日 / R²={r2:.4f}"
-        )
-        prompts_pdf = [
-            ('AIプロンプト① 結果の読み方',
-             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n\n【質問】\n"
-             f"1. Weibullのkとλの値は何を意味していますか？顧客離脱パターンはどう解釈すればよいですか？\n"
-             f"2. LTV∞（売上ベース¥{ltv_rev:,.0f}）の値は適切な水準ですか？\n"
-             f"3. R²={r2:.4f}からフィット精度はどう評価できますか？\n"
-             f"4. この結果で特に注意すべき点があれば教えてください。"),
-            ('AIプロンプト② マーケ戦略への活用',
-             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n\n【質問】\n"
-             f"1. このLTV∞とCAC上限をもとに、広告予算の上限をどう設定すべきですか？\n"
-             f"2. 顧客獲得チャネル別にROIを評価するには何が必要ですか？\n"
-             f"3. LTVを高めるために優先すべき施策は何ですか？\n"
-             f"4. このビジネスに最適なLTV:CAC比率の目安を教えてください。"),
-            ('AIプロンプト③ 精度の検証',
-             f"私はLTV分析ツールを使い、以下の結果を得ました。\n{pdata_pdf}\n\n【質問】\n"
-             f"1. このデータ件数と解約件数でWeibullフィッティングの信頼性はどう評価できますか？\n"
-             f"2. R²={r2:.4f}は十分ですか？改善するにはどうすればよいですか？\n"
-             f"3. Weibullモデルの仮定が成立していない可能性はありますか？\n"
-             f"4. {'解約日ベースの分析ですが、解約データの欠損や遅延がある場合のLTV推定への影響は？' if dormancy_days is None else f'休眠判定{dormancy_label}の設定はこのビジネスに適切ですか？'}"),
-        ]
-        for label, prompt_text in prompts_pdf:
-            story.append(Paragraph(label, s_label))
-            for line in prompt_text.split('\n'):
-                story.append(Paragraph(line if line else ' ', s_prompt))
-            story.append(Spacer(1, 0.4 * cm))
 
         # ═══════════════════════════════════════════════════════════
         # 付録: 分析パラメータ設定
