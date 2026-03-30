@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v281</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v282</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2554,32 +2554,56 @@ if True:
         # ═══════════════════════════════════════════════════════════
         # Chapter 1: 表紙
         # ═══════════════════════════════════════════════════════════
-        story.append(Spacer(1, 3 * cm))
+        story.append(Spacer(1, 4 * cm))
         story.append(Paragraph('LTV Analysis Report', s_title))
-        if report_title:
-            story.append(Paragraph(report_title, s_sub))
+        _cover_sub = report_title if report_title else 'Kaplan–Meier × Weibull Model'
+        story.append(Paragraph(_cover_sub, s_sub))
+        story.append(Spacer(1, 1.5 * cm))
         if client_name:
-            story.append(Paragraph(f'クライアント: {client_name}', s_sub))
+            story.append(Paragraph(f'クライアント名: {client_name}', s_body))
+        import datetime as _dt_pdf
+        story.append(Paragraph(f'分析日: {_dt_pdf.date.today().strftime("%Y年%m月%d日")}', s_body))
         if analyst_name:
-            story.append(Paragraph(f'アナリスト: {analyst_name}', s_sub))
-        story.append(Spacer(1, 0.8 * cm))
+            story.append(Paragraph(f'分析者: {analyst_name}', s_body))
 
-        # 表紙サマリーKPI（アプリの5列メトリックに近づけたテーブル）
+        # ═══════════════════════════════════════════════════════════
+        # Chapter 2: 分析結果サマリー
+        # ═══════════════════════════════════════════════════════════
+        story.append(PageBreak())
+        story.append(Paragraph('分析結果サマリー', s_chap))
+
+        # データ情報ヘッダー
+        _billing_disp_pdf = billing_cycle_display if 'billing_cycle_display' in dir() else ''
+        _prorate_disp = '解約時の日割り計算: ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else ''
+        _data_info = (
+            f'顧客数: {len(df):,}件 | 解約済み: {int(df["event"].sum()):,}件 | '
+            f'継続中: {int((df["event"]==0).sum()):,}件 | '
+            f'Daily ARPU: ¥{arpu_daily:,.2f} | GPM: {gpm:.0%}'
+        )
+        story.append(Paragraph(_data_info, s_small))
+        _biz_info = f'{business_type} | {_billing_disp_pdf}'
+        if _prorate_disp:
+            _biz_info += f' | {_prorate_disp}'
+        story.append(Paragraph(_biz_info, s_small))
+        story.append(Spacer(1, 0.4 * cm))
+
+        # 6列KPIカード（添付PDFデザイン準拠）
+        _k_desc_pdf = "初期離脱型（k<1）" if k < 1 else "逓増離脱型（k≧1）"
         _kpi_data = [
             [f'¥{ltv_rev:,.0f}', f'¥{cac_upper:,.0f}', f'{k:.3f}',
-             f'{lam_display:.0f}日', f'{r2:.3f}'],
-            ['LTV∞（売上）', f'CAC上限（{cac_label}）', 'Weibull k',
-             'Weibull λ', 'R²'],
+             f'{lam_display:.0f}日', f'{r2:.3f}', f'¥{ltv_val:,.0f}'],
+            ['LTV∞（売上）', f'CAC上限（粗利）', 'k（形状パラメータ）',
+             'λ（尺度パラメータ）', 'R²（フィット精度）', 'LTV∞（粗利）'],
         ]
-        _kpi_cw = [CONTENT_W / 5] * 5
+        _kpi_cw = [CONTENT_W / 6] * 6
         _kpi_t = RLTable(_kpi_data, colWidths=_kpi_cw, rowHeights=[28, 16])
         _kpi_t.setStyle(TableStyle([
             ('BACKGROUND',  (0, 0), (-1, -1), _BG2),
             ('TEXTCOLOR',   (0, 0), (-1, 0), _WHITE),
             ('TEXTCOLOR',   (0, 1), (-1, 1), _ACCENT),
             ('FONTNAME',    (0, 0), (-1, -1), 'HeiseiMin-W3'),
-            ('FONTSIZE',    (0, 0), (-1, 0), 13),
-            ('FONTSIZE',    (0, 1), (-1, 1), 7.5),
+            ('FONTSIZE',    (0, 0), (-1, 0), 12),
+            ('FONTSIZE',    (0, 1), (-1, 1), 7),
             ('ALIGN',       (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN',      (0, 0), (-1, -1), 'MIDDLE'),
             ('GRID',        (0, 0), (-1, -1), 0.3, _GRID),
@@ -2587,31 +2611,20 @@ if True:
             ('BOTTOMPADDING',(0, 0), (-1, -1), 4),
         ]))
         story.append(_kpi_t)
-        story.append(Spacer(1, 1 * cm))
-
-        # 表紙の概要テキスト
-        _k_desc_pdf = "初期離脱型（k<1）" if k < 1 else "逓増離脱型（k≧1）"
-        story.append(Paragraph(
-            f'Weibull分析の結果、このビジネスは{_k_desc_pdf}に分類されます。'
-            f'λ={lam_display:.0f}日（約{lam_display/365:.1f}年）を平均継続期間の目安として、'
-            f'LTV∞（売上ベース）は¥{ltv_rev:,.0f}と推定されました。',
-            s_body
-        ))
         story.append(Spacer(1, 0.5 * cm))
-        story.append(Paragraph(
-            f'ビジネスタイプ: {business_type}　/　'
-            f'休眠判定: {dormancy_label}　/　'
-            f'顧客数: {len(df):,}件　/　'
-            f'Daily ARPU: ¥{arpu_daily:,.2f}　/　GPM: {gpm:.1%}',
-            s_small
-        ))
 
-        # ═══════════════════════════════════════════════════════════
-        # Chapter 2: 分析結果サマリー
-        # ═══════════════════════════════════════════════════════════
-        story.append(PageBreak())
-        story.append(Paragraph('分析結果サマリー', s_chap))
-        story.append(Spacer(1, 0.3 * cm))
+        # 結論テキスト
+        story.append(Paragraph('結論', s_h3))
+        story.append(Paragraph(summary_text, s_body))
+        story.append(Spacer(1, 0.5 * cm))
+
+        # サマリーテーブル（異常値除外行追加）
+        _outlier_parts_pdf = []
+        if outlier_upper_pct > 0:
+            _outlier_parts_pdf.append(f'上位{outlier_upper_pct:.1f}%')
+        if outlier_lower_pct > 0:
+            _outlier_parts_pdf.append(f'下位{outlier_lower_pct:.1f}%')
+        _outlier_label_pdf = '、'.join(_outlier_parts_pdf) if _outlier_parts_pdf else '除外なし'
 
         _sum_data = [
             ['指標', '値'],
@@ -2622,6 +2635,7 @@ if True:
             ['Weibull λ（尺度パラメータ）', f'{lam_display:.1f}日（約{lam_display/365:.1f}年）'],
             ['R²（フィット精度）', f'{r2:.4f}　→　{"良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
             ['顧客数', f'{len(df):,}件'],
+            ['異常値除外', f'{n_outlier:,}件（{_outlier_label_pdf}）'],
             ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
             ['Daily ARPU（売上）', f'¥{arpu_daily:,.2f}'],
             ['GPM（粗利率）', f'{gpm:.1%}'],
@@ -2632,11 +2646,6 @@ if True:
         _sum_t = RLTable(_sum_data, colWidths=[9 * cm, _val_cw])
         _sum_t.setStyle(_dark_tbl_style(has_title_col=True))
         story.append(_sum_t)
-        story.append(Spacer(1, 0.5 * cm))
-
-        # 結論テキスト（アプリの「結論」ボックスに対応）
-        story.append(Paragraph('結論', s_h3))
-        story.append(Paragraph(summary_text, s_body))
 
         # ═══════════════════════════════════════════════════════════
         # Chapter 3: モデル信頼性
@@ -2783,9 +2792,10 @@ if True:
 
                 seg_vals = df[sc].dropna().unique()
                 pdf_rows = [['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）',
-                             'CAC上限', 'k', 'R²']]
+                             'CAC上限', 'k', 'λ（日）', 'R²']]
                 best_pdf = None
                 avg_ltv_pdf = []
+                _seg_results = []  # 加重平均用
                 for sv in sorted(seg_vals):
                     df_s = df[df[sc] == sv]
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
@@ -2804,7 +2814,9 @@ if True:
                         pdf_rows.append([str(sv), f'{len(df_s):,}',
                                         f'¥{ltv_r:,.0f}', f'¥{ltv_g:,.0f}',
                                         f'¥{ltv_g/cac_n:,.0f}',
-                                        f'{k_s:.3f}', f'{r2_s:.3f}'])
+                                        f'{k_s:.3f}', f'{lam_s:.1f}', f'{r2_s:.3f}'])
+                        _seg_results.append({'n': len(df_s), 'ltv_r': ltv_r,
+                                            'ltv_g': ltv_g, 'cac': ltv_g / cac_n})
                         avg_ltv_pdf.append(ltv_r)
                         if best_pdf is None or ltv_r > best_pdf['ltv_r']:
                             best_pdf = {'seg': str(sv), 'ltv_r': ltv_r,
@@ -2812,29 +2824,94 @@ if True:
                     except Exception:
                         continue
 
-                # サマリーテーブル（上位10件）
+                # TOP PICK
+                if best_pdf and avg_ltv_pdf:
+                    avg_pp = sum(avg_ltv_pdf) / len(avg_ltv_pdf)
+                    prem = (best_pdf['ltv_r'] - avg_pp) / avg_pp * 100
+                    story.append(Paragraph(f'{sc}: LTV∞', s_h3))
+                    story.append(Paragraph(
+                        f"TOP PICK {best_pdf['seg']}",
+                        s_label
+                    ))
+                    story.append(Paragraph(
+                        f"LTV∞(売上): ¥{best_pdf['ltv_r']:,.0f}（全セグメント平均比 +{prem:.1f}%）"
+                        f" | 許容CAC上限 ¥{best_pdf['cac']:,.0f}",
+                        s_small
+                    ))
+                    story.append(Spacer(1, 0.4 * cm))
+
+                # LTV∞バーチャート
+                if len(pdf_rows) > 1:
+                    import matplotlib.pyplot as plt_seg_bar
+                    _seg_names = [r[0] for r in pdf_rows[1:]]
+                    _seg_ltvs = [float(r[2].replace('¥', '').replace(',', '')) for r in pdf_rows[1:]]
+                    # LTV降順ソート
+                    _sorted_idx = sorted(range(len(_seg_ltvs)), key=lambda i: _seg_ltvs[i], reverse=True)
+                    _seg_names = [_seg_names[i] for i in _sorted_idx]
+                    _seg_ltvs = [_seg_ltvs[i] for i in _sorted_idx]
+
+                    fig_bar, ax_bar = plt_seg_bar.subplots(figsize=(10, max(2.5, len(_seg_names) * 0.5)))
+                    fig_bar.patch.set_facecolor('#0E1117')
+                    ax_bar.set_facecolor('#0E1117')
+                    bars = ax_bar.barh(range(len(_seg_names)), _seg_ltvs, color='#56b4d3', height=0.6)
+                    ax_bar.set_yticks(range(len(_seg_names)))
+                    ax_bar.set_yticklabels(_seg_names, fontsize=8, color='#ccc')
+                    ax_bar.invert_yaxis()
+                    ax_bar.tick_params(colors='#888', labelsize=8)
+                    ax_bar.xaxis.set_major_formatter(plt_seg_bar.FuncFormatter(lambda x, _: f'¥{x:,.0f}'))
+                    ax_bar.grid(True, axis='x', alpha=0.15, color='#2a3040')
+                    for sp in ax_bar.spines.values():
+                        sp.set_color('#2a3040')
+                    # 値ラベル
+                    for bar, val in zip(bars, _seg_ltvs):
+                        ax_bar.text(bar.get_width() + max(_seg_ltvs) * 0.01, bar.get_y() + bar.get_height() / 2,
+                                   f'¥{val:,.0f}', va='center', fontsize=7, color='#a8dadc')
+                    fig_bar.tight_layout()
+                    buf_bar = io.BytesIO()
+                    fig_bar.savefig(buf_bar, format='png', dpi=120, facecolor='#0E1117', bbox_inches='tight')
+                    buf_bar.seek(0)
+                    plt_seg_bar.close(fig_bar)
+                    story.append(RLImage(buf_bar, width=CONTENT_W, height=CONTENT_W * 0.3))
+                    story.append(Spacer(1, 0.4 * cm))
+
+                # サマリーテーブル（上位10件 + 加重平均行）
+                story.append(Paragraph(f'{sc}: 分析結果のサマリー', s_h3))
                 pdf_rows_show = ([pdf_rows[0]] +
                                 sorted(pdf_rows[1:],
                                        key=lambda x: float(x[2].replace('¥', '').replace(',', '')),
                                        reverse=True)[:10])
-                _seg_title_cw = 3 * cm
-                _seg_data_cw = (CONTENT_W - _seg_title_cw) / 6
-                t_seg = RLTable(pdf_rows_show,
-                               colWidths=[_seg_title_cw] + [_seg_data_cw] * 6)
-                t_seg.setStyle(_dark_tbl_style(has_title_col=True))
-                story.append(t_seg)
-                story.append(Spacer(1, 0.4 * cm))
+                # 加重平均行
+                if _seg_results:
+                    _total_n = sum(s['n'] for s in _seg_results)
+                    _wavg_r = sum(s['ltv_r'] * s['n'] for s in _seg_results) / _total_n
+                    _wavg_g = sum(s['ltv_g'] * s['n'] for s in _seg_results) / _total_n
+                    _wavg_c = sum(s['cac'] * s['n'] for s in _seg_results) / _total_n
+                    pdf_rows_show.append(['加重平均', f'{_total_n:,}',
+                                         f'¥{_wavg_r:,.0f}', f'¥{_wavg_g:,.0f}',
+                                         f'¥{_wavg_c:,.0f}', '—', '—', '—'])
 
-                # 推奨セグメント
-                if best_pdf and avg_ltv_pdf:
-                    avg_pp = sum(avg_ltv_pdf) / len(avg_ltv_pdf)
-                    prem = (best_pdf['ltv_r'] - avg_pp) / avg_pp * 100
-                    story.append(Paragraph(
-                        f"★ 優先獲得推奨：{best_pdf['seg']}　"
-                        f"LTV∞（売上）¥{best_pdf['ltv_r']:,.0f}（全平均比+{prem:.1f}%）　"
-                        f"CAC上限（粗利）¥{best_pdf['cac']:,.0f}",
-                        s_rec
-                    ))
+                _seg_title_cw = 2.5 * cm
+                _seg_data_cw = (CONTENT_W - _seg_title_cw) / 7
+                t_seg = RLTable(pdf_rows_show,
+                               colWidths=[_seg_title_cw] + [_seg_data_cw] * 7)
+                _seg_style = _dark_tbl_style(has_title_col=True)
+                # 加重平均行をハイライト
+                if _seg_results:
+                    _last_row = len(pdf_rows_show) - 1
+                    _seg_style.add('BACKGROUND', (0, _last_row), (-1, _last_row), _BG3)
+                    _seg_style.add('TEXTCOLOR', (0, _last_row), (-1, _last_row), _ACCENT2)
+                t_seg.setStyle(_seg_style)
+                story.append(t_seg)
+                story.append(Spacer(1, 0.2 * cm))
+
+                # NOTE
+                _n_segs = len(pdf_rows) - 1
+                story.append(Paragraph(
+                    f'NOTE — テーブルは最大上位10項目を表示。'
+                    f'加重平均行は全{_n_segs}項目を顧客数で重み付けした値です。',
+                    s_small
+                ))
+                story.append(Spacer(1, 0.4 * cm))
 
                 # ── セグメント詳細 ──
                 story.append(PageBreak())
@@ -2989,7 +3066,58 @@ if True:
                 story.append(Paragraph(line if line else ' ', s_prompt))
             story.append(Spacer(1, 0.4 * cm))
 
-        doc.build(story)
+        # ═══════════════════════════════════════════════════════════
+        # 付録: 分析パラメータ設定
+        # ═══════════════════════════════════════════════════════════
+        story.append(PageBreak())
+        story.append(Paragraph('付録', s_chap))
+        story.append(Spacer(1, 0.3 * cm))
+        story.append(Paragraph('分析パラメータ設定', s_h3))
+
+        _billing_disp_pdf2 = billing_cycle_display if 'billing_cycle_display' in dir() else ''
+        _prorate_disp2 = 'ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else 'OFF'
+        _param_data = [
+            ['項目', '設定値'],
+            ['ビジネスタイプ', business_type],
+            ['請求サイクル', _billing_disp_pdf2],
+            ['解約時の日割り計算', _prorate_disp2],
+            ['異常値の処理', _outlier_label_pdf],
+            ['セグメント列', segment_cols_input if segment_cols_input.strip() else 'なし'],
+            [f'CAC倍率', f'{cac_n:.1f}倍'],
+            ['粗利率（GPM）', f'{gpm:.0%}'],
+        ]
+        _param_title_cw = 5 * cm
+        _param_val_cw = CONTENT_W - _param_title_cw
+        _param_t = RLTable(_param_data, colWidths=[_param_title_cw, _param_val_cw])
+        _param_t.setStyle(_dark_tbl_style(has_title_col=True))
+        story.append(_param_t)
+
+        def _pdf_footer(canvas, doc):
+            canvas.saveState()
+            canvas.setFont('HeiseiMin-W3', 7)
+            canvas.setFillColor(rl_colors.HexColor('#555555'))
+            _footer_text = f'Copyright © LTV-analyzer All rights reserved.  |  Page {doc.page}'
+            canvas.drawCentredString(A4[0] / 2, 1.0 * cm, _footer_text)
+            # ページ背景
+            canvas.setFillColor(_BG)
+            canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
+            canvas.restoreState()
+
+        def _pdf_on_page(canvas, doc):
+            # 背景を先に描画
+            canvas.saveState()
+            canvas.setFillColor(_BG)
+            canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
+            canvas.restoreState()
+            # フッター
+            canvas.saveState()
+            canvas.setFont('HeiseiMin-W3', 7)
+            canvas.setFillColor(rl_colors.HexColor('#555555'))
+            _footer_text = f'Copyright \u00a9 LTV-analyzer All rights reserved.  |  Page {doc.page}'
+            canvas.drawCentredString(A4[0] / 2, 1.0 * cm, _footer_text)
+            canvas.restoreState()
+
+        doc.build(story, onFirstPage=_pdf_on_page, onLaterPages=_pdf_on_page)
         pdf_buf.seek(0)
         import base64 as _b64
         _pdf_b64 = _b64.b64encode(pdf_buf.read()).decode()
