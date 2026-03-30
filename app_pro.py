@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v287</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v288</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2603,8 +2603,12 @@ if True:
             ['Daily ARPU（売上）', f'¥{arpu_daily:,.2f}'],
             ['GPM（粗利率）', f'{gpm:.1%}'],
             ['ビジネスタイプ', business_type],
-            ['休眠判定', dormancy_label],
         ]
+        if business_type == "都度購入型":
+            _sum_data.append(['休眠判定', dormancy_label])
+        else:
+            _prorate_val = 'ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else 'OFF'
+            _sum_data.append(['解約時の日割り計算', _prorate_val])
         _val_cw = CONTENT_W - 9 * cm
         _sum_t = RLTable(_sum_data, colWidths=[9 * cm, _val_cw])
         _sum_t.setStyle(_dark_tbl_style(has_title_col=True))
@@ -2826,8 +2830,13 @@ if True:
                     ax_bar.invert_yaxis()
                     ax_bar.tick_params(colors='#888', labelsize=8)
                     ax_bar.xaxis.set_major_formatter(plt_seg_bar.FuncFormatter(lambda x, _: f'¥{x:,.0f}'))
-                    ax_bar.grid(True, axis='x', alpha=0.15, color='#2a3040', zorder=0)
                     ax_bar.set_axisbelow(True)
+                    ax_bar.grid(True, axis='x', alpha=0.15, color='#2a3040', zorder=0)
+                    ax_bar.set_yticks(range(len(_seg_names)))
+                    ax_bar.set_yticklabels(_seg_names, fontsize=8, color='#ccc')
+                    ax_bar.invert_yaxis()
+                    ax_bar.tick_params(colors='#888', labelsize=8)
+                    ax_bar.xaxis.set_major_formatter(plt_seg_bar.FuncFormatter(lambda x, _: f'¥{x:,.0f}'))
                     for sp in ax_bar.spines.values():
                         sp.set_color('#2a3040')
                     # 値ラベル
@@ -2977,19 +2986,21 @@ if True:
                         for h in horizons:
                             lh_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, h)
                             label_h = f'{h}日' if h < 365 else f'{h // 365}年'
+                            _pct_sv2 = lh_sv2 / ltv_inf_sv2 * 100
                             hor_data2.append([
                                 label_h, f'¥{lh_sv2:,.0f}',
-                                f'{lh_sv2 / ltv_inf_sv2 * 100:.1f}%',
+                                f'{_pct_sv2:.1f}%',
                                 f'¥{lh_sv2 * gpm / cac_n:,.0f}',
-                                f'{lh_sv2 / ltv_inf_sv2 * 100:.1f}%',
+                                f'{_pct_sv2:.1f}%',
                             ])
                         # λ行
                         _lh_lam_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, lam_sv2)
+                        _pct_lam_sv2 = _lh_lam_sv2 / ltv_inf_sv2 * 100
                         hor_data2.append([
                             f'λ  {round(lam_sv2)}日', f'¥{_lh_lam_sv2:,.0f}',
-                            f'{_lh_lam_sv2 / ltv_inf_sv2 * 100:.1f}%',
+                            f'{_pct_lam_sv2:.1f}%',
                             f'¥{_lh_lam_sv2 * gpm / cac_n:,.0f}',
-                            f'{_lh_lam_sv2 / ltv_inf_sv2 * 100:.1f}%',
+                            f'{_pct_lam_sv2:.1f}%',
                         ])
                         # 99%到達行
                         try:
@@ -3012,7 +3023,7 @@ if True:
                             f'¥{ltv_inf_sv2 * gpm / cac_n:,.0f}',
                             '100.0%',
                         ])
-                        _seg_ltv_title_cw = 4.5 * cm
+                        _seg_ltv_title_cw = 4 * cm
                         _seg_ltv_data_cw = (CONTENT_W - _seg_ltv_title_cw) / 4
                         t_sv2 = RLTable(hor_data2,
                                        colWidths=[_seg_ltv_title_cw] + [_seg_ltv_data_cw] * 4)
