@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v278</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v279</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1283,16 +1283,18 @@ try:
         # 上位パーセンタイル除外
         if outlier_upper_pct > 0:
             upper_r = df['revenue_total'].quantile(1.0 - outlier_upper_pct / 100.0)
-            n_outlier_upper = (df['revenue_total'] > upper_r).sum()
+            n_outlier_upper = (df['revenue_total'] >= upper_r).sum()
         else:
             upper_r = df['revenue_total'].max() + 1  # 除外なし
+            n_outlier_upper = 0
         # 下位パーセンタイル除外
         if outlier_lower_pct > 0:
             lower_r = df['revenue_total'].quantile(outlier_lower_pct / 100.0)
-            n_outlier_lower = (df['revenue_total'] < lower_r).sum()
+            n_outlier_lower = (df['revenue_total'] <= lower_r).sum()
         else:
             lower_r = df['revenue_total'].min() - 1  # 除外なし
-        df = df[(df['revenue_total'] >= lower_r) & (df['revenue_total'] <= upper_r)]
+            n_outlier_lower = 0
+        df = df[(df['revenue_total'] > lower_r) & (df['revenue_total'] < upper_r)]
         n_outlier = before - len(df)
 
     # ARPU計算
