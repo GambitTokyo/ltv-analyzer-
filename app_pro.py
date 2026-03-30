@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v286</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v287</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2521,7 +2521,7 @@ if True:
         s_small  = ParagraphStyle('Sm', fontName='HeiseiMin-W3', fontSize=7.5, leading=11,
                                    textColor=_TEXT_DIM, spaceAfter=2)
         s_label  = ParagraphStyle('Lb', fontName='HeiseiMin-W3', fontSize=8, leading=12,
-                                   textColor=_ACCENT, spaceAfter=2, spaceBefore=6)
+                                   textColor=_ACCENT, spaceAfter=1, spaceBefore=4)
         s_prompt = ParagraphStyle('Pr', fontName='HeiseiMin-W3', fontSize=7.5, leading=11,
                                    textColor=_TEXT, spaceAfter=1, leftIndent=8, rightIndent=8)
         s_rec    = ParagraphStyle('Rc', fontName='HeiseiMin-W3', fontSize=9, leading=13,
@@ -2820,13 +2820,14 @@ if True:
                     fig_bar, ax_bar = plt_seg_bar.subplots(figsize=(10, max(2.5, len(_seg_names) * 0.5)))
                     fig_bar.patch.set_facecolor('#0E1117')
                     ax_bar.set_facecolor('#0E1117')
-                    bars = ax_bar.barh(range(len(_seg_names)), _seg_ltvs, color='#56b4d3', height=0.6)
+                    bars = ax_bar.barh(range(len(_seg_names)), _seg_ltvs, color='#56b4d3', height=0.6, zorder=3)
                     ax_bar.set_yticks(range(len(_seg_names)))
                     ax_bar.set_yticklabels(_seg_names, fontsize=8, color='#ccc')
                     ax_bar.invert_yaxis()
                     ax_bar.tick_params(colors='#888', labelsize=8)
                     ax_bar.xaxis.set_major_formatter(plt_seg_bar.FuncFormatter(lambda x, _: f'¥{x:,.0f}'))
-                    ax_bar.grid(True, axis='x', alpha=0.15, color='#2a3040')
+                    ax_bar.grid(True, axis='x', alpha=0.15, color='#2a3040', zorder=0)
+                    ax_bar.set_axisbelow(True)
                     for sp in ax_bar.spines.values():
                         sp.set_color('#2a3040')
                     # 値ラベル
@@ -2857,7 +2858,7 @@ if True:
                                          f'¥{_wavg_r:,.0f}', f'¥{_wavg_g:,.0f}',
                                          f'¥{_wavg_c:,.0f}', '—', '—', '—'])
 
-                _seg_title_cw = 2.5 * cm
+                _seg_title_cw = 4.5 * cm
                 _seg_data_cw = (CONTENT_W - _seg_title_cw) / 7
                 t_seg = RLTable(pdf_rows_show,
                                colWidths=[_seg_title_cw] + [_seg_data_cw] * 7)
@@ -2967,12 +2968,12 @@ if True:
 
                         # 横並び：左グラフ左端 = 単一グラフ左端、右グラフ右端 = 単一グラフ右端
                         story.append(RLImage(buf_2g, width=CONTENT_W,
-                                            height=CONTENT_W * 0.33))
-                        story.append(Spacer(1, 0.3 * cm))
+                                            height=CONTENT_W * 0.28))
+                        story.append(Spacer(1, 0.15 * cm))
 
                         # 暫定LTVテーブル
-                        hor_data2 = [['ホライズン', '暫定LTV（売上）', 'LTV∞比',
-                                     'CAC上限（粗利）']]
+                        hor_data2 = [['ホライズン', 'LTV（売上）', 'LTV∞比',
+                                     'CAC上限（粗利）', 'LTV∞到達率']]
                         for h in horizons:
                             lh_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, h)
                             label_h = f'{h}日' if h < 365 else f'{h // 365}年'
@@ -2980,6 +2981,7 @@ if True:
                                 label_h, f'¥{lh_sv2:,.0f}',
                                 f'{lh_sv2 / ltv_inf_sv2 * 100:.1f}%',
                                 f'¥{lh_sv2 * gpm / cac_n:,.0f}',
+                                f'{lh_sv2 / ltv_inf_sv2 * 100:.1f}%',
                             ])
                         # λ行
                         _lh_lam_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, lam_sv2)
@@ -2987,20 +2989,40 @@ if True:
                             f'λ  {round(lam_sv2)}日', f'¥{_lh_lam_sv2:,.0f}',
                             f'{_lh_lam_sv2 / ltv_inf_sv2 * 100:.1f}%',
                             f'¥{_lh_lam_sv2 * gpm / cac_n:,.0f}',
+                            f'{_lh_lam_sv2 / ltv_inf_sv2 * 100:.1f}%',
                         ])
+                        # 99%到達行
+                        try:
+                            _d99_sv2 = brentq(
+                                lambda hh: ltv_horizon(k_sv2, lam_sv2, arpu_sv2, hh) / ltv_inf_sv2 - 0.99,
+                                1, 365000)
+                            _lh99_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, _d99_sv2)
+                            hor_data2.append([
+                                f'99%到達 {fmt_horizon(_d99_sv2)}', f'¥{_lh99_sv2:,.0f}',
+                                '99.0%',
+                                f'¥{_lh99_sv2 * gpm / cac_n:,.0f}',
+                                '99.0%',
+                            ])
+                        except Exception:
+                            pass
                         # LTV∞行
                         hor_data2.append([
                             'LTV∞', f'¥{ltv_inf_sv2:,.0f}',
                             '100.0%',
                             f'¥{ltv_inf_sv2 * gpm / cac_n:,.0f}',
+                            '100.0%',
                         ])
-                        _seg_ltv_title_cw = 4 * cm
-                        _seg_ltv_data_cw = (CONTENT_W - _seg_ltv_title_cw) / 3
+                        _seg_ltv_title_cw = 4.5 * cm
+                        _seg_ltv_data_cw = (CONTENT_W - _seg_ltv_title_cw) / 4
                         t_sv2 = RLTable(hor_data2,
-                                       colWidths=[_seg_ltv_title_cw] + [_seg_ltv_data_cw] * 3)
-                        t_sv2.setStyle(_dark_tbl_style(has_title_col=True))
+                                       colWidths=[_seg_ltv_title_cw] + [_seg_ltv_data_cw] * 4)
+                        _sv2_style = _dark_tbl_style(has_title_col=True)
+                        _sv2_style.add('FONTSIZE', (0, 0), (-1, -1), 7)
+                        _sv2_style.add('TOPPADDING', (0, 0), (-1, -1), 2)
+                        _sv2_style.add('BOTTOMPADDING', (0, 0), (-1, -1), 2)
+                        t_sv2.setStyle(_sv2_style)
                         story.append(t_sv2)
-                        story.append(Spacer(1, 0.8 * cm))
+                        story.append(Spacer(1, 0.5 * cm))
                         _seg_detail_count += 1
                         # 2項目ごとに改ページ
                         if _seg_detail_count % 2 == 0:
