@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v280</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v281</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2632,6 +2632,11 @@ if True:
         _sum_t = RLTable(_sum_data, colWidths=[9 * cm, _val_cw])
         _sum_t.setStyle(_dark_tbl_style(has_title_col=True))
         story.append(_sum_t)
+        story.append(Spacer(1, 0.5 * cm))
+
+        # 結論テキスト（アプリの「結論」ボックスに対応）
+        story.append(Paragraph('結論', s_h3))
+        story.append(Paragraph(summary_text, s_body))
 
         # ═══════════════════════════════════════════════════════════
         # Chapter 3: モデル信頼性
@@ -2643,11 +2648,22 @@ if True:
         story.append(Paragraph('Survival Curve（生存曲線）', s_h3))
         buf1.seek(0)
         story.append(RLImage(buf1, width=CONTENT_W, height=CONTENT_W * 0.48))
+        story.append(Spacer(1, 0.3 * cm))
+        story.append(Paragraph(
+            f'生存曲線：実測KM曲線（実線）にWeibullフィット（破線）。'
+            f'k={k:.3f}・λ={lam_display:.1f}日',
+            s_small
+        ))
         story.append(Spacer(1, 0.8 * cm))
 
         story.append(Paragraph('Weibull Linearization Plot（直線化プロット）', s_h3))
         buf2.seek(0)
         story.append(RLImage(buf2, width=CONTENT_W, height=CONTENT_W * 0.48))
+        story.append(Spacer(1, 0.3 * cm))
+        story.append(Paragraph(
+            f'Weibull直線化プロット：R²={r2:.3f}（1.0に近いほど精度高い）',
+            s_small
+        ))
 
         # ═══════════════════════════════════════════════════════════
         # Chapter 4: 暫定LTV — 観測期間別
@@ -2739,6 +2755,20 @@ if True:
         _ltv_t = RLTable(_ltv_tdata, colWidths=[_title_cw] + [_data_cw] * 4)
         _ltv_t.setStyle(_dark_tbl_style(has_title_col=True))
         story.append(_ltv_t)
+        story.append(Spacer(1, 0.5 * cm))
+
+        # 解釈ガイド（アプリの「このテーブルの読み方」に対応）
+        story.append(Paragraph('このテーブルの読み方', s_h3))
+        _guide_lines = [
+            lam_desc,
+            k_desc,
+            f'LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。',
+            f'1年時点でLTV∞の{pct_1y:.1f}%（¥{ltv_1y:,.0f}）、2年時点で{pct_2y:.1f}%（¥{ltv_2y:,.0f}）、3年時点で{pct_3y:.1f}%（¥{ltv_3y:,.0f}）に到達します。',
+            f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約{cac_recover_rev_str} / 粗利ベース 約{cac_recover_gp_str}',
+            f'CAC設計の目安：λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}を用いてCAC上限を算出してください。',
+        ]
+        for gl in _guide_lines:
+            story.append(Paragraph(f'・{gl}', s_small))
 
         # ═══════════════════════════════════════════════════════════
         # Chapter 5+6: セグメント別分析
