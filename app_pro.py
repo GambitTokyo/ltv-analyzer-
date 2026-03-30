@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v284</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v285</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2648,6 +2648,14 @@ if True:
         import matplotlib.pyplot as plt_pdf
         import numpy as np_pdf
 
+        # PDF用グラフの日本語フォント設定
+        if _JP_FONT_NAME:
+            plt_pdf.rcParams['font.family'] = _JP_FONT_NAME
+        elif _JP_FONT_PATH:
+            from matplotlib.font_manager import FontProperties as _FP_pdf
+            _jp_fp = _FP_pdf(fname=_JP_FONT_PATH)
+            plt_pdf.rcParams['font.family'] = _jp_fp.get_name()
+
         fig_ltv_pdf, ax_lp = plt_pdf.subplots(figsize=(10, 4.5))
         fig_ltv_pdf.patch.set_facecolor('#0E1117')
         ax_lp.set_facecolor('#0E1117')
@@ -2716,10 +2724,6 @@ if True:
         _ltv_tdata.append([
             'LTV∞', f'¥{ltv_rev:,.0f}', f'¥{ltv_val:,.0f}',
             f'¥{cac_upper:,.0f}', '100.0%',
-        ])
-        # 99%到達行
-        _ltv_tdata.append([
-            f'99%到達 {fmt_horizon(days_99)}', '', '', '', '99.0%',
         ])
 
         _title_cw = 5.5 * cm
@@ -2990,32 +2994,6 @@ if True:
                             story.append(PageBreak())
                     except Exception:
                         continue
-
-        # ═══════════════════════════════════════════════════════════
-        # 付録: 分析パラメータ設定
-        # ═══════════════════════════════════════════════════════════
-        story.append(PageBreak())
-        story.append(Paragraph('付録', s_chap))
-        story.append(Spacer(1, 0.3 * cm))
-        story.append(Paragraph('分析パラメータ設定', s_h3))
-
-        _billing_disp_pdf2 = billing_cycle_display if 'billing_cycle_display' in dir() else ''
-        _prorate_disp2 = 'ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else 'OFF'
-        _param_data = [
-            ['項目', '設定値'],
-            ['ビジネスタイプ', business_type],
-            ['請求サイクル', _billing_disp_pdf2],
-            ['解約時の日割り計算', _prorate_disp2],
-            ['異常値の処理', _outlier_label_pdf],
-            ['セグメント列', segment_cols_input if segment_cols_input.strip() else 'なし'],
-            [f'CAC倍率', f'{cac_n:.1f}倍'],
-            ['粗利率（GPM）', f'{gpm:.0%}'],
-        ]
-        _param_title_cw = 5 * cm
-        _param_val_cw = CONTENT_W - _param_title_cw
-        _param_t = RLTable(_param_data, colWidths=[_param_title_cw, _param_val_cw])
-        _param_t.setStyle(_dark_tbl_style(has_title_col=True))
-        story.append(_param_t)
 
         def _pdf_footer(canvas, doc):
             canvas.saveState()
