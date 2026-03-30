@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v285</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v286</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2981,7 +2981,20 @@ if True:
                                 f'{lh_sv2 / ltv_inf_sv2 * 100:.1f}%',
                                 f'¥{lh_sv2 * gpm / cac_n:,.0f}',
                             ])
-                        _seg_ltv_title_cw = 3 * cm
+                        # λ行
+                        _lh_lam_sv2 = ltv_horizon(k_sv2, lam_sv2, arpu_sv2, lam_sv2)
+                        hor_data2.append([
+                            f'λ  {round(lam_sv2)}日', f'¥{_lh_lam_sv2:,.0f}',
+                            f'{_lh_lam_sv2 / ltv_inf_sv2 * 100:.1f}%',
+                            f'¥{_lh_lam_sv2 * gpm / cac_n:,.0f}',
+                        ])
+                        # LTV∞行
+                        hor_data2.append([
+                            'LTV∞', f'¥{ltv_inf_sv2:,.0f}',
+                            '100.0%',
+                            f'¥{ltv_inf_sv2 * gpm / cac_n:,.0f}',
+                        ])
+                        _seg_ltv_title_cw = 4 * cm
                         _seg_ltv_data_cw = (CONTENT_W - _seg_ltv_title_cw) / 3
                         t_sv2 = RLTable(hor_data2,
                                        colWidths=[_seg_ltv_title_cw] + [_seg_ltv_data_cw] * 3)
