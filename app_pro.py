@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v292</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v293</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2816,17 +2816,20 @@ if True:
                     import matplotlib.pyplot as plt_seg_bar
                     _seg_names = [r[0] for r in pdf_rows[1:]]
                     _seg_ltvs = [float(r[2].replace('¥', '').replace(',', '')) for r in pdf_rows[1:]]
-                    # LTV昇順ソート（下から低い→上が高い = barh + invert無し）
-                    _sorted_idx = sorted(range(len(_seg_ltvs)), key=lambda i: _seg_ltvs[i])
+                    # 降順ソートして上位10件に制限
+                    _sorted_idx = sorted(range(len(_seg_ltvs)), key=lambda i: _seg_ltvs[i], reverse=True)[:10]
                     _seg_names = [_seg_names[i] for i in _sorted_idx]
                     _seg_ltvs = [_seg_ltvs[i] for i in _sorted_idx]
+                    # barh用に昇順に戻す（下が低い→上が高い）
+                    _seg_names = _seg_names[::-1]
+                    _seg_ltvs = _seg_ltvs[::-1]
 
                     fig_bar, ax_bar = plt_seg_bar.subplots(figsize=(10, max(2.5, len(_seg_names) * 0.6)))
                     fig_bar.patch.set_facecolor('#0E1117')
                     ax_bar.set_facecolor('#0E1117')
                     # TOP PICKは濃い青、それ以外は薄い青
-                    _bar_colors = ['#56b4d3' if _seg_names[i] == best_pdf['seg'] else '#a8dadc'
-                                   for i in range(len(_seg_names))] if best_pdf else ['#a8dadc'] * len(_seg_names)
+                    _bar_colors = ['#56b4d3' if _seg_names[i] == best_pdf['seg'] else '#2a4a5a'
+                                   for i in range(len(_seg_names))] if best_pdf else ['#2a4a5a'] * len(_seg_names)
                     bars = ax_bar.barh(range(len(_seg_names)), _seg_ltvs, color=_bar_colors, height=0.6, zorder=3)
                     ax_bar.set_yticks(range(len(_seg_names)))
                     ax_bar.set_yticklabels(_seg_names, fontsize=8, color='#ccc')
