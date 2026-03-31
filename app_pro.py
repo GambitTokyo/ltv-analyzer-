@@ -290,9 +290,9 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
     border: 1px solid #1c3a4a !important;
     border-radius: 8px !important;
     width: 100% !important;
-    font-size: 0.78rem !important;
-    line-height: 1.4 !important;
-    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+    padding: 5px 8px !important;
 }
 [data-testid="stSidebar"] [data-testid="stDownloadButton"] > button:hover,
 [data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover {
@@ -825,7 +825,7 @@ with st.sidebar:
         _dl_key = _sample_options[_selected_sample][0]
         _dl_fn, _dl_data = _dl_map[_dl_key]
         st.download_button(
-            label="サンプルCSVをダウンロード",
+            label="サンプルCSVをダウンロード（データフォーマット確認用）",
             data=_dl_data,
             file_name=_dl_fn,
             mime='text/csv',
@@ -994,7 +994,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v303</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v304</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2145,7 +2145,7 @@ else:
         f"LTV∞をほぼ数年以内に回収できます。ただし離脱が集中する時期のリテンション施策が重要です。"
     )
 insight_html = f"""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:10px; padding:18px 20px; margin-top:12px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:10px; padding:18px 20px; margin-top:28px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
   <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:12px;'>このテーブルの読み方</div>
   <div>・{lam_desc}</div>
   <div>・{k_desc}</div>
@@ -2357,7 +2357,9 @@ if True:
                 hor_header = ['セグメント', 'ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率（%）']
                 ws_seg_hor.append(hor_header)
                 hor_points = [180, 365, 730, 1095, 1825]
-                for sv in sorted(seg_vals):
+                # seg_rowsのLTV∞降順に合わせる
+                _xl_seg_order = [r[0] for r in seg_rows]
+                for sv in _xl_seg_order:
                     df_s = df[df[sc] == sv]
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
                         continue
@@ -2930,7 +2932,11 @@ if True:
                 story.append(Spacer(1, 0.6 * cm))
 
                 _seg_detail_count = 0
-                for sv in sorted(seg_vals):
+                # pdf_rows_showからLTV∞降順のセグメント順を取得
+                _pdf_seg_order = [r[0] for r in pdf_rows_show[1:] if r[0] != '加重平均']
+                # pdf_rows_showに含まれないセグメントも末尾に追加
+                _all_sorted = _pdf_seg_order + [sv for sv in sorted(seg_vals) if str(sv) not in _pdf_seg_order]
+                for sv in _all_sorted:
                     df_sv2 = df[df[sc] == sv]
                     if len(df_sv2) < 10 or df_sv2['event'].sum() < 5:
                         continue

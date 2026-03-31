@@ -1,5 +1,6 @@
 """PPTX Export Module v245"""
 import io, copy, os, math
+from math import gamma
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -83,14 +84,16 @@ def _write_table(tbl, hdr, rows, footer=None):
                 for r in p.runs: r.text = ''
             if tf.paragraphs and tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text = str(v)
 
-def _write_table_styled(tbl, hdr, rows, footer=None):
+def _write_table_styled(tbl, hdr, rows, footer=None, special_last_n=1, data_font_size=None):
     _write_table(tbl, hdr, rows, footer)
     data = rows + ([footer] if footer else [])
+    n_special = special_last_n if footer is None else special_last_n
     for ri in range(len(data)):
         if ri+1 >= len(tbl.rows): break
-        row = tbl.rows[ri+1]; is_ft = footer and ri == len(data)-1
-        bg = '142030' if is_ft else ('0D1520' if ri%2==0 else '0A1018')
-        fc = 'A8DADC' if is_ft else 'C8D0D8'
+        row = tbl.rows[ri+1]
+        is_special = ri >= len(data) - n_special
+        bg = '142030' if is_special else ('0D1520' if ri%2==0 else '0A1018')
+        fc = 'A8DADC' if is_special else 'C8D0D8'
         for ci in range(len(row.cells)):
             cell = row.cells[ci]
             tcPr = cell._tc.get_or_add_tcPr()
@@ -105,6 +108,8 @@ def _write_table_styled(tbl, hdr, rows, footer=None):
                     sf2 = etree.Element(f'{{{A}}}solidFill')
                     c2 = etree.SubElement(sf2, f'{{{A}}}srgbClr'); c2.set('val', fc)
                     rPr.insert(0, sf2)
+                    if data_font_size is not None:
+                        rPr.set('sz', str(int(data_font_size * 100)))
 
 def _copy_slide(prs, idx):
     src = prs.slides[idx]; new = prs.slides.add_slide(src.slide_layout)
@@ -377,7 +382,7 @@ def generate_pptx(
     rows_s4.append([f'LTV∞到達率: 99%（{int(days_99):,}日）',f'¥{rev_99:,.0f}',f'¥{gp_99:,.0f}',f'¥{gp_99/cac_n:,.0f}','99.0%'])
     rows_s4.append([f'LTV∞',f'¥{ltv_rev:,.0f}',f'¥{cac_upper*cac_n:,.0f}',f'¥{cac_upper:,.0f}','100%'])
     for sh in s4.shapes:
-        if sh.shape_type==19: _write_table(sh.table,None,rows_s4[:-1],rows_s4[-1])
+        if sh.shape_type==19: _write_table_styled(sh.table,None,rows_s4,special_last_n=3,data_font_size=8)
         elif sh.name=='テキスト ボックス 3' and sh.has_text_frame:
             sh.top=sh.top+182880
             if s4_guide_data: _set_s4_guide(sh, s4_guide_data)
@@ -408,7 +413,8 @@ def generate_pptx(
                     km_s=_compute_km_df(df_s); k_s,lam_s,r2_s,_=_fit_weibull_df(km_s)
                     if k_s is None: continue
                     arpu_s=df_s['arpu_daily'].mean(); gp_s=arpu_s*gpm
-                    ltv_r,_=ltv_inf(k_s,lam_s,arpu_s); ltv_g,_=ltv_inf(k_s,lam_s,gp_s)
+                    _si=lam_s*gamma(1+1/k_s)
+                    ltv_r=((_si+ltv_offset_days)*arpu_s); ltv_g=((_si+ltv_offset_days)*gp_s)
                     pp_rows.append({'seg':str(sv),'n':len(df_s),'ltv_r':ltv_r,'ltv_g':ltv_g,'cac':ltv_g/cac_n,'k':k_s,'lam':lam_s,'r2':r2_s})
                 except: continue
             if not pp_rows: continue
@@ -488,7 +494,7 @@ def generate_pptx(
                     if sh.name=='タイトル 8': _set_text(sh,f'{sc}: {row["seg"]}')
                     elif sh.name=='Picture 6' and buf_km: buf_km.seek(0); _replace_image(sx,sh,buf_km)
                     elif sh.name=='Picture 7' and buf_wb: buf_wb.seek(0); _replace_image(sx,sh,buf_wb)
-                    elif sh.shape_type==19: _write_table(sh.table,None,rows_sx[:-1],rows_sx[-1])
+                    elif sh.shape_type==19: _write_table_styled(sh.table,None,rows_sx,special_last_n=3,data_font_size=8)
                     elif sh.name=='テキスト ボックス 17' and sh.has_text_frame:
                         _set_text(sh,'TOP PICK　' if ri==0 else '')
                         bp=sh.text_frame._txBody.find(f'{{{A}}}bodyPr')
