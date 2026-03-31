@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v289</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v290</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2829,16 +2829,18 @@ if True:
                     ax_bar.set_yticklabels(_seg_names, fontsize=8, color='#ccc')
                     ax_bar.tick_params(colors='#888', labelsize=8)
                     ax_bar.xaxis.set_major_formatter(plt_seg_bar.FuncFormatter(lambda x, _: f'¥{x:,.0f}'))
+                    ax_bar.xaxis.tick_top()
+                    ax_bar.xaxis.set_label_position('top')
                     ax_bar.set_axisbelow(True)
                     ax_bar.grid(True, axis='x', alpha=0.15, color='#2a3040', zorder=0)
                     for sp in ax_bar.spines.values():
                         sp.set_color('#2a3040')
-                    # 値ラベル（棒グラフ内の右寄せ）
+                    # 値ラベル（棒グラフ内の右寄せ、白系）
                     for bar, val in zip(bars, _seg_ltvs):
                         ax_bar.text(bar.get_width() - max(_seg_ltvs) * 0.01,
                                    bar.get_y() + bar.get_height() / 2,
                                    f'¥{val:,.0f}', va='center', ha='right',
-                                   fontsize=8, color='#0E1117', fontweight='bold')
+                                   fontsize=8, color='#e6edf3', fontweight='bold')
                     fig_bar.tight_layout()
                     buf_bar = io.BytesIO()
                     fig_bar.savefig(buf_bar, format='png', dpi=120, facecolor='#0E1117', bbox_inches='tight')
