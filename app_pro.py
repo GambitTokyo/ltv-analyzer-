@@ -561,7 +561,7 @@ with st.sidebar:
     # サンプルデータ生成
     # ① 動画学習プラットフォーム（サブスク・日割りOFF・月額¥9,800）
     # ② コワーキングスペース（サブスク・日割りON・月額¥19,800）
-    # ③ D2C スキンケアEC（都度購入・平均¥5,800・休眠180日）
+    # ③ D2C コスメ系EC（都度購入・平均¥5,800・休眠180日）
     # ══════════════════════════════════════════════════════
     n_sample  = 10000
     BASE_DATE = pd.Timestamp('2025-12-31')
@@ -686,7 +686,7 @@ with st.sidebar:
         'occupation':  s2_occupation,
     })
 
-    # ── ③ D2C スキンケアEC（都度購入）────────────────
+    # ── ③ D2C コスメ系EC（都度購入）────────────────
     # 平均単価¥5,800、k=0.75系（初期離脱型）、購入間隔平均60日（ばらつきあり）
     # 休眠判定180日推奨
     # セグメント: channel, age_group, gender
@@ -777,7 +777,7 @@ with st.sidebar:
     _sample_options = {
         'サブスク型：動画学習（日割りOFF）': ('elearn', sample_elearn),
         'サブスク型：コワーキング（日割りON）': ('cowork', sample_cowork),
-        '都度購入型：スキンケアEC':           ('skincare', sample_skincare),
+        '都度購入型：コスメ系EC':           ('skincare', sample_skincare),
     }
     _btn_s = "display:block; width:100%; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5; box-sizing:border-box;"
     _selected_sample = st.selectbox(
@@ -796,14 +796,23 @@ with st.sidebar:
             st.session_state['_sample_biz']     = 'サブスク・継続課金型'
             st.session_state['_sample_prorate'] = False
             st.session_state['_sample_seg']     = 'channel, age_group, device'
+            st.session_state['_sample_report_title']  = '動画学習プラットフォーム 顧客LTV分析'
+            st.session_state['_sample_client_name']   = 'LearnPlus株式会社'
+            st.session_state['_sample_analyst_name']  = 'マーケティング部'
         elif _key == 'cowork':
             st.session_state['_sample_biz']     = 'サブスク・継続課金型'
             st.session_state['_sample_prorate'] = True
             st.session_state['_sample_seg']     = 'channel, age_group, occupation'
+            st.session_state['_sample_report_title']  = 'コワーキングスペース 会員LTV分析'
+            st.session_state['_sample_client_name']   = 'WorkHub株式会社'
+            st.session_state['_sample_analyst_name']  = '事業企画部'
         else:  # skincare
             st.session_state['_sample_biz']     = '都度購入型'
             st.session_state['_sample_prorate'] = False
             st.session_state['_sample_seg']     = 'channel, age_group, gender'
+            st.session_state['_sample_report_title']  = 'コスメ系EC 顧客LTV分析'
+            st.session_state['_sample_client_name']   = 'GlowSkin株式会社'
+            st.session_state['_sample_analyst_name']  = 'CRM推進チーム'
         st.rerun()
 
     # サンプルデータCSVダウンロード
@@ -816,7 +825,7 @@ with st.sidebar:
         _dl_key = _sample_options[_selected_sample][0]
         _dl_fn, _dl_data = _dl_map[_dl_key]
         st.download_button(
-            label="📥 サンプルCSVをダウンロード（データフォーマット確認用）",
+            label="サンプルCSVをダウンロード",
             data=_dl_data,
             file_name=_dl_fn,
             mime='text/csv',
@@ -973,9 +982,9 @@ with st.sidebar:
 
     st.markdown("")
     st.markdown("### レポート情報")
-    report_title = st.text_input("レポートタイトル", "", placeholder="月額SaaS顧客LTV分析など")
-    client_name  = st.text_input("クライアント名", "", placeholder="会社・ブランド・商品/サービスなど")
-    analyst_name = st.text_input("作成者", "", placeholder="氏名・チーム・部署・組織など")
+    report_title = st.text_input("レポートタイトル", st.session_state.get('_sample_report_title', ''), placeholder="月額SaaS顧客LTV分析など")
+    client_name  = st.text_input("クライアント名", st.session_state.get('_sample_client_name', ''), placeholder="会社・ブランド・商品/サービスなど")
+    analyst_name = st.text_input("作成者", st.session_state.get('_sample_analyst_name', ''), placeholder="氏名・チーム・部署・組織など")
 
 # ══════════════════════════════════════════════════════════════
 # Header
@@ -985,7 +994,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v299</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v300</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1038,7 +1047,7 @@ if 'sample' in _qp and st.session_state.get('sample_df') is None:
         st.session_state.sample_label = 'サブスク型：コワーキング（日割りON）'
     elif _s == 'skincare':
         st.session_state.sample_df    = sample_skincare
-        st.session_state.sample_label = '都度購入型：スキンケアEC'
+        st.session_state.sample_label = '都度購入型：コスメ系EC'
     st.query_params.clear()
 
 # ══════════════════════════════════════════════════════════════
@@ -1997,6 +2006,16 @@ tbl_rows.append({
     '_type': '99pct',
 })
 
+# LTV∞行
+tbl_rows.append({
+    'ホライズン':    'LTV∞',
+    'LTV（売上）':   f'¥{ltv_rev:,.0f}',
+    'LTV（粗利）':   f'¥{ltv_gp:,.0f}',
+    'CAC上限':       f'¥{ltv_gp/cac_n:,.0f}',
+    'LTV∞到達率':   '100%',
+    '_type': 'ltv_inf',
+})
+
 # HTML テーブルで描画
 ACCENT   = '#56b4d3'
 BG_HEAD  = '#0d1f2d'
@@ -2015,7 +2034,7 @@ for i, row in enumerate(tbl_rows):
         bg    = BG_HEAD
         color = '#a8dadc'
         border_top = f"border-top:1px solid {SEP_COLOR};"
-    else:  # 99pct
+    else:  # 99pct or ltv_inf
         bg    = BG_HEAD
         color = '#a8dadc'
         border_top = f"border-top:1px solid {SEP_COLOR};"
@@ -2296,6 +2315,12 @@ if True:
             else:
                 lh = ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)
             ws3.append([h, round(lh, 0), round(lh/ltv_val*100, 1), round(lh/cac_n, 0)])
+        # λ行
+        ws3.append([f'λ {round(lam + ltv_offset_days):,}', round(lam_rev, 0), round(lam_rev/ltv_val*100, 1), round(lam_gp/cac_n, 0)])
+        # 99%到達行
+        ws3.append([f'99%到達 {int(days_99):,}', round(rev_99, 0), 99.0, round(gp_99/cac_n, 0)])
+        # LTV∞行
+        ws3.append(['LTV∞', round(ltv_rev, 0), 100.0, round(ltv_gp/cac_n, 0)])
 
         # セグメント別シート追加
         if segment_cols_input.strip():
@@ -3269,6 +3294,8 @@ if segment_cols_input.strip():
 
             seg_df = pd.DataFrame(seg_results).sort_values('LTV∞（売上）', ascending=False).reset_index(drop=True)
             all_seg_results[seg_col] = seg_df  # エクスポート用に保存
+            # seg_resultsもLTV∞降順にソート（詳細表示の並び順をseg_dfと一致させる）
+            seg_results = sorted(seg_results, key=lambda x: x['LTV∞（売上）'], reverse=True)
 
             progress_bar.empty()
 

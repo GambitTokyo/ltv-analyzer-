@@ -375,6 +375,7 @@ def generate_pptx(
         rows_s4.append([label,f'¥{lr:,.0f}',f'¥{lg:,.0f}',f'¥{lg/cac_n:,.0f}',f'{lr/ltv_rev*100:.1f}%'])
     rows_s4.append([f'λ {round(lam_actual):,}日',f'¥{lam_rev:,.0f}',f'¥{lam_gp:,.0f}',f'¥{lam_gp/cac_n:,.0f}',f'{lam_rev/ltv_rev*100:.1f}%'])
     rows_s4.append([f'LTV∞到達率: 99%（{int(days_99):,}日）',f'¥{rev_99:,.0f}',f'¥{gp_99:,.0f}',f'¥{gp_99/cac_n:,.0f}','99.0%'])
+    rows_s4.append([f'LTV∞',f'¥{ltv_rev:,.0f}',f'¥{ltv_gp:,.0f}',f'¥{ltv_gp/cac_n:,.0f}','100%'])
     for sh in s4.shapes:
         if sh.shape_type==19: _write_table(sh.table,None,rows_s4[:-1],rows_s4[-1])
         elif sh.name=='テキスト ボックス 3' and sh.has_text_frame:
