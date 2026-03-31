@@ -431,7 +431,7 @@ def generate_pptx(
                         for r in tf.paragraphs[1].runs: r.text=''
                         if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=f'LTV∞(売上): ¥{best["ltv_r"]:,.0f}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 ¥{best["cac"]:,.0f}（全セグメント平均より{cac_diff_str}）'
                 elif sh.name=='コンテンツ プレースホルダー 8':
-                    buf7=_make_bar_graph(pp_rows,best,avg_ltv); _replace_image(s7,sh,buf7)
+                    buf7=_make_bar_graph(pp_rows[:10],best,avg_ltv); _replace_image(s7,sh,buf7)
             s8=_copy_slide(prs,7); top10=pp_rows[:10]
             dr8=[[r['seg'],f'{r["n"]:,}',f'¥{r["ltv_r"]:,.0f}',f'¥{r["ltv_g"]:,.0f}',f'¥{r["cac"]:,.0f}',f'{r["k"]:.3f}',f'{r["lam"]:.1f}',f'{r["r2"]:.3f}'] for r in top10]
             ft8=['加重平均',f'{n_total:,}',f'¥{avg_ltv:,.0f}',f'¥{w_ltv_g:,.0f}',f'¥{w_cac:,.0f}','—','—','—']
