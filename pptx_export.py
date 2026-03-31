@@ -440,7 +440,7 @@ def generate_pptx(
                 elif sh.shape_type==19: _write_table_styled(sh.table,None,dr8,ft8)
                 elif sh.name=='テキスト ボックス 9' and sh.has_text_frame:
                     diff_pct=(avg_ltv-ltv_rev)/ltv_rev*100
-                    note=f'NOTE — テーブルは最大上位10項目を表示。加重平均行は全{len(pp_rows)}項目を顧客数で重み付けした値です。全体LTV∞との差（{diff_pct:+.1f}%）は統計的に正常な現象です。詳細スライドには全項目が記載されています。'
+                    note=f'NOTE — テーブルは最大上位10項目を表示。加重平均行は全{len(pp_rows)}項目を顧客数で重み付けした値です。全体LTV∞との差（{diff_pct:+.1f}%）は統計的に正常な現象です。次項以降に全項目の詳細が記載されています。'
                     _set_note_text(sh,note)
             for ri,row in enumerate(pp_rows):
                 tmpl_idx=8 if ri==0 else 9
