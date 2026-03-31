@@ -994,7 +994,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v300</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v301</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2010,8 +2010,8 @@ tbl_rows.append({
 tbl_rows.append({
     'ホライズン':    'LTV∞',
     'LTV（売上）':   f'¥{ltv_rev:,.0f}',
-    'LTV（粗利）':   f'¥{ltv_gp:,.0f}',
-    'CAC上限':       f'¥{ltv_gp/cac_n:,.0f}',
+    'LTV（粗利）':   f'¥{ltv_val:,.0f}',
+    'CAC上限':       f'¥{ltv_val/cac_n:,.0f}',
     'LTV∞到達率':   '100%',
     '_type': 'ltv_inf',
 })
@@ -2320,7 +2320,7 @@ if True:
         # 99%到達行
         ws3.append([f'99%到達 {int(days_99):,}', round(rev_99, 0), 99.0, round(gp_99/cac_n, 0)])
         # LTV∞行
-        ws3.append(['LTV∞', round(ltv_rev, 0), 100.0, round(ltv_gp/cac_n, 0)])
+        ws3.append(['LTV∞', round(ltv_rev, 0), 100.0, round(ltv_val/cac_n, 0)])
 
         # セグメント別シート追加
         if segment_cols_input.strip():
