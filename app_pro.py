@@ -559,230 +559,212 @@ with st.sidebar:
 
     # ══════════════════════════════════════════════════════
     # サンプルデータ生成
-    # サブスク：フィットネスジム（月額7,000〜12,000円、k>1・逓増離脱型）
-    # 都度購入：ファストファッションEC（1回4,000〜15,000円、購入間隔90日）
+    # ① 動画学習プラットフォーム（サブスク・日割りOFF・月額¥9,800）
+    # ② コワーキングスペース（サブスク・日割りON・月額¥19,800）
+    # ③ D2C スキンケアEC（都度購入・平均¥5,800・休眠180日）
     # ══════════════════════════════════════════════════════
-    np.random.seed(42)
     n_sample  = 10000
-    BASE_DATE = pd.Timestamp('2025-12-31')  # 基準日固定
-    OBS_START = pd.Timestamp('2021-01-01')  # 観測期間開始（5年間）
+    BASE_DATE = pd.Timestamp('2025-12-31')
     today_ts  = BASE_DATE
 
-    # start_datesを観測期間内（2023-01-01〜2025-12-31）で均等に生成
-    # ※単発顧客の観測完結を保証するため全期間で均等生成
-    _all_dates  = pd.date_range(OBS_START, BASE_DATE, periods=n_sample)
-    _all_dates  = list(_all_dates)
-    np.random.shuffle(_all_dates)
-    start_dates = _all_dates[:n_sample]
-    # 単発顧客生成カットオフ（基準日-180日）：これ以前のstart_dateなら観測完結保証
-    _single_cutoff = BASE_DATE - pd.Timedelta(days=180)
+    # ── ① 動画学習プラットフォーム（サブスク・日割りOFF）─────
+    # 月額¥9,800固定、k=0.85系（初期離脱型）
+    # セグメント: channel, age_group, device
+    np.random.seed(42)
+    SUB1_START = pd.Timestamp('2023-01-01')
+    _s1_dates = list(pd.date_range(SUB1_START, BASE_DATE, periods=n_sample))
+    np.random.shuffle(_s1_dates)
+    s1_starts = _s1_dates[:n_sample]
+    MONTHLY_1 = 9800
 
-    # ── サブスク：SaaS（月額）──────────────────────────
-    # k=0.921（初期離脱型）、λ=273日
-    # 6ヶ月：50%生存、1年：28%、2年：8%、3年：3%
-    # 月額プラン：5,000 / 9,800 / 19,800円
-    # LTV∞イメージ：約8万円、99%到達6年
-    # サブスクは3年観測期間で独自のstart_datesを使用
-    SUB_START = pd.Timestamp('2023-01-01')
-    _sub_dates = list(pd.date_range(SUB_START, BASE_DATE, periods=n_sample))
-    np.random.shuffle(_sub_dates)
-    start_dates_sub = _sub_dates[:n_sample]
+    # セグメント割り当て（チャネルごとにWeibullパラメータを変える）
+    _s1_ch_vals  = ['検索広告', 'SNS広告', '口コミ', '自然検索', 'その他']
+    _s1_ch_prob  = [0.28, 0.30, 0.18, 0.19, 0.05]
+    _s1_ch_k     = {'検索広告': 0.83, 'SNS広告': 0.80, '口コミ': 0.88, '自然検索': 0.90, 'その他': 0.82}
+    _s1_ch_lam   = {'検索広告': 230,  'SNS広告': 200,  '口コミ': 260,  '自然検索': 280,  'その他': 220}
+    s1_channel   = np.random.choice(_s1_ch_vals, n_sample, p=_s1_ch_prob)
 
-    ec_plans    = np.random.choice([5000, 9800, 19800], n_sample, p=[0.50, 0.35, 0.15])
-    ec_survival = np.random.weibull(0.921, n_sample) * 273
-    ec_churned  = np.random.random(n_sample) < 0.85
+    _s1_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
+    _s1_age_prob = [0.15, 0.35, 0.28, 0.17, 0.05]
+    s1_age       = np.random.choice(_s1_age_vals, n_sample, p=_s1_age_prob)
 
-    end_dates_sub = []
-    revenues_sub  = []
+    _s1_dev_vals = ['PC', 'スマホ', 'タブレット', 'その他']
+    _s1_dev_prob = [0.35, 0.45, 0.15, 0.05]
+    s1_device    = np.random.choice(_s1_dev_vals, n_sample, p=_s1_dev_prob)
+
+    # 解約率 85%
+    s1_churned = np.random.random(n_sample) < 0.85
+    s1_end     = []
+    s1_rev     = []
     for i in range(n_sample):
-        sd  = start_dates_sub[i]
-        fee = ec_plans[i]
-        if ec_churned[i]:
-            ed = sd + pd.Timedelta(days=max(1, int(ec_survival[i])))
+        sd  = s1_starts[i]
+        ch  = s1_channel[i]
+        k_i = _s1_ch_k[ch]
+        l_i = _s1_ch_lam[ch]
+        surv = np.random.weibull(k_i) * l_i
+        if s1_churned[i]:
+            ed = sd + pd.Timedelta(days=max(1, int(surv)))
             if ed <= BASE_DATE:
-                end_dates_sub.append(ed.strftime('%Y-%m-%d'))
-                months = max(1, int((ed - sd).days // 30) + 1)
+                s1_end.append(ed.strftime('%Y-%m-%d'))
+                months = max(1, (ed - sd).days // 30 + 1)
             else:
-                end_dates_sub.append('')
-                months = max(1, int((BASE_DATE - sd).days // 30) + 1)
+                s1_end.append('')
+                months = max(1, (BASE_DATE - sd).days // 30 + 1)
         else:
-            end_dates_sub.append('')
-            months = max(1, int((BASE_DATE - sd).days // 30) + 1)
-        revenues_sub.append(fee * months)
+            s1_end.append('')
+            months = max(1, (BASE_DATE - sd).days // 30 + 1)
+        s1_rev.append(MONTHLY_1 * months)
 
-    ec_plan_label = np.where(ec_plans == 7000,  'レギュラー（¥7,000）',
-                    np.where(ec_plans == 9800,  'プレミアム（¥9,800）', 'パーソナル（¥12,000）'))
-    channels_sub  = np.random.choice(['SNS広告', '検索広告', '紹介', 'オーガニック'], n_sample, p=[0.35, 0.30, 0.15, 0.20])
-    ages_sub      = np.random.choice(['10代', '20代', '30代', '40代', '50代以上'], n_sample, p=[0.05, 0.25, 0.35, 0.25, 0.10])
-    regions_sub   = np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
-                        n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09])
-    prefs = ['東京','神奈川','大阪','愛知','埼玉','千葉','福岡','北海道','兵庫','静岡',
-             '茨城','広島','京都','宮城','新潟','長野','栃木','岐阜','群馬','岡山',
-             '三重','熊本','鹿児島','山口','愛媛','長崎','奈良','青森','岩手','大分',
-             '石川','山形','富山','秋田','香川','和歌山','佐賀','福井','徳島','高知',
-             '島根','宮崎','鳥取','沖縄','滋賀','山梨','福島']
-    prefs_sub = np.random.choice(prefs, n_sample)
-
-    sample_sub = pd.DataFrame({
-        'customer_id':   [f'GY{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates_sub],
-        'end_date':      end_dates_sub,
-        'revenue_total': revenues_sub,
-        'plan':          ec_plan_label,
-        'channel':       channels_sub,
-        'age_group':     ages_sub,
-        'region':        regions_sub,
-        'prefecture':    prefs_sub,
+    sample_elearn = pd.DataFrame({
+        'customer_id': [f'EL{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':  [d.strftime('%Y-%m-%d') for d in s1_starts],
+        'end_date':    s1_end,
+        'revenue_total': s1_rev,
+        'channel':     s1_channel,
+        'age_group':   s1_age,
+        'device':      s1_device,
     })
 
-    # ── 都度購入：ファストファッションEC ────────────────
-    # k≈0.7（初期離脱型）、購入間隔90日、休眠判定180日推奨
-    # 単発65%、リピート35%（うちアクティブ15%・離脱85%）
+    # ── ② コワーキングスペース（サブスク・日割りON）──────
+    # 月額¥19,800固定、k=1.1系（逓増離脱型）
+    # セグメント: channel, age_group, occupation
     np.random.seed(43)
-    ff_unit   = np.random.choice([8000, 15000, 25000, 30000], n_sample, p=[0.35, 0.35, 0.20, 0.10])
-    ff_surv   = np.random.weibull(0.75, n_sample) * 300   # k<1：初期離脱型
-    ff_single = np.random.random(n_sample) < 0.721         # 単発65%相当（カットオフ補正済）
-    ff_active = np.random.random(n_sample) < 0.15          # リピートのうちアクティブ15%
+    SUB2_START = pd.Timestamp('2023-01-01')
+    _s2_dates = list(pd.date_range(SUB2_START, BASE_DATE, periods=n_sample))
+    np.random.shuffle(_s2_dates)
+    s2_starts = _s2_dates[:n_sample]
+    MONTHLY_2 = 19800
 
-    last_purchase_dates = []
-    revenues_spot       = []
+    _s2_ch_vals  = ['検索広告', 'SNS広告', '紹介', 'Googleマップ', 'その他']
+    _s2_ch_prob  = [0.25, 0.22, 0.23, 0.25, 0.05]
+    _s2_ch_k     = {'検索広告': 1.08, 'SNS広告': 1.05, '紹介': 1.15, 'Googleマップ': 1.12, 'その他': 1.06}
+    _s2_ch_lam   = {'検索広告': 280,  'SNS広告': 250,  '紹介': 350,  'Googleマップ': 320,  'その他': 260}
+    s2_channel   = np.random.choice(_s2_ch_vals, n_sample, p=_s2_ch_prob)
+
+    _s2_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
+    _s2_age_prob = [0.12, 0.35, 0.30, 0.18, 0.05]
+    s2_age       = np.random.choice(_s2_age_vals, n_sample, p=_s2_age_prob)
+
+    _s2_occ_vals = ['会社員', '経営者・自営など', '学生', 'その他']
+    _s2_occ_prob = [0.35, 0.30, 0.20, 0.15]
+    _s2_occ_k    = {'会社員': 1.10, '経営者・自営など': 1.15, '学生': 1.00, 'その他': 1.05}
+    _s2_occ_lam  = {'会社員': 290,  '経営者・自営など': 360,  '学生': 180,  'その他': 250}
+    s2_occupation = np.random.choice(_s2_occ_vals, n_sample, p=_s2_occ_prob)
+
+    s2_churned = np.random.random(n_sample) < 0.85
+    s2_end     = []
+    s2_rev     = []
     for i in range(n_sample):
-        sd    = start_dates[i]
-        price = ff_unit[i]
-        if ff_single[i] and sd <= _single_cutoff:
-            # 単発：first=last、売上=単価1回
-            lp        = sd
-            purchases = 1
-        elif ff_active[i] or (ff_single[i] and sd > _single_cutoff):
-            # アクティブ：基準日から180日以内に購入あり
-            days_since = np.random.randint(1, 180)
-            lp         = BASE_DATE - pd.Timedelta(days=int(days_since))
-            lp         = max(lp, sd + pd.Timedelta(days=1))
-            purchases  = min(max(2, round((lp - sd).days / 90)), 15)  # 上限15回
+        sd  = s2_starts[i]
+        ch  = s2_channel[i]
+        occ = s2_occupation[i]
+        # チャネルとoccupationのパラメータを平均して使用
+        k_i = (_s2_ch_k[ch] + _s2_occ_k[occ]) / 2
+        l_i = (_s2_ch_lam[ch] + _s2_occ_lam[occ]) / 2
+        surv = np.random.weibull(k_i) * l_i
+        if s2_churned[i]:
+            ed = sd + pd.Timedelta(days=max(1, int(surv)))
+            if ed <= BASE_DATE:
+                s2_end.append(ed.strftime('%Y-%m-%d'))
+                days = max(1, (ed - sd).days)
+            else:
+                s2_end.append('')
+                days = max(1, (BASE_DATE - sd).days)
         else:
-            # 離脱リピート：Weibull生存期間で自然に離脱
-            surv_days = max(1, int(ff_surv[i]))
-            lp        = sd + pd.Timedelta(days=surv_days)
-            lp        = min(lp, BASE_DATE - pd.Timedelta(days=1))
-            lp        = max(lp, sd + pd.Timedelta(days=1))
-            purchases = min(max(2, round((lp - sd).days / 90)), 15)  # 上限15回
-        last_purchase_dates.append(lp.strftime('%Y-%m-%d'))
-        revenues_spot.append(price * purchases)
-
-    ff_gender   = np.random.choice(['男性', '女性', '未回答'],
-                      n_sample, p=[0.38, 0.55, 0.07])
-    ff_channels = np.random.choice(['Instagram広告', '検索広告', 'アプリ通知', 'メルマガ', '口コミ'],
-                      n_sample, p=[0.35, 0.25, 0.15, 0.15, 0.10])
-    ff_ages     = np.random.choice(['10代', '20代', '30代', '40代', '50代以上'],
-                      n_sample, p=[0.15, 0.40, 0.28, 0.12, 0.05])
-    ff_regions  = np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
-                      n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09])
-    prefs_ff    = np.random.choice(prefs, n_sample)
-
-    sample_spot = pd.DataFrame({
-        'customer_id':        [f'FF{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':         [d.strftime('%Y-%m-%d') for d in start_dates],
-        'end_date':           '',
-        'last_purchase_date': last_purchase_dates,
-        'revenue_total':      revenues_spot,
-        'gender':             ff_gender,
-        'channel':            ff_channels,
-        'age_group':          ff_ages,
-        'region':             ff_regions,
-        'prefecture':         prefs_ff,
-    })
-
-    # ── サブスク：ジム（日割りON版）────────────────────
-    # 既存データの累計売上を日割り計算に変換
-    revenues_sub_on = []
-    for i in range(n_sample):
-        sd  = start_dates_sub[i]
-        fee = ec_plans[i]
-        ed_str = end_dates_sub[i]
-        if ed_str:
-            ed = pd.Timestamp(ed_str)
-            days = max(1, (ed - sd).days)
-        else:
+            s2_end.append('')
             days = max(1, (BASE_DATE - sd).days)
-        revenues_sub_on.append(round(fee * days / 30, 0))  # 日割り：月額×日数/30
+        # 日割り計算：月額 × 日数 / 30
+        s2_rev.append(round(MONTHLY_2 * days / 30, 0))
 
-    sample_sub_on = pd.DataFrame({
-        'customer_id':   [f'GY{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':    [d.strftime('%Y-%m-%d') for d in start_dates_sub],
-        'end_date':      end_dates_sub,
-        'revenue_total': revenues_sub_on,
-        'plan':          ec_plan_label,
-        'channel':       channels_sub,
-        'age_group':     ages_sub,
-        'region':        regions_sub,
-        'prefecture':    prefs_sub,
+    sample_cowork = pd.DataFrame({
+        'customer_id': [f'CW{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':  [d.strftime('%Y-%m-%d') for d in s2_starts],
+        'end_date':    s2_end,
+        'revenue_total': s2_rev,
+        'channel':     s2_channel,
+        'age_group':   s2_age,
+        'occupation':  s2_occupation,
     })
 
-    # ── 都度購入：サプリ・健康食品EC ──────────────────
-    # k>1（逓増離脱型）、購入間隔45日、休眠判定180日推奨
-    # 単発45%：初回購入後リピートなし、リピート55%：定期的に購入
-    np.random.seed(99)
-    sp_unit   = np.random.choice([3000, 5000, 8000, 12000], n_sample, p=[0.25, 0.40, 0.25, 0.10])
-    sp_surv   = np.random.weibull(1.3, n_sample) * 180   # k>1：逓増離脱型
-    sp_single = np.random.random(n_sample) < 0.499        # 単発45%相当（カットオフ補正済）
-    sp_active = np.random.random(n_sample) < 0.20         # リピートのうちアクティブ20%
+    # ── ③ D2C スキンケアEC（都度購入）────────────────
+    # 平均単価¥5,800、k=0.75系（初期離脱型）、購入間隔平均60日（ばらつきあり）
+    # 休眠判定180日推奨
+    # セグメント: channel, age_group, gender
+    np.random.seed(44)
+    OBS_START = pd.Timestamp('2021-01-01')
+    _s3_dates = list(pd.date_range(OBS_START, BASE_DATE, periods=n_sample))
+    np.random.shuffle(_s3_dates)
+    s3_starts = _s3_dates[:n_sample]
+    _single_cutoff = BASE_DATE - pd.Timedelta(days=180)
+    UNIT_PRICE_3 = 5800
 
-    sp_last_purchase = []
-    sp_revenues      = []
+    _s3_ch_vals  = ['検索広告', 'Instagram広告', 'インフルエンサー', '自然検索', 'その他']
+    _s3_ch_prob  = [0.25, 0.30, 0.15, 0.25, 0.05]
+    _s3_ch_k     = {'検索広告': 0.77, 'Instagram広告': 0.73, 'インフルエンサー': 0.65, '自然検索': 0.85, 'その他': 0.74}
+    _s3_ch_lam   = {'検索広告': 210,  'Instagram広告': 190,  'インフルエンサー': 130,  '自然検索': 280,  'その他': 195}
+    # チャネル別の単発率（インフルエンサー経由は単発が多い）
+    _s3_ch_single = {'検索広告': 0.50, 'Instagram広告': 0.55, 'インフルエンサー': 0.70, '自然検索': 0.40, 'その他': 0.55}
+    s3_channel   = np.random.choice(_s3_ch_vals, n_sample, p=_s3_ch_prob)
+
+    _s3_age_vals = ['18-24', '25-34', '35-44', '45-54', '55+', '不明']
+    _s3_age_prob = [0.10, 0.30, 0.28, 0.18, 0.09, 0.05]
+    s3_age       = np.random.choice(_s3_age_vals, n_sample, p=_s3_age_prob)
+
+    _s3_gen_vals = ['女性', '男性', '未回答']
+    _s3_gen_prob = [0.58, 0.37, 0.05]
+    _s3_gen_k    = {'女性': 0.80, '男性': 0.70, '未回答': 0.75}
+    _s3_gen_lam  = {'女性': 240,  '男性': 160,  '未回答': 200}
+    s3_gender    = np.random.choice(_s3_gen_vals, n_sample, p=_s3_gen_prob)
+
+    # リピートのうちアクティブ18%
+    s3_active = np.random.random(n_sample) < 0.18
+
+    s3_last_purchase = []
+    s3_revenues      = []
     for i in range(n_sample):
-        sd    = start_dates[i]
-        price = sp_unit[i]
-        if sp_single[i] and sd <= _single_cutoff:
-            # 単発：first=last、売上=単価1回（観測完結保証）
+        sd    = s3_starts[i]
+        ch    = s3_channel[i]
+        gen   = s3_gender[i]
+        k_i   = (_s3_ch_k[ch] + _s3_gen_k[gen]) / 2
+        l_i   = (_s3_ch_lam[ch] + _s3_gen_lam[gen]) / 2
+        single_rate = _s3_ch_single[ch]
+        is_single = np.random.random() < single_rate
+        # 購入間隔：平均60日、標準偏差20日でばらつき
+        avg_interval = max(20, int(np.random.normal(60, 20)))
+        price = UNIT_PRICE_3 + int(np.random.normal(0, 1000))  # 単価にもばらつき
+        price = max(3000, min(10000, price))  # ¥3,000〜¥10,000の範囲
+        if is_single and sd <= _single_cutoff:
             lp        = sd
             purchases = 1
-        elif sp_active[i] or (sp_single[i] and sd > _single_cutoff):
-            # アクティブリピート：基準日から180日以内に購入あり
+        elif s3_active[i] or (is_single and sd > _single_cutoff):
             days_since = np.random.randint(1, 180)
             lp         = BASE_DATE - pd.Timedelta(days=int(days_since))
             lp         = max(lp, sd + pd.Timedelta(days=1))
-            purchases  = min(max(2, round((lp - sd).days / 45)), 20)  # 上限20回
+            purchases  = min(max(2, round((lp - sd).days / avg_interval)), 20)
         else:
-            # 離脱リピート：生存期間に従い自然に離脱
-            surv_days = max(1, int(sp_surv[i]))
+            surv_days = max(1, int(np.random.weibull(k_i) * l_i))
             lp        = sd + pd.Timedelta(days=surv_days)
             lp        = min(lp, BASE_DATE - pd.Timedelta(days=1))
             lp        = max(lp, sd + pd.Timedelta(days=1))
-            purchases = min(max(2, round((lp - sd).days / 45)), 20)  # 上限20回
-        sp_last_purchase.append(lp.strftime('%Y-%m-%d'))
-        sp_revenues.append(price * purchases)
+            purchases = min(max(2, round((lp - sd).days / avg_interval)), 20)
+        s3_last_purchase.append(lp.strftime('%Y-%m-%d'))
+        s3_revenues.append(price * purchases)
 
-    sp_gender   = np.random.choice(['男性', '女性', '未回答'], n_sample, p=[0.35, 0.58, 0.07])
-    sp_channels = np.random.choice(['SNS広告', '検索広告', 'アプリ通知', 'メルマガ', '口コミ'],
-                      n_sample, p=[0.30, 0.25, 0.15, 0.20, 0.10])
-    sp_ages     = np.random.choice(['20代', '30代', '40代', '50代以上', '60代以上'],
-                      n_sample, p=[0.15, 0.30, 0.30, 0.18, 0.07])
-    sp_regions  = np.random.choice(['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'],
-                      n_sample, p=[0.05, 0.07, 0.35, 0.15, 0.18, 0.07, 0.04, 0.09])
-    prefs_sp    = np.random.choice(prefs, n_sample)
-
-    sample_supp = pd.DataFrame({
-        'customer_id':        [f'SP{i:05d}' for i in range(1, n_sample+1)],
-        'start_date':         [d.strftime('%Y-%m-%d') for d in start_dates],
+    sample_skincare = pd.DataFrame({
+        'customer_id':        [f'SC{i:05d}' for i in range(1, n_sample+1)],
+        'start_date':         [d.strftime('%Y-%m-%d') for d in s3_starts],
         'end_date':           '',
-        'last_purchase_date': sp_last_purchase,
-        'revenue_total':      sp_revenues,
-        'gender':             sp_gender,
-        'channel':            sp_channels,
-        'age_group':          sp_ages,
-        'region':             sp_regions,
-        'prefecture':         prefs_sp,
+        'last_purchase_date': s3_last_purchase,
+        'revenue_total':      s3_revenues,
+        'channel':            s3_channel,
+        'age_group':          s3_age,
+        'gender':             s3_gender,
     })
 
     import base64
-    sub_csv     = sample_sub.to_csv(index=False).encode('utf-8-sig')
-    sub_on_csv  = sample_sub_on.to_csv(index=False).encode('utf-8-sig')
-    spot_csv    = sample_spot.to_csv(index=False).encode('utf-8-sig')
-    supp_csv    = sample_supp.to_csv(index=False).encode('utf-8-sig')
-    sub_b64     = base64.b64encode(sub_csv).decode()
-    sub_on_b64  = base64.b64encode(sub_on_csv).decode()
-    spot_b64    = base64.b64encode(spot_csv).decode()
-    supp_b64    = base64.b64encode(supp_csv).decode()
+    elearn_csv   = sample_elearn.to_csv(index=False).encode('utf-8-sig')
+    cowork_csv   = sample_cowork.to_csv(index=False).encode('utf-8-sig')
+    skincare_csv = sample_skincare.to_csv(index=False).encode('utf-8-sig')
 
     st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>サンプルデータを選択してお試しください。</span>", unsafe_allow_html=True)
 
@@ -793,10 +775,9 @@ with st.sidebar:
         st.session_state.sample_label = None
 
     _sample_options = {
-        'サブスク型：月額ジム（日割りOFF）': ('sub', sample_sub),
-        'サブスク型：月額ジム（日割りON）':  ('sub_on', sample_sub_on),
-        '都度購入型：ファッションEC':        ('spot', sample_spot),
-        '都度購入型：サプリEC':              ('supp', sample_supp),
+        'サブスク型：動画学習（日割りOFF）': ('elearn', sample_elearn),
+        'サブスク型：コワーキング（日割りON）': ('cowork', sample_cowork),
+        '都度購入型：スキンケアEC':           ('skincare', sample_skincare),
     }
     _btn_s = "display:block; width:100%; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5; box-sizing:border-box;"
     _selected_sample = st.selectbox(
@@ -811,16 +792,36 @@ with st.sidebar:
         st.session_state.sample_df = _df
         st.session_state.sample_label = _selected_sample
         # サンプルに応じてデフォルト設定をセッションに保存
-        if 'sub' in _key:
+        if _key == 'elearn':
             st.session_state['_sample_biz']     = 'サブスク・継続課金型'
-            st.session_state['_sample_prorate'] = (_key == 'sub_on')
-            st.session_state['_sample_seg']     = 'plan, channel, age_group, region'
-        else:
+            st.session_state['_sample_prorate'] = False
+            st.session_state['_sample_seg']     = 'channel, age_group, device'
+        elif _key == 'cowork':
+            st.session_state['_sample_biz']     = 'サブスク・継続課金型'
+            st.session_state['_sample_prorate'] = True
+            st.session_state['_sample_seg']     = 'channel, age_group, occupation'
+        else:  # skincare
             st.session_state['_sample_biz']     = '都度購入型'
             st.session_state['_sample_prorate'] = False
-            st.session_state['_sample_seg']     = 'gender, channel, age_group, region' 
+            st.session_state['_sample_seg']     = 'channel, age_group, gender'
         st.rerun()
 
+    # サンプルデータCSVダウンロード
+    _dl_map = {
+        'elearn':   ('sample_elearn.csv',   elearn_csv),
+        'cowork':   ('sample_cowork.csv',   cowork_csv),
+        'skincare': ('sample_skincare.csv', skincare_csv),
+    }
+    if _selected_sample != '（選択してください）':
+        _dl_key = _sample_options[_selected_sample][0]
+        _dl_fn, _dl_data = _dl_map[_dl_key]
+        st.download_button(
+            label="📥 サンプルCSVをダウンロード（データフォーマット確認用）",
+            data=_dl_data,
+            file_name=_dl_fn,
+            mime='text/csv',
+            key='sample_csv_dl'
+        )
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
@@ -984,7 +985,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v298</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v299</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1029,18 +1030,15 @@ if uploaded is None and st.session_state.get('sample_df') is None:
 _qp = st.query_params
 if 'sample' in _qp and st.session_state.get('sample_df') is None:
     _s = _qp['sample']
-    if _s == 'sub':
-        st.session_state.sample_df    = sample_sub
-        st.session_state.sample_label = 'サブスク型：月額ジム（日割りOFF）'
-    elif _s == 'sub_on':
-        st.session_state.sample_df    = sample_sub_on
-        st.session_state.sample_label = 'サブスク型：月額ジム（日割りON）'
-    elif _s == 'spot':
-        st.session_state.sample_df    = sample_spot
-        st.session_state.sample_label = '都度購入型：ファッションEC'
-    elif _s == 'supp':
-        st.session_state.sample_df    = sample_supp
-        st.session_state.sample_label = '都度購入型：サプリEC'
+    if _s == 'elearn':
+        st.session_state.sample_df    = sample_elearn
+        st.session_state.sample_label = 'サブスク型：動画学習（日割りOFF）'
+    elif _s == 'cowork':
+        st.session_state.sample_df    = sample_cowork
+        st.session_state.sample_label = 'サブスク型：コワーキング（日割りON）'
+    elif _s == 'skincare':
+        st.session_state.sample_df    = sample_skincare
+        st.session_state.sample_label = '都度購入型：スキンケアEC'
     st.query_params.clear()
 
 # ══════════════════════════════════════════════════════════════
