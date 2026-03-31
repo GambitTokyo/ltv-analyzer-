@@ -482,6 +482,8 @@ def generate_pptx(
                     r99s=ltv_horizon_offset(row['k'],row['lam'],_arpu,d99s,ltv_offset_days)
                     rows_sx.append([f'LTV∞到達率: 99%（{int(d99s):,}日）',f'¥{r99s:,.0f}',f'¥{r99s*gpm:,.0f}',f'¥{r99s*gpm/cac_n:,.0f}','99.0%'])
                 except: pass
+                # LTV∞行
+                rows_sx.append([f'LTV∞',f'¥{row["ltv_r"]:,.0f}',f'¥{row["ltv_r"]*gpm:,.0f}',f'¥{row["ltv_r"]*gpm/cac_n:,.0f}','100%'])
                 for sh in sx.shapes:
                     if sh.name=='タイトル 8': _set_text(sh,f'{sc}: {row["seg"]}')
                     elif sh.name=='Picture 6' and buf_km: buf_km.seek(0); _replace_image(sx,sh,buf_km)

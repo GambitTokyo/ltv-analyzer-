@@ -994,7 +994,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v301</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v302</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2331,7 +2331,8 @@ if True:
                 ws_seg.append(['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', 'k', 'λ（日）', 'R²', '獲得効率'])
                 seg_vals = df[sc].dropna().unique()
                 seg_rows = []
-                for sv in sorted(seg_vals):
+                _seg_order_xl = list(all_seg_results[sc]['セグメント']) if sc in all_seg_results else sorted(seg_vals)
+                for sv in _seg_order_xl:
                     df_s = df[df[sc] == sv]
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
                         continue
@@ -2357,7 +2358,9 @@ if True:
                 hor_header = ['セグメント', 'ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率（%）']
                 ws_seg_hor.append(hor_header)
                 hor_points = [180, 365, 730, 1095, 1825]
-                for sv in sorted(seg_vals):
+                # all_seg_resultsのLTV∞降順で出力
+                _seg_order = list(all_seg_results[sc]['セグメント']) if sc in all_seg_results else sorted(seg_vals)
+                for sv in _seg_order:
                     df_s = df[df[sc] == sv]
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
                         continue
@@ -2747,11 +2750,6 @@ if True:
                 row['ホライズン'], row['LTV（売上）'], row['LTV（粗利）'],
                 row['CAC上限'], row['LTV∞到達率'],
             ])
-        # LTV∞行追加
-        _ltv_tdata.append([
-            'LTV∞', f'¥{ltv_rev:,.0f}', f'¥{ltv_val:,.0f}',
-            f'¥{cac_upper:,.0f}', '100.0%',
-        ])
 
         _title_cw = 5.5 * cm
         _data_cw  = (CONTENT_W - _title_cw) / 4
@@ -2790,7 +2788,8 @@ if True:
                 best_pdf = None
                 avg_ltv_pdf = []
                 _seg_results = []  # 加重平均用
-                for sv in sorted(seg_vals):
+                _seg_order_pdf = list(all_seg_results[sc]['セグメント']) if sc in all_seg_results else sorted(seg_vals)
+                for sv in _seg_order_pdf:
                     df_s = df[df[sc] == sv]
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
                         continue
@@ -2935,7 +2934,8 @@ if True:
                 story.append(Spacer(1, 0.6 * cm))
 
                 _seg_detail_count = 0
-                for sv in sorted(seg_vals):
+                _seg_order_detail = list(all_seg_results[sc]['セグメント']) if sc in all_seg_results else sorted(seg_vals)
+                for sv in _seg_order_detail:
                     df_sv2 = df[df[sc] == sv]
                     if len(df_sv2) < 10 or df_sv2['event'].sum() < 5:
                         continue
@@ -3683,6 +3683,10 @@ if segment_cols_input.strip():
 
                         # 99%行
                         hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞到達率: 99%（{int(rev_99_s_d):,}日）</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{rev_99_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{gp_99_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{gp_99_s/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>99.0%</td></tr>"
+
+                        # LTV∞行
+                        _ltv_gp_s_tbl = ltv_inf_s_offset * gpm if business_type == '都度購入型' else ltv_inf_offset(k_s, lam_s, arpu_s * gpm, ltv_offset_days)[0]
+                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{ltv_inf_s_offset:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{_ltv_gp_s_tbl:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{_ltv_gp_s_tbl/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>100%</td></tr>"
 
                         hor_tbl_html = f"""
 <table style='width:100%; border-collapse:collapse; margin-top:4px; table-layout:fixed;'>
