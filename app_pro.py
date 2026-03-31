@@ -984,7 +984,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v293</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v294</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2824,10 +2824,13 @@ if True:
                     _seg_names = _seg_names[::-1]
                     _seg_ltvs = _seg_ltvs[::-1]
 
-                    fig_bar, ax_bar = plt_seg_bar.subplots(figsize=(10, max(2.5, len(_seg_names) * 0.6)))
+                    _n_bars = len(_seg_names)
+                    _fig_h = max(2.0, _n_bars * 0.6)
+                    _fig_w = 10
+                    fig_bar, ax_bar = plt_seg_bar.subplots(figsize=(_fig_w, _fig_h))
                     fig_bar.patch.set_facecolor('#0E1117')
                     ax_bar.set_facecolor('#0E1117')
-                    # TOP PICKは濃い青、それ以外は薄い青
+                    # TOP PICKは濃い青、それ以外はダークティール
                     _bar_colors = ['#56b4d3' if _seg_names[i] == best_pdf['seg'] else '#2a4a5a'
                                    for i in range(len(_seg_names))] if best_pdf else ['#2a4a5a'] * len(_seg_names)
                     bars = ax_bar.barh(range(len(_seg_names)), _seg_ltvs, color=_bar_colors, height=0.6, zorder=3)
@@ -2841,7 +2844,7 @@ if True:
                     ax_bar.grid(True, axis='x', alpha=0.15, color='#2a3040', zorder=0)
                     for sp in ax_bar.spines.values():
                         sp.set_color('#2a3040')
-                    # 値ラベル（棒グラフ内の右寄せ、白系）
+                    # 値ラベル（棒グラフ内の右寄せ、白太字）
                     for bar, val in zip(bars, _seg_ltvs):
                         ax_bar.text(bar.get_width() - max(_seg_ltvs) * 0.01,
                                    bar.get_y() + bar.get_height() / 2,
@@ -2852,7 +2855,9 @@ if True:
                     fig_bar.savefig(buf_bar, format='png', dpi=120, facecolor='#0E1117', bbox_inches='tight')
                     buf_bar.seek(0)
                     plt_seg_bar.close(fig_bar)
-                    story.append(RLImage(buf_bar, width=CONTENT_W, height=CONTENT_W * 0.3))
+                    # 縦横比をfigと一致させる
+                    _rl_bar_h = CONTENT_W * (_fig_h / _fig_w)
+                    story.append(RLImage(buf_bar, width=CONTENT_W, height=_rl_bar_h))
                     story.append(Spacer(1, 0.4 * cm))
 
                 # サマリーテーブル（上位10件 + 加重平均行）
