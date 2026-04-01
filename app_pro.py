@@ -290,9 +290,15 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
     border: 1px solid #1c3a4a !important;
     border-radius: 8px !important;
     width: 100% !important;
+    height: auto !important;
     font-size: 0.78rem !important;
+    font-weight: 400 !important;
     line-height: 1.4 !important;
     padding: 6px 10px !important;
+    letter-spacing: 0 !important;
+    text-align: center !important;
+    display: block !important;
+    white-space: normal !important;
 }
 [data-testid="stSidebar"] [data-testid="stDownloadButton"] > button:hover,
 [data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover {
@@ -835,7 +841,7 @@ with st.sidebar:
         _dl_key = _sample_options[_active_sample][0]
         _dl_fn, _dl_data = _dl_map[_dl_key]
         st.download_button(
-            label="サンプルCSVをダウンロード",
+            label="サンプルCSVをダウンロード（データフォーマット確認用）",
             data=_dl_data,
             file_name=_dl_fn,
             mime='text/csv',
@@ -1005,7 +1011,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v309</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v311</div>
 </div>
 """, unsafe_allow_html=True)
 
