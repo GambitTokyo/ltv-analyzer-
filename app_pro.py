@@ -1031,7 +1031,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v326</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v327</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1050,7 +1050,7 @@ if uploaded is None and st.session_state.get('sample_df') is None:
 | `start_date` | 契約開始日 / 初回購入日 | YYYY-MM-DD | 2023-01-01 |
 | `end_date` | 解約日（サブスク向け・継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
 | `last_purchase_date` | 最終購買日（都度購入向け・任意） | YYYY-MM-DD | 2024-06-01 |
-| `revenue` | **累計売上**（円） | 数値 | 48000 |
+| `revenue` | **累計売上** | 数値 | 48000 |
 | `セグメント列`（任意の列名） | **Advanced機能**：プラン・チャネル・年齢層など | 文字列 | 月額300 |
 
 > **Advanced版では必ずセグメント列を追加してください。**複数列追加可能です。\n
@@ -1491,7 +1491,7 @@ try:
         plot_bgcolor='rgba(0,0,0,0)',
         title=dict(text='累計売上の分布', font=dict(size=14)),
         xaxis=dict(
-            title=f'累計売上 ({cur_symbol(CUR)})', tickformat=',',
+            title=f'累計売上', tickformat=',',
             gridcolor='rgba(255,255,255,0.06)',
             zeroline=False,
             showline=True, linewidth=1, linecolor='rgba(255,255,255,0.15)',
@@ -1915,7 +1915,7 @@ with _col_ltv:
         font=dict(color='#ccc', size=10),
         legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
         xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals, ticktext=tick_text, tickfont=dict(color='#888'), range=[0, x_max + 50]),
-        yaxis=dict(title='金額（円）', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
+        yaxis=dict(title='金額', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
     )
     st.plotly_chart(fig_ltv, use_container_width=True)
 
@@ -2834,7 +2834,7 @@ if True:
         if _JP_FONT_NAME:
             ax_lp.set_xlabel('継続期間', fontsize=9, color='#888',
                             fontfamily=_JP_FONT_NAME)
-            ax_lp.set_ylabel('金額（円）', fontsize=9, color='#888',
+            ax_lp.set_ylabel('金額', fontsize=9, color='#888',
                             fontfamily=_JP_FONT_NAME)
         else:
             ax_lp.set_xlabel('Days', fontsize=9, color='#888')
@@ -3686,7 +3686,7 @@ if segment_cols_input.strip():
                             font=dict(color='#ccc', size=10),
                             legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
                             xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals_s, ticktext=tick_text_s, tickfont=dict(color='#888')),
-                            yaxis=dict(title='金額（円）', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
+                            yaxis=dict(title='金額', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
                         )
                         st.plotly_chart(fig_hor_s, use_container_width=True)
 

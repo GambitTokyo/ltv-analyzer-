@@ -257,7 +257,7 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
     ax.grid(True, alpha=0.15, color='#1a3040')
     for s in ax.spines.values(): s.set_color('#1a3040')
     ax.set_xlabel('継続期間', color='#888', fontsize=9, fontproperties=fp)
-    ax.set_ylabel('金額（円）', color='#888', fontsize=9, fontproperties=fp)
+    ax.set_ylabel('金額', color='#888', fontsize=9, fontproperties=fp)
     leg = ax.legend(
         [Line2D([0],[0],color='#56b4d3',lw=1.2,marker='o',ms=2),
          Line2D([0],[0],color='#a8dadc',lw=1.2,ls='--',marker='o',ms=2),
