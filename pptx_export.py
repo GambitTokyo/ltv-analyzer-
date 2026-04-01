@@ -391,7 +391,7 @@ def generate_pptx(
     for sh in s4.shapes:
         if sh.name=='テキスト ボックス 3' and sh.has_text_frame:
             if _tbl_shape:
-                sh.top = _tbl_shape.top + _tbl_shape.height + 137160  # テーブル底 + 約0.15in隙間
+                sh.top = _tbl_shape.top + _tbl_shape.height + 340000  # テーブル底 + 約1行分隙間
             if s4_guide_data: _set_s4_guide(sh, s4_guide_data)
     buf_s5=_make_ltv_graph(t_range,rev_line,gp_line,cac_line,ltv_rev,lam_actual,x_max)
     for sh in prs.slides[4].shapes:
