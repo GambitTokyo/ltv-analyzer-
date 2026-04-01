@@ -386,7 +386,7 @@ def generate_pptx(
     for sh in s4.shapes:
         if sh.shape_type==19: _write_table_styled(sh.table,None,rows_s4,special_last_n=3,data_font_size=8)
         elif sh.name=='テキスト ボックス 3' and sh.has_text_frame:
-            sh.top=sh.top+182880
+            sh.top=sh.top+365760
             if s4_guide_data: _set_s4_guide(sh, s4_guide_data)
     buf_s5=_make_ltv_graph(t_range,rev_line,gp_line,cac_line,ltv_rev,lam_actual,x_max)
     for sh in prs.slides[4].shapes:
