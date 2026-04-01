@@ -994,7 +994,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v304</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v306</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2228,6 +2228,85 @@ with tab3:
     st.code(p3, language=None)
 
 # ══════════════════════════════════════════════════════════════
+# Pre-compute Segment Analysis (shared by all outputs)
+# ══════════════════════════════════════════════════════════════
+all_seg_results = {}  # {seg_col: seg_df}  全出力で共有
+all_seg_details = {}  # {seg_col: [dict, ...]}  ソート済みseg_results
+
+if segment_cols_input.strip():
+    _pre_seg_cols = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
+    for _pre_sc in _pre_seg_cols[:5]:
+        _pre_seg_values = df[_pre_sc].dropna().unique()
+        if len(_pre_seg_values) > 50:
+            continue
+        _pre_results = []
+        for _pre_sv in sorted(_pre_seg_values):
+            _pre_df = df[df[_pre_sc] == _pre_sv].copy()
+            if len(_pre_df) < 10 or _pre_df['event'].sum() < 5:
+                continue
+            try:
+                if ltv_offset_days > 0:
+                    _pre_df_fit = _pre_df.copy()
+                    _pre_df_fit['duration'] = _pre_df_fit['duration'] - ltv_offset_days
+                    _pre_df_fit.loc[_pre_df_fit['duration'] <= 0, 'event'] = 0
+                    _pre_df_fit.loc[_pre_df_fit['duration'] <= 0, 'duration'] = 1
+                    _pre_df_fit['duration'] = _pre_df_fit['duration'].clip(lower=1)
+                    _pre_km = _compute_km_df(_pre_df_fit)
+                else:
+                    _pre_km = _compute_km_df(_pre_df)
+                _pre_k, _pre_lam, _pre_r2, _ = _fit_weibull_df(_pre_km)
+                if _pre_k is None:
+                    continue
+                if business_type == '都度購入型' and 'last_purchase_date' in _pre_df.columns:
+                    _pre_dorm = dormancy_days or 180
+                    _gap = (_pre_df['last_purchase_date'] - _pre_df['start_date']).dt.days.fillna(-1)
+                    _days = (today - _pre_df['last_purchase_date']).dt.days.fillna(0)
+                    _single_m = (_gap == 0) & (_days >= _pre_dorm)
+                    _long_m   = (_gap > 0)
+                    _single_d = _pre_df[_single_m]
+                    _long_d   = _pre_df[_long_m]
+                    _arpu_short = _single_d['revenue_total'].sum() / len(_single_d) / _pre_dorm if len(_single_d) > 0 else 0.0
+                    _arpu_long  = _long_d['revenue_total'].sum() / _long_d['duration'].sum() if len(_long_d) > 0 else _pre_df['revenue_total'].sum() / _pre_df['duration'].sum()
+                    _n = len(_single_d) + len(_long_d)
+                    _w_s = len(_single_d) / _n if _n > 0 else 0.5
+                    _w_l = len(_long_d) / _n if _n > 0 else 0.5
+                    _arpu_0_dorm = _arpu_short * _w_s + _arpu_long * _w_l
+                    _arpu = _arpu_long
+                else:
+                    _arpu = _pre_df['arpu_daily'].mean()
+                    _arpu_long = _arpu
+                    _arpu_0_dorm = _arpu
+                    _pre_dorm = ltv_offset_days
+                _gp = _arpu * gpm
+                if business_type == '都度購入型':
+                    _ltv_short = _pre_dorm * _arpu_0_dorm
+                    _ltv_long, _ = ltv_inf_offset(_pre_k, _pre_lam, _arpu_long, 0)
+                    _ltv_r = _ltv_short + _ltv_long
+                    _gp_short = _pre_dorm * (_arpu_0_dorm * gpm)
+                    _gp_long, _ = ltv_inf_offset(_pre_k, _pre_lam, _arpu_long * gpm, 0)
+                    _ltv_g = _gp_short + _gp_long
+                else:
+                    _ltv_r, _ = ltv_inf_offset(_pre_k, _pre_lam, _arpu, ltv_offset_days)
+                    _ltv_g, _ = ltv_inf_offset(_pre_k, _pre_lam, _gp, ltv_offset_days)
+                _pre_results.append({
+                    'セグメント': _pre_sv, '顧客数': len(_pre_df),
+                    'LTV∞（売上）': _ltv_r, 'LTV∞（粗利）': _ltv_g,
+                    'CAC上限（粗利）': _ltv_g / cac_n,
+                    '総ポテンシャル': _ltv_r * len(_pre_df),
+                    'k': _pre_k, 'λ（日）': _pre_lam + ltv_offset_days, 'λ_raw': _pre_lam,
+                    'arpu_s': _arpu, 'arpu_long_s': _arpu_long, 'arpu_0_dorm_s': _arpu_0_dorm,
+                    'R²': _pre_r2,
+                    '獲得効率': (_ltv_g / cac_input) if cac_known else None,
+                    '優先スコア': _ltv_r * len(_pre_df),
+                })
+            except Exception:
+                continue
+        if _pre_results:
+            _pre_df_result = pd.DataFrame(_pre_results).sort_values('LTV∞（売上）', ascending=False).reset_index(drop=True)
+            all_seg_results[_pre_sc] = _pre_df_result
+            all_seg_details[_pre_sc] = sorted(_pre_results, key=lambda x: x['LTV∞（売上）'], reverse=True)
+
+# ══════════════════════════════════════════════════════════════
 # Export buttons
 # ══════════════════════════════════════════════════════════════
 
@@ -2326,30 +2405,13 @@ if True:
         if segment_cols_input.strip():
             seg_cols_xl = [c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
             for sc in seg_cols_xl:
-                # ── セグメント概要シート ──
+                # ── セグメント概要シート（all_seg_resultsから参照）──
                 ws_seg = wb.create_sheet(f'SEG_{sc}'[:31])
                 ws_seg.append(['セグメント', '顧客数', 'LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）', 'k', 'λ（日）', 'R²', '獲得効率'])
-                seg_vals = df[sc].dropna().unique()
-                seg_rows = []
-                for sv in sorted(seg_vals):
-                    df_s = df[df[sc] == sv]
-                    if len(df_s) < 10 or df_s['event'].sum() < 5:
-                        continue
-                    try:
-                        km_s = _compute_km_df(df_s)
-                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
-                        if k_s is None: continue
-                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
-                        gp_s   = arpu_s * gpm
-                        ltv_r_s, _ = ltv_inf_offset(k_s, lam_s, arpu_s, ltv_offset_days)
-                        ltv_g_s, _ = ltv_inf_offset(k_s, lam_s, gp_s,   ltv_offset_days)
-                        eff = round(ltv_g_s / cac_input, 2) if cac_known else '-'
-                        seg_rows.append([sv, len(df_s), round(ltv_r_s,0), round(ltv_g_s,0), round(ltv_g_s/cac_n,0), round(k_s,4), round(lam_s,1), round(r2_s,4), eff])
-                    except Exception:
-                        continue
-                seg_rows.sort(key=lambda x: x[2], reverse=True)
-                for row in seg_rows:
-                    ws_seg.append(row)
+                if sc in all_seg_results:
+                    for _, _r in all_seg_results[sc].iterrows():
+                        eff = round(_r['獲得効率'], 2) if _r['獲得効率'] is not None else '-'
+                        ws_seg.append([_r['セグメント'], _r['顧客数'], round(_r['LTV∞（売上）'],0), round(_r['LTV∞（粗利）'],0), round(_r['CAC上限（粗利）'],0), round(_r['k'],4), round(_r['λ（日）'],1), round(_r['R²'],4), eff])
                 ws_seg.column_dimensions['A'].width = 20
 
                 # ── セグメント別暫定LTV詳細シート ──
@@ -2357,8 +2419,8 @@ if True:
                 hor_header = ['セグメント', 'ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率（%）']
                 ws_seg_hor.append(hor_header)
                 hor_points = [180, 365, 730, 1095, 1825]
-                # seg_rowsのLTV∞降順に合わせる
-                _xl_seg_order = [r[0] for r in seg_rows]
+                # all_seg_resultsのLTV∞降順に合わせる
+                _xl_seg_order = list(all_seg_results[sc]['セグメント']) if sc in all_seg_results else sorted(df[sc].dropna().unique())
                 for sv in _xl_seg_order:
                     df_s = df[df[sc] == sv]
                     if len(df_s) < 10 or df_s['event'].sum() < 5:
@@ -2480,6 +2542,7 @@ if True:
             arpu_0_dorm=arpu_0_dorm if 'arpu_0_dorm' in dir() else arpu_daily,
             arpu_long=arpu_long if 'arpu_long' in dir() else arpu_daily,
             outlier_label=_outlier_label,
+            all_seg_results=all_seg_results,
         )
 
         import base64 as _b64
@@ -2787,33 +2850,19 @@ if True:
                 best_pdf = None
                 avg_ltv_pdf = []
                 _seg_results = []  # 加重平均用
-                for sv in sorted(seg_vals):
-                    df_s = df[df[sc] == sv]
-                    if len(df_s) < 10 or df_s['event'].sum() < 5:
-                        continue
-                    try:
-                        km_s = _compute_km_df(df_s)
-                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
-                        if k_s is None:
-                            continue
-                        arpu_s = (df_s['revenue_total'].sum() / df_s['duration'].sum()
-                                  if billing_cycle == '日次（都度購入）'
-                                  else df_s['arpu_daily'].mean())
-                        gp_s = arpu_s * gpm
-                        ltv_r, _ = ltv_inf(k_s, lam_s, arpu_s)
-                        ltv_g, _ = ltv_inf(k_s, lam_s, gp_s)
-                        pdf_rows.append([str(sv), f'{len(df_s):,}',
-                                        f'¥{ltv_r:,.0f}', f'¥{ltv_g:,.0f}',
-                                        f'¥{ltv_g/cac_n:,.0f}',
-                                        f'{k_s:.3f}', f'{lam_s:.1f}', f'{r2_s:.3f}'])
-                        _seg_results.append({'n': len(df_s), 'ltv_r': ltv_r,
-                                            'ltv_g': ltv_g, 'cac': ltv_g / cac_n})
-                        avg_ltv_pdf.append(ltv_r)
-                        if best_pdf is None or ltv_r > best_pdf['ltv_r']:
-                            best_pdf = {'seg': str(sv), 'ltv_r': ltv_r,
-                                       'ltv_g': ltv_g, 'cac': ltv_g / cac_n}
-                    except Exception:
-                        continue
+                # all_seg_resultsから参照（独自Weibullフィットしない）
+                if sc in all_seg_results:
+                    for _, _r in all_seg_results[sc].iterrows():
+                        pdf_rows.append([str(_r['セグメント']), f'{int(_r["顧客数"]):,}',
+                                        f'¥{_r["LTV∞（売上）"]:,.0f}', f'¥{_r["LTV∞（粗利）"]:,.0f}',
+                                        f'¥{_r["CAC上限（粗利）"]:,.0f}',
+                                        f'{_r["k"]:.3f}', f'{_r["λ（日）"]:.1f}', f'{_r["R²"]:.3f}'])
+                        _seg_results.append({'n': int(_r['顧客数']), 'ltv_r': _r['LTV∞（売上）'],
+                                            'ltv_g': _r['LTV∞（粗利）'], 'cac': _r['CAC上限（粗利）']})
+                        avg_ltv_pdf.append(_r['LTV∞（売上）'])
+                        if best_pdf is None or _r['LTV∞（売上）'] > best_pdf['ltv_r']:
+                            best_pdf = {'seg': str(_r['セグメント']), 'ltv_r': _r['LTV∞（売上）'],
+                                       'ltv_g': _r['LTV∞（粗利）'], 'cac': _r['CAC上限（粗利）']}
 
                 # TOP PICK
                 if best_pdf and avg_ltv_pdf:
@@ -2932,11 +2981,10 @@ if True:
                 story.append(Spacer(1, 0.6 * cm))
 
                 _seg_detail_count = 0
-                # pdf_rows_showからLTV∞降順のセグメント順を取得
-                _pdf_seg_order = [r[0] for r in pdf_rows_show[1:] if r[0] != '加重平均']
-                # pdf_rows_showに含まれないセグメントも末尾に追加
-                _all_sorted = _pdf_seg_order + [sv for sv in sorted(seg_vals) if str(sv) not in _pdf_seg_order]
-                for sv in _all_sorted:
+                # all_seg_resultsのLTV∞降順で出力
+                _pdf_detail_order = list(all_seg_results[sc]["セグメント"]) if sc in all_seg_results else sorted(seg_vals)
+                for sv in _pdf_detail_order:
+
                     df_sv2 = df[df[sc] == sv]
                     if len(df_sv2) < 10 or df_sv2['event'].sum() < 5:
                         continue
@@ -2948,7 +2996,7 @@ if True:
                         arpu_sv2 = (df_sv2['revenue_total'].sum() / df_sv2['duration'].sum()
                                     if billing_cycle == '日次（都度購入）'
                                     else df_sv2['arpu_daily'].mean())
-                        ltv_inf_sv2 = lam_sv2 * gamma(1 + 1 / k_sv2) * arpu_sv2
+                        ltv_inf_sv2 = (lam_sv2 * gamma(1 + 1 / k_sv2) + ltv_offset_days) * arpu_sv2
 
                         story.append(Paragraph(
                             f'{str(sv)}　（{len(df_sv2):,}件 / LTV∞ ¥{ltv_inf_sv2:,.0f} '
@@ -3156,9 +3204,6 @@ a.dl-btn:focus, a.dl-btn:focus-visible, a.dl-btn:active {{
 # Segment Analysis (Advanced)
 # ══════════════════════════════════════════════════════════════
 
-# セグメント結果を保存（エクスポート用）
-all_seg_results = {}  # {seg_col: seg_df}
-
 if segment_cols_input.strip():
     seg_cols = [c.strip() for c in segment_cols_input.split(',') if c.strip()]
     valid_seg_cols = [c for c in seg_cols if c in df.columns]
@@ -3196,109 +3241,13 @@ if segment_cols_input.strip():
             elif len(seg_values) > 20:
                 st.info(f"`{seg_col}` のユニーク値が{len(seg_values)}個あります。計算に少し時間がかかります。")
 
-            seg_results = []
-            seg_figs = []
-
-            progress_bar = st.progress(0, text=f"`{seg_col}` を分析中...")
-            for seg_idx, seg_val in enumerate(sorted(seg_values)):
-                progress_bar.progress(
-                    int((seg_idx + 1) / len(seg_values) * 100),
-                    text=f"`{seg_col}` 分析中... {seg_val} ({seg_idx+1}/{len(seg_values)})"
-                )
-                df_seg = df[df[seg_col] == seg_val].copy()
-                if len(df_seg) < 10 or df_seg['event'].sum() < 5:
-                    continue
-
-                try:
-                    # ── 全体分析と完全同一のロジック ──
-                    # 1. オフセット処理
-                    if ltv_offset_days > 0:
-                        df_seg_fit = df_seg.copy()
-                        df_seg_fit['duration'] = df_seg_fit['duration'] - ltv_offset_days
-                        df_seg_fit.loc[df_seg_fit['duration'] <= 0, 'event'] = 0
-                        df_seg_fit.loc[df_seg_fit['duration'] <= 0, 'duration'] = 1
-                        df_seg_fit['duration'] = df_seg_fit['duration'].clip(lower=1)
-                        km_seg = _compute_km_df(df_seg_fit)
-                    else:
-                        km_seg = _compute_km_df(df_seg)
-
-                    # 2. Weibullフィット
-                    k_s, lam_s, r2_s, _ = _fit_weibull_df(km_seg)
-                    if k_s is None:
-                        continue
-
-                    # 3. ARPU計算（全体と同じ分岐）
-                    if business_type == '都度購入型' and 'last_purchase_date' in df_seg.columns:
-                        _dorm_s = dormancy_days or 180
-                        _gap_s = (df_seg['last_purchase_date'] - df_seg['start_date']).dt.days.fillna(-1)
-                        _days_s = (today - df_seg['last_purchase_date']).dt.days.fillna(0)
-                        _single_mask_s = (_gap_s == 0) & (_days_s >= _dorm_s)
-                        _long_mask_s   = (_gap_s > 0)
-                        _single_df_s   = df_seg[_single_mask_s]
-                        _long_df_s     = df_seg[_long_mask_s]
-                        arpu_short_s = _single_df_s['revenue_total'].sum() / len(_single_df_s) / _dorm_s if len(_single_df_s) > 0 else 0.0
-                        arpu_long_s  = _long_df_s['revenue_total'].sum() / _long_df_s['duration'].sum() if len(_long_df_s) > 0 else df_seg['revenue_total'].sum() / df_seg['duration'].sum()
-                        _n_s = len(_single_df_s) + len(_long_df_s)
-                        _w_short_s = len(_single_df_s) / _n_s if _n_s > 0 else 0.5
-                        _w_long_s  = len(_long_df_s)  / _n_s if _n_s > 0 else 0.5
-                        arpu_0_dorm_s = arpu_short_s * _w_short_s + arpu_long_s * _w_long_s
-                        arpu_s = arpu_long_s
-                    else:
-                        arpu_s = df_seg['arpu_daily'].mean()
-                        arpu_long_s = arpu_s
-                        arpu_0_dorm_s = arpu_s
-                        _dorm_s = ltv_offset_days
-
-                    gp_s = arpu_s * gpm
-
-                    # 4. LTV∞計算（全体と同じ分岐）
-                    if business_type == '都度購入型':
-                        _ltv_short_s = _dorm_s * arpu_0_dorm_s
-                        _ltv_long_s, _ = ltv_inf_offset(k_s, lam_s, arpu_long_s, 0)
-                        ltv_rev_s = _ltv_short_s + _ltv_long_s
-                        _gp_short_s = _dorm_s * (arpu_0_dorm_s * gpm)
-                        _gp_long_s, _ = ltv_inf_offset(k_s, lam_s, arpu_long_s * gpm, 0)
-                        ltv_gp_s = _gp_short_s + _gp_long_s
-                    else:
-                        ltv_rev_s, _ = ltv_inf_offset(k_s, lam_s, arpu_s, ltv_offset_days)
-                        ltv_gp_s, _  = ltv_inf_offset(k_s, lam_s, gp_s,  ltv_offset_days)
-
-                    cac_s          = ltv_gp_s / cac_n
-                    total_ltv_s    = ltv_rev_s * len(df_seg)
-                    lam_s_disp     = lam_s + ltv_offset_days
-                    efficiency     = (ltv_gp_s / cac_input) if cac_known else None
-                    priority_score = ltv_rev_s * len(df_seg)
-
-                    seg_results.append({
-                        'セグメント':    seg_val,
-                        '顧客数':        len(df_seg),
-                        'LTV∞（売上）':  ltv_rev_s,
-                        'LTV∞（粗利）':  ltv_gp_s,
-                        'CAC上限（粗利）': cac_s,
-                        '総ポテンシャル': total_ltv_s,
-                        'k':             k_s,
-                        'λ（日）':       lam_s_disp,
-                        'λ_raw':         lam_s,
-                        'arpu_s':        arpu_s,
-                        'arpu_long_s':   arpu_long_s,
-                        'arpu_0_dorm_s': arpu_0_dorm_s,
-                        'R²':            r2_s,
-                        '獲得効率':      efficiency,
-                        '優先スコア':    priority_score,
-                    })
-                except Exception:
-                    continue
-
-            if not seg_results:
+            # Pre-computeの結果を使用（計算は1回だけ）
+            if seg_col not in all_seg_results:
                 st.caption("分析に十分なデータがありませんでした。")
                 continue
 
-            seg_df = pd.DataFrame(seg_results).sort_values('LTV∞（売上）', ascending=False).reset_index(drop=True)
-            all_seg_results[seg_col] = seg_df  # エクスポート用に保存
-            # seg_resultsもLTV∞降順にソート（詳細表示の並び順をseg_dfと一致させる）
-            seg_results = sorted(seg_results, key=lambda x: x['LTV∞（売上）'], reverse=True)
-
-            progress_bar.empty()
+            seg_results = all_seg_details[seg_col]
+            seg_df = all_seg_results[seg_col]
 
             # Top Pick（タイトルとグラフの間）
             if seg_results:

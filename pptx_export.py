@@ -313,6 +313,7 @@ def generate_pptx(
     arpu_0_dorm=None,
     arpu_long=None,
     outlier_label='除外なし',
+    all_seg_results=None,
 ):
     if k<0.7: ki=f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
     elif k<1.0: ki=f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
@@ -405,18 +406,23 @@ def generate_pptx(
         for sh in prs.slides[5].shapes:
             if sh.name=='TextBox 4': _set_text(sh,'  |  '.join(seg_cols))
         for sc in seg_cols:
+            # all_seg_resultsから参照（独自Weibullフィットしない）
             pp_rows=[]
-            for sv in sorted(df[sc].dropna().unique()):
-                df_s=df[df[sc]==sv]
-                if len(df_s)<10 or df_s['event'].sum()<5: continue
-                try:
-                    km_s=_compute_km_df(df_s); k_s,lam_s,r2_s,_=_fit_weibull_df(km_s)
-                    if k_s is None: continue
-                    arpu_s=df_s['arpu_daily'].mean(); gp_s=arpu_s*gpm
-                    _si=lam_s*gamma(1+1/k_s)
-                    ltv_r=((_si+ltv_offset_days)*arpu_s); ltv_g=((_si+ltv_offset_days)*gp_s)
-                    pp_rows.append({'seg':str(sv),'n':len(df_s),'ltv_r':ltv_r,'ltv_g':ltv_g,'cac':ltv_g/cac_n,'k':k_s,'lam':lam_s,'r2':r2_s})
-                except: continue
+            if all_seg_results and sc in all_seg_results:
+                for _, _r in all_seg_results[sc].iterrows():
+                    pp_rows.append({'seg':str(_r['セグメント']),'n':int(_r['顧客数']),'ltv_r':_r['LTV∞（売上）'],'ltv_g':_r['LTV∞（粗利）'],'cac':_r['CAC上限（粗利）'],'k':_r['k'],'lam':_r['λ_raw'],'r2':_r['R²']})
+            else:
+                for sv in sorted(df[sc].dropna().unique()):
+                    df_s=df[df[sc]==sv]
+                    if len(df_s)<10 or df_s['event'].sum()<5: continue
+                    try:
+                        km_s=_compute_km_df(df_s); k_s,lam_s,r2_s,_=_fit_weibull_df(km_s)
+                        if k_s is None: continue
+                        arpu_s=df_s['arpu_daily'].mean(); gp_s=arpu_s*gpm
+                        _si=lam_s*gamma(1+1/k_s)
+                        ltv_r=((_si+ltv_offset_days)*arpu_s); ltv_g=((_si+ltv_offset_days)*gp_s)
+                        pp_rows.append({'seg':str(sv),'n':len(df_s),'ltv_r':ltv_r,'ltv_g':ltv_g,'cac':ltv_g/cac_n,'k':k_s,'lam':lam_s,'r2':r2_s})
+                    except: continue
             if not pp_rows: continue
             pp_rows.sort(key=lambda x:x['ltv_r'],reverse=True)
             best=pp_rows[0]; n_total=sum(r['n'] for r in pp_rows)
