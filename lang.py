@@ -3,13 +3,13 @@
 
 CURRENCIES = {
     'JPY': {'symbol': '¥',  'prefix': True,  'decimal': 0},
-    'USD': {'symbol': '$',  'prefix': True,  'decimal': 2},
-    'EUR': {'symbol': '€',  'prefix': True,  'decimal': 2},
-    'GBP': {'symbol': '£',  'prefix': True,  'decimal': 2},
+    'USD': {'symbol': '$',  'prefix': True,  'decimal': 0},
+    'EUR': {'symbol': '€',  'prefix': True,  'decimal': 0},
+    'GBP': {'symbol': '£',  'prefix': True,  'decimal': 0},
     'KRW': {'symbol': '₩',  'prefix': True,  'decimal': 0},
-    'CNY': {'symbol': '¥',  'prefix': True,  'decimal': 2},
+    'CNY': {'symbol': '¥',  'prefix': True,  'decimal': 0},
     'TWD': {'symbol': 'NT$','prefix': True,  'decimal': 0},
-    'INR': {'symbol': '₹',  'prefix': True,  'decimal': 2},
+    'INR': {'symbol': '₹',  'prefix': True,  'decimal': 0},
     'none':{'symbol': '',   'prefix': True,  'decimal': 0},
 }
 
@@ -20,15 +20,12 @@ LANG_DEFAULTS = {
 
 # ── 通貨フォーマッター ────────────────────────────────────────
 
-def fmt_c(val, cur='JPY'):
-    """通貨フォーマット — fmt_c(12345, 'JPY') → '¥12,345'"""
+def fmt_c(val, cur='JPY', dp=None):
+    """通貨フォーマット — fmt_c(12345, 'JPY') → '¥12,345'  /  fmt_c(123.45, 'USD', 2) → '$123.45'"""
     c = CURRENCIES.get(cur, CURRENCIES['JPY'])
-    d = c['decimal']
+    d = dp if dp is not None else c['decimal']
     s = c['symbol']
-    if d == 0:
-        num = f'{val:,.0f}'
-    else:
-        num = f'{val:,.{d}f}'
+    num = f'{val:,.{d}f}'
     if c['prefix']:
         return f'{s}{num}'
     else:

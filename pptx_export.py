@@ -345,9 +345,9 @@ def generate_pptx(
             # 2行目：ビジネスタイプ | 請求サイクル/休眠判定 | 日割り(サブスクのみ) | Daily ARPU | GPM
             if business_type == '都度購入型':
                 _dorm_disp = f'{dormancy_days}日' if dormancy_days else '180日'
-                i2=f"{business_type}　|　休眠判定: {_dorm_disp}　|　Daily ARPU: {fmt_c(arpu_daily, cur)}　|　GPM: {gpm:.0%}"
+                i2=f"{business_type}　|　休眠判定: {_dorm_disp}　|　Daily ARPU: {fmt_c(arpu_daily, cur, 2)}　|　GPM: {gpm:.0%}"
             else:
-                i2=f"{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}　|　Daily ARPU: {fmt_c(arpu_daily, cur)}　|　GPM: {gpm:.0%}"
+                i2=f"{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}　|　Daily ARPU: {fmt_c(arpu_daily, cur, 2)}　|　GPM: {gpm:.0%}"
             if len(tf.paragraphs)>=1:
                 for r in tf.paragraphs[0].runs: r.text=''
                 if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=i1

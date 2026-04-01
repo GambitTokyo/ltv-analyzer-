@@ -1031,7 +1031,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v327</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v328</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2226,7 +2226,7 @@ prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル
 【分析結果】
 ・ビジネスタイプ: {business_type} / 休眠判定: {dormancy_label}
 ・顧客数: {len(df):,}件（解約済み: {churned_count:,}件 / 継続中: {active_count:,}件 / 解約率: {churn_rate:.1f}%）
-・Daily ARPU（売上）: {fmt_c(arpu_daily, CUR)} / Daily GP（粗利）: {fmt_c(gp_daily, CUR)} / GPM: {gpm:.1%}
+・Daily ARPU（売上）: {fmt_c(arpu_daily, CUR, 2)} / Daily GP（粗利）: {fmt_c(gp_daily, CUR, 2)} / GPM: {gpm:.1%}
 ・LTV∞（売上ベース）: {fmt_c(ltv_rev, CUR)} / LTV∞（粗利ベース）: {fmt_c(ltv_val, CUR)}
 ・CAC上限（{cac_label}）: {fmt_c(cac_upper, CUR)}
 ・Weibull k（形状）: {k:.4f} → {k_pattern}
@@ -2743,7 +2743,7 @@ if True:
             ['顧客数', f'{len(df):,}件'],
             ['異常値除外', f'{n_outlier:,}件（{_outlier_label_pdf}）'],
             ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
-            ['Daily ARPU（売上）', f'{fmt_c(arpu_daily, CUR)}'],
+            ['Daily ARPU（売上）', f'{fmt_c(arpu_daily, CUR, 2)}'],
             ['GPM（粗利率）', f'{gpm:.1%}'],
             ['ビジネスタイプ', business_type],
         ]
@@ -3764,7 +3764,7 @@ else:
 # ══════════════════════════════════════════════════════════════
 
 with st.expander("読み込んだデータを確認"):
-    st.write(f"有効データ: {len(df):,}件 ／ 解約: {df['event'].sum():,}件 ／ 継続中: {(df['event']==0).sum():,}件 ／ Daily ARPU: {fmt_c(arpu_daily, CUR)}")
+    st.write(f"有効データ: {len(df):,}件 ／ 解約: {df['event'].sum():,}件 ／ 継続中: {(df['event']==0).sum():,}件 ／ Daily ARPU: {fmt_c(arpu_daily, CUR, 2)}")
     st.dataframe(
         df[['customer_id','start_date','end_date','duration','event','arpu_daily']].head(30),
         hide_index=True
