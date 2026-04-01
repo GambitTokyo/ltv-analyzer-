@@ -290,9 +290,9 @@ div[data-baseweb="slider"] div[class*="InnerTrack"] { background-color: #56b4d3 
     border: 1px solid #1c3a4a !important;
     border-radius: 8px !important;
     width: 100% !important;
-    font-size: 0.75rem !important;
-    line-height: 1.3 !important;
-    padding: 5px 8px !important;
+    font-size: 0.78rem !important;
+    line-height: 1.4 !important;
+    padding: 6px 10px !important;
 }
 [data-testid="stSidebar"] [data-testid="stDownloadButton"] > button:hover,
 [data-testid="stSidebar"] [data-testid="stDownloadButton"] button:hover {
@@ -586,6 +586,8 @@ with st.sidebar:
 
     _s1_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
     _s1_age_prob = [0.15, 0.35, 0.28, 0.17, 0.05]
+    _s1_age_k    = {'18-24': 0.82, '25-34': 0.86, '35-44': 0.88, '45+': 0.84, '不明': 0.83}
+    _s1_age_lam  = {'18-24': 210,  '25-34': 250,  '35-44': 260,  '45+': 230,  '不明': 220}
     s1_age       = np.random.choice(_s1_age_vals, n_sample, p=_s1_age_prob)
 
     _s1_dev_vals = ['PC', 'スマホ', 'タブレット', 'その他']
@@ -599,8 +601,9 @@ with st.sidebar:
     for i in range(n_sample):
         sd  = s1_starts[i]
         ch  = s1_channel[i]
-        k_i = _s1_ch_k[ch]
-        l_i = _s1_ch_lam[ch]
+        ag  = s1_age[i]
+        k_i = (_s1_ch_k[ch] + _s1_age_k[ag]) / 2
+        l_i = (_s1_ch_lam[ch] + _s1_age_lam[ag]) / 2
         surv = np.random.weibull(k_i) * l_i
         if s1_churned[i]:
             ed = sd + pd.Timedelta(days=max(1, int(surv)))
@@ -643,6 +646,8 @@ with st.sidebar:
 
     _s2_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
     _s2_age_prob = [0.12, 0.35, 0.30, 0.18, 0.05]
+    _s2_age_k    = {'18-24': 1.03, '25-34': 1.12, '35-44': 1.14, '45+': 1.08, '不明': 1.06}
+    _s2_age_lam  = {'18-24': 230,  '25-34': 310,  '35-44': 330,  '45+': 280,  '不明': 260}
     s2_age       = np.random.choice(_s2_age_vals, n_sample, p=_s2_age_prob)
 
     _s2_occ_vals = ['会社員', '経営者・自営など', '学生', 'その他']
@@ -658,9 +663,10 @@ with st.sidebar:
         sd  = s2_starts[i]
         ch  = s2_channel[i]
         occ = s2_occupation[i]
-        # チャネルとoccupationのパラメータを平均して使用
-        k_i = (_s2_ch_k[ch] + _s2_occ_k[occ]) / 2
-        l_i = (_s2_ch_lam[ch] + _s2_occ_lam[occ]) / 2
+        ag  = s2_age[i]
+        # チャネル・occupation・age_groupのパラメータを平均して使用
+        k_i = (_s2_ch_k[ch] + _s2_occ_k[occ] + _s2_age_k[ag]) / 3
+        l_i = (_s2_ch_lam[ch] + _s2_occ_lam[occ] + _s2_age_lam[ag]) / 3
         surv = np.random.weibull(k_i) * l_i
         if s2_churned[i]:
             ed = sd + pd.Timedelta(days=max(1, int(surv)))
@@ -708,6 +714,8 @@ with st.sidebar:
 
     _s3_age_vals = ['18-24', '25-34', '35-44', '45-54', '55+', '不明']
     _s3_age_prob = [0.10, 0.30, 0.28, 0.18, 0.09, 0.05]
+    _s3_age_k    = {'18-24': 0.72, '25-34': 0.78, '35-44': 0.80, '45-54': 0.76, '55+': 0.73, '不明': 0.74}
+    _s3_age_lam  = {'18-24': 170,  '25-34': 220,  '35-44': 230,  '45-54': 200,  '55+': 180,  '不明': 190}
     s3_age       = np.random.choice(_s3_age_vals, n_sample, p=_s3_age_prob)
 
     _s3_gen_vals = ['女性', '男性', '未回答']
@@ -725,8 +733,9 @@ with st.sidebar:
         sd    = s3_starts[i]
         ch    = s3_channel[i]
         gen   = s3_gender[i]
-        k_i   = (_s3_ch_k[ch] + _s3_gen_k[gen]) / 2
-        l_i   = (_s3_ch_lam[ch] + _s3_gen_lam[gen]) / 2
+        ag    = s3_age[i]
+        k_i   = (_s3_ch_k[ch] + _s3_gen_k[gen] + _s3_age_k[ag]) / 3
+        l_i   = (_s3_ch_lam[ch] + _s3_gen_lam[gen] + _s3_age_lam[ag]) / 3
         single_rate = _s3_ch_single[ch]
         is_single = np.random.random() < single_rate
         # 購入間隔：平均60日、標準偏差20日でばらつき
@@ -821,16 +830,18 @@ with st.sidebar:
         'cowork':   ('sample_cowork.csv',   cowork_csv),
         'skincare': ('sample_skincare.csv', skincare_csv),
     }
-    if _selected_sample != '（選択してください）':
-        _dl_key = _sample_options[_selected_sample][0]
+    _active_sample = _selected_sample if _selected_sample != '（選択してください）' else st.session_state.get('_prev_sample', None)
+    if _active_sample and _active_sample in _sample_options:
+        _dl_key = _sample_options[_active_sample][0]
         _dl_fn, _dl_data = _dl_map[_dl_key]
         st.download_button(
-            label="サンプルCSVをダウンロード（データフォーマット確認用）",
+            label="サンプルCSVをダウンロード",
             data=_dl_data,
             file_name=_dl_fn,
             mime='text/csv',
             key='sample_csv_dl'
         )
+        st.caption("データフォーマット確認用")
 
     uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
 
@@ -994,7 +1005,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v306</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v309</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2145,7 +2156,7 @@ else:
         f"LTV∞をほぼ数年以内に回収できます。ただし離脱が集中する時期のリテンション施策が重要です。"
     )
 insight_html = f"""
-<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:10px; padding:18px 20px; margin-top:28px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
+<div style='background:#0d1f2d; border:1px solid #1a3a4a; border-radius:10px; padding:18px 20px; margin-top:40px; line-height:1.9; font-size:0.85rem; color:#ccc;'>
   <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:12px;'>このテーブルの読み方</div>
   <div>・{lam_desc}</div>
   <div>・{k_desc}</div>
