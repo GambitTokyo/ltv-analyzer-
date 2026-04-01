@@ -13,6 +13,7 @@ from pptx.oxml.ns import qn
 from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 from lxml import etree
 from datetime import date
+from lang import fmt_c, cur_symbol
 
 _JP_FP = None
 def _init():
@@ -207,28 +208,28 @@ def _set_s4_guide(sh, g):
     _para('このテーブルの読み方', '3A6A7A', True, sz)
     _para(g['lam_desc'], 'C8D0D8', False, sz, ind)
     _para(g['k_desc'], 'C8D0D8', False, sz, ind)
-    _mpara([(f'LTV∞（¥{g["ltv_rev"]:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。', 'C8D0D8', False)], sz, ind)
+    _mpara([(f'LTV∞（{fmt_c(g["ltv_rev"], cur)}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。', 'C8D0D8', False)], sz, ind)
     p2 = etree.SubElement(txBody, f'{{{A}}}p')
     pPr2 = etree.SubElement(p2, f'{{{A}}}pPr'); pPr2.set('marL', str(ind)); pPr2.set('indent', '0')
     etree.SubElement(pPr2, f'{{{A}}}buNone')
     for text, color, bold in [
         ('1年時点', '56B4D3', False), ('でLTV∞の', 'C8D0D8', False),
-        (f'{g["pct_1y"]:.1f}%', 'A8DADC', True), (f'（¥{g["ltv_1y"]:,.0f}）、 ', 'C8D0D8', False),
+        (f'{g["pct_1y"]:.1f}%', 'A8DADC', True), (f'（{fmt_c(g["ltv_1y"], cur)}）、 ', 'C8D0D8', False),
         ('2年時点', '56B4D3', False), ('で', 'C8D0D8', False),
-        (f'{g["pct_2y"]:.1f}%', 'A8DADC', True), (f'（¥{g["ltv_2y"]:,.0f}）、 ', 'C8D0D8', False),
+        (f'{g["pct_2y"]:.1f}%', 'A8DADC', True), (f'（{fmt_c(g["ltv_2y"], cur)}）、 ', 'C8D0D8', False),
         ('3年時点', '56B4D3', False), ('で', 'C8D0D8', False),
-        (f'{g["pct_3y"]:.1f}%', 'A8DADC', True), (f'（¥{g["ltv_3y"]:,.0f}）に到達します。', 'C8D0D8', False),
+        (f'{g["pct_3y"]:.1f}%', 'A8DADC', True), (f'（{fmt_c(g["ltv_3y"], cur)}）に到達します。', 'C8D0D8', False),
     ]:
         r = etree.SubElement(p2, f'{{{A}}}r'); rPr = etree.SubElement(r, f'{{{A}}}rPr')
         rPr.set('lang', 'ja-JP'); rPr.set('b', '1' if bold else '0'); rPr.set('sz', str(sz))
         sf = etree.SubElement(rPr, f'{{{A}}}solidFill'); c = etree.SubElement(sf, f'{{{A}}}srgbClr'); c.set('val', color)
         t = etree.SubElement(r, f'{{{A}}}t'); t.text = text
-    _mpara([(f'CAC上限（¥{g["cac_upper"]:,.0f}）の回収期間：売上ベース 約 ', 'C8D0D8', False),
+    _mpara([(f'CAC上限（{fmt_c(g["cac_upper"], cur)}）の回収期間：売上ベース 約 ', 'C8D0D8', False),
         (g['cac_recover_rev_str'], 'A8DADC', True), (' / 粗利ベース 約 ', 'C8D0D8', False),
         (g['cac_recover_gp_str'], '56B4D3', True)], sz, ind)
     _empty()
     _mpara([('CAC設計の目安', '56B4D3', True), ('：回収期間に迷ったら、', 'C8D0D8', False),
-        (f'λ={g["lam_actual_round"]:,}日（約{g["lam_years"]:.1f}年）時点の暫定LTV（粗利）¥{g["lam_gp"]:,.0f}', 'A8DADC', True),
+        (f'λ={g["lam_actual_round"]:,}日（約{g["lam_years"]:.1f}年）時点の暫定LTV（粗利）{fmt_c(g["lam_gp"], cur)}', 'A8DADC', True),
         (f' を用いてCAC上限を算出してください。λは{g["lam_meaning"]}をデータが示した答えです。', 'C8D0D8', False)], sz)
 
 # ── グラフ（S5: 日本語に戻す） ──
@@ -266,7 +267,7 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
         bbox_to_anchor=(0.02, 0.98), borderaxespad=0)
     for t in leg.get_texts(): t.set_fontproperties(fp)
     ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='#a8dadc', fontsize=8, fontproperties=fp, ha='center', annotation_clip=False, bbox=dict(boxstyle='square,pad=0.15', facecolor=BG, edgecolor='none'))
-    ax.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=8, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
+    ax.annotate(f'LTV∞ {fmt_c(ltv_rev, cur)}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=8, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
     fig.subplots_adjust(left=0.08, right=0.88, top=0.95, bottom=0.14)
     buf = io.BytesIO(); fig.savefig(buf, format='png', dpi=120, facecolor=BG); buf.seek(0); plt.close(fig)
     return buf
@@ -281,13 +282,13 @@ def _make_bar_graph(pp_rows, best, avg_ltv):
     colors = ['#56b4d3' if pp_rows[::-1][i]['seg']==best['seg'] else '#2a4a5a' for i in range(len(pp_rows))]
     # 加重平均ラインを先に描画（背面）
     ax.axvline(avg_ltv, color='#a8dadc', lw=1, ls='--', alpha=0.7, zorder=1)
-    ax.text(avg_ltv, len(segs)-0.3, f'Avg ¥{avg_ltv:,.0f}', color='#a8dadc', fontsize=7, ha='center', va='bottom', fontproperties=fp, zorder=5)
+    ax.text(avg_ltv, len(segs)-0.3, f'Avg {fmt_c(avg_ltv, cur)}', color='#a8dadc', fontsize=7, ha='center', va='bottom', fontproperties=fp, zorder=5)
     # 棒グラフを後に描画（最前面）
     bars = ax.barh(segs, vals, color=colors, height=0.6, zorder=3)
     # 棒内に数値ラベル（右寄せ）
     for bar, val in zip(bars, vals):
         ax.text(bar.get_width() - max(vals)*0.02, bar.get_y() + bar.get_height()/2,
-                f'¥{val:,.0f}', va='center', ha='right', color='white', fontsize=7, fontproperties=fp, zorder=4)
+                f'{fmt_c(val, cur)}', va='center', ha='right', color='white', fontsize=7, fontproperties=fp, zorder=4)
     ax.tick_params(colors='#888', labelsize=8)
     for l in ax.get_yticklabels(): l.set_fontproperties(fp)
     # X軸: 数値表記（60,000形式）
@@ -315,6 +316,7 @@ def generate_pptx(
     arpu_long=None,
     outlier_label='除外なし',
     all_seg_results=None,
+    cur='JPY',
 ):
     if k<0.7: ki=f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
     elif k<1.0: ki=f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
@@ -343,9 +345,9 @@ def generate_pptx(
             # 2行目：ビジネスタイプ | 請求サイクル/休眠判定 | 日割り(サブスクのみ) | Daily ARPU | GPM
             if business_type == '都度購入型':
                 _dorm_disp = f'{dormancy_days}日' if dormancy_days else '180日'
-                i2=f"{business_type}　|　休眠判定: {_dorm_disp}　|　Daily ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
+                i2=f"{business_type}　|　休眠判定: {_dorm_disp}　|　Daily ARPU: {fmt_c(arpu_daily, cur)}　|　GPM: {gpm:.0%}"
             else:
-                i2=f"{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}　|　Daily ARPU: ¥{arpu_daily:,.2f}　|　GPM: {gpm:.0%}"
+                i2=f"{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}　|　Daily ARPU: {fmt_c(arpu_daily, cur)}　|　GPM: {gpm:.0%}"
             if len(tf.paragraphs)>=1:
                 for r in tf.paragraphs[0].runs: r.text=''
                 if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=i1
@@ -353,7 +355,7 @@ def generate_pptx(
                 for r in tf.paragraphs[1].runs: r.text=''
                 if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=i2
         elif sh.name=='グループ化 26':
-            kpi={'TextBox 6':f'¥{ltv_rev:,.0f}','TextBox 10':f'¥{cac_upper:,.0f}','TextBox 11':f'CAC上限（{cac_label}）','TextBox 14':f'{k:.3f}','TextBox 18':f'{lam_actual:.0f}日','TextBox 22':f'{r2:.3f}'}
+            kpi={'TextBox 6':f'{fmt_c(ltv_rev, cur)}','TextBox 10':f'{fmt_c(cac_upper, cur)}','TextBox 11':f'CAC上限（{cac_label}）','TextBox 14':f'{k:.3f}','TextBox 18':f'{lam_actual:.0f}日','TextBox 22':f'{r2:.3f}'}
             for g in sh.shapes:
                 if g.name in kpi: _set_text(g, kpi[g.name])
         elif sh.name=='テキスト ボックス 49' and sh.has_text_frame:
@@ -379,10 +381,10 @@ def generate_pptx(
         else:
             lr=ltv_horizon_offset(k,lam,arpu_daily,h,ltv_offset_days); lg=ltv_horizon_offset(k,lam,gp_daily,h,ltv_offset_days)
         label=f'{h}日' if h<365 else f'{h//365}年（{h:,}日）'
-        rows_s4.append([label,f'¥{lr:,.0f}',f'¥{lg:,.0f}',f'¥{lg/cac_n:,.0f}',f'{lr/ltv_rev*100:.1f}%'])
-    rows_s4.append([f'λ {round(lam_actual):,}日',f'¥{lam_rev:,.0f}',f'¥{lam_gp:,.0f}',f'¥{lam_gp/cac_n:,.0f}',f'{lam_rev/ltv_rev*100:.1f}%'])
-    rows_s4.append([f'LTV∞到達率: 99%（{int(days_99):,}日）',f'¥{rev_99:,.0f}',f'¥{gp_99:,.0f}',f'¥{gp_99/cac_n:,.0f}','99.0%'])
-    rows_s4.append([f'LTV∞',f'¥{ltv_rev:,.0f}',f'¥{cac_upper*cac_n:,.0f}',f'¥{cac_upper:,.0f}','100%'])
+        rows_s4.append([label,f'{fmt_c(lr, cur)}',f'{fmt_c(lg, cur)}',f'{fmt_c(lg/cac_n, cur)}',f'{lr/ltv_rev*100:.1f}%'])
+    rows_s4.append([f'λ {round(lam_actual):,}日',f'{fmt_c(lam_rev, cur)}',f'{fmt_c(lam_gp, cur)}',f'{fmt_c(lam_gp/cac_n, cur)}',f'{lam_rev/ltv_rev*100:.1f}%'])
+    rows_s4.append([f'LTV∞到達率: 99%（{int(days_99):,}日）',f'{fmt_c(rev_99, cur)}',f'{fmt_c(gp_99, cur)}',f'{fmt_c(gp_99/cac_n, cur)}','99.0%'])
+    rows_s4.append([f'LTV∞',f'{fmt_c(ltv_rev, cur)}',f'{fmt_c(cac_upper*cac_n, cur)}',f'{fmt_c(cac_upper, cur)}','100%'])
     _tbl_shape = None
     for sh in s4.shapes:
         if sh.shape_type==19:
@@ -438,7 +440,7 @@ def generate_pptx(
             avg_cac=sum(r['cac']*r['n'] for r in pp_rows)/n_total
             premium=(best['ltv_r']-avg_ltv)/avg_ltv*100
             cac_diff=best['cac']-avg_cac
-            cac_diff_str=f"+¥{cac_diff:,.0f}高く設定可能" if cac_diff>=0 else f"¥{abs(cac_diff):,.0f}低め"
+            cac_diff_str=f"+{fmt_c(cac_diff, cur)}高く設定可能" if cac_diff>=0 else f"{fmt_c(abs(cac_diff), cur)}低め"
             s7=_copy_slide(prs,6)
             for sh in s7.shapes:
                 if sh.name=='タイトル 4': _set_text(sh,f'{sc}: LTV∞')
@@ -448,12 +450,12 @@ def generate_pptx(
                         for r in tf.paragraphs[0].runs: r.text=''
                         if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=f'TOP PICK　{best["seg"]}'
                         for r in tf.paragraphs[1].runs: r.text=''
-                        if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=f'LTV∞(売上): ¥{best["ltv_r"]:,.0f}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 ¥{best["cac"]:,.0f}（全セグメント平均より{cac_diff_str}）'
+                        if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=f'LTV∞(売上): {fmt_c(best["ltv_r"], cur)}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 {fmt_c(best["cac"], cur)}（全セグメント平均より{cac_diff_str}）'
                 elif sh.name=='コンテンツ プレースホルダー 8':
                     buf7=_make_bar_graph(pp_rows[:10],best,avg_ltv); _replace_image(s7,sh,buf7)
             s8=_copy_slide(prs,7); top10=pp_rows[:10]
-            dr8=[[r['seg'],f'{r["n"]:,}',f'¥{r["ltv_r"]:,.0f}',f'¥{r["ltv_g"]:,.0f}',f'¥{r["cac"]:,.0f}',f'{r["k"]:.3f}',f'{r["lam"]:.1f}',f'{r["r2"]:.3f}'] for r in top10]
-            ft8=['加重平均',f'{n_total:,}',f'¥{avg_ltv:,.0f}',f'¥{w_ltv_g:,.0f}',f'¥{w_cac:,.0f}','—','—','—']
+            dr8=[[r['seg'],f'{r["n"]:,}',f'{fmt_c(r["ltv_r"], cur)}',f'{fmt_c(r["ltv_g"], cur)}',f'{fmt_c(r["cac"], cur)}',f'{r["k"]:.3f}',f'{r["lam"]:.1f}',f'{r["r2"]:.3f}'] for r in top10]
+            ft8=['加重平均',f'{n_total:,}',f'{fmt_c(avg_ltv, cur)}',f'{fmt_c(w_ltv_g, cur)}',f'{fmt_c(w_cac, cur)}','—','—','—']
             for sh in s8.shapes:
                 if sh.name=='タイトル 2': _set_text(sh,f'{sc}: 分析結果のサマリー')
                 elif sh.shape_type==19: _write_table_styled(sh.table,None,dr8,ft8)
@@ -507,7 +509,7 @@ def generate_pptx(
                     else:
                         lr_s=ltv_horizon_offset(row['k'],row['lam'],_arpu_s,h,ltv_offset_days)
                         lg_s=lr_s*gpm
-                    rows_sx.append([fmt_horizon(h),f'¥{lr_s:,.0f}',f'¥{lg_s:,.0f}',f'¥{lg_s/cac_n:,.0f}',f'{lr_s/row["ltv_r"]*100:.1f}%'])
+                    rows_sx.append([fmt_horizon(h),f'{fmt_c(lr_s, cur)}',f'{fmt_c(lg_s, cur)}',f'{fmt_c(lg_s/cac_n, cur)}',f'{lr_s/row["ltv_r"]*100:.1f}%'])
                 # λ行
                 _lam_actual_s=row['lam']+ltv_offset_days
                 if business_type=='都度購入型':
@@ -516,7 +518,7 @@ def generate_pptx(
                 else:
                     lam_r_s=ltv_horizon_offset(row['k'],row['lam'],_arpu_s,_lam_actual_s,ltv_offset_days)
                     lam_g_s=lam_r_s*gpm
-                rows_sx.append([f'λ {round(row["lam"]):,}日',f'¥{lam_r_s:,.0f}',f'¥{lam_g_s:,.0f}',f'¥{lam_g_s/cac_n:,.0f}',f'{lam_r_s/row["ltv_r"]*100:.1f}%'])
+                rows_sx.append([f'λ {round(row["lam"]):,}日',f'{fmt_c(lam_r_s, cur)}',f'{fmt_c(lam_g_s, cur)}',f'{fmt_c(lam_g_s/cac_n, cur)}',f'{lam_r_s/row["ltv_r"]*100:.1f}%'])
                 try:
                     from scipy.optimize import brentq as _bq
                     if business_type=='都度購入型':
@@ -527,13 +529,13 @@ def generate_pptx(
                         d99s=_bq(lambda h:ltv_horizon_offset(row['k'],row['lam'],_arpu_s,h,ltv_offset_days)/row['ltv_r']-0.99,1,500000)
                         r99s=ltv_horizon_offset(row['k'],row['lam'],_arpu_s,d99s,ltv_offset_days)
                         g99s=r99s*gpm
-                    rows_sx.append([f'LTV∞到達率: 99%（{int(d99s):,}日）',f'¥{r99s:,.0f}',f'¥{g99s:,.0f}',f'¥{g99s/cac_n:,.0f}','99.0%'])
+                    rows_sx.append([f'LTV∞到達率: 99%（{int(d99s):,}日）',f'{fmt_c(r99s, cur)}',f'{fmt_c(g99s, cur)}',f'{fmt_c(g99s/cac_n, cur)}','99.0%'])
                 except:
                     r99_approx = row['ltv_r'] * 0.99
                     g99_approx = row['ltv_g']* 0.99
-                    rows_sx.append([f'LTV∞到達率: 99%',f'¥{r99_approx:,.0f}',f'¥{g99_approx:,.0f}',f'¥{g99_approx/cac_n:,.0f}','99.0%'])
+                    rows_sx.append([f'LTV∞到達率: 99%',f'{fmt_c(r99_approx, cur)}',f'{fmt_c(g99_approx, cur)}',f'{fmt_c(g99_approx/cac_n, cur)}','99.0%'])
                 # LTV∞行
-                rows_sx.append([f'LTV∞',f'¥{row["ltv_r"]:,.0f}',f'¥{row["ltv_g"]:,.0f}',f'¥{row["ltv_g"]/cac_n:,.0f}','100%'])
+                rows_sx.append([f'LTV∞',f'{fmt_c(row["ltv_r"], cur)}',f'{fmt_c(row["ltv_g"], cur)}',f'{fmt_c(row["ltv_g"]/cac_n, cur)}','100%'])
                 for sh in sx.shapes:
                     if sh.name=='タイトル 8': _set_text(sh,f'{sc}: {row["seg"]}')
                     elif sh.name=='Picture 6' and buf_km: buf_km.seek(0); _replace_image(sx,sh,buf_km)

@@ -11,6 +11,7 @@ import warnings
 import calendar
 import plotly.graph_objects as go
 from scipy.optimize import brentq
+from lang import fmt_c, cur_symbol, cur_decimal, CURRENCIES, LANG_DEFAULTS
 warnings.filterwarnings('ignore')
 
 # ── Page config ──────────────────────────────────────────────
@@ -572,6 +573,15 @@ def weibull_s(t, k, lam):
 # ══════════════════════════════════════════════════════════════
 
 with st.sidebar:
+    st.markdown("### 言語 / 通貨")
+    _lang_options = {'日本語': 'ja', 'English': 'en'}
+    _lang_sel = st.selectbox("言語 / Language", list(_lang_options.keys()), index=0)
+    LANG = _lang_options[_lang_sel]
+    _cur_default = LANG_DEFAULTS.get(LANG, 'JPY')
+    _cur_options = list(CURRENCIES.keys())
+    _cur_idx = _cur_options.index(_cur_default) if _cur_default in _cur_options else 0
+    CUR = st.selectbox("通貨 / Currency", _cur_options, index=_cur_idx)
+
     st.markdown("### データ入力")
 
     # ══════════════════════════════════════════════════════
@@ -1021,7 +1031,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v324</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v325</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1461,7 +1471,7 @@ try:
         ))
         _cutline_annots.append(dict(
             x=_upper_val, y=0.55, yref='paper',
-            text=f'上位{outlier_upper_pct:.1f}%<br>¥{_upper_val:,.0f}',
+            text=f'上位{outlier_upper_pct:.1f}%<br>{fmt_c(_upper_val, CUR)}',
             showarrow=False, font=dict(color=_cut_color, size=11), xanchor='left',
         ))
     if outlier_lower_pct > 0:
@@ -1472,7 +1482,7 @@ try:
         ))
         _cutline_annots.append(dict(
             x=_lower_val, y=0.55, yref='paper',
-            text=f'下位{outlier_lower_pct:.1f}%<br>¥{_lower_val:,.0f}',
+            text=f'下位{outlier_lower_pct:.1f}%<br>{fmt_c(_lower_val, CUR)}',
             showarrow=False, font=dict(color=_cut_color, size=11), xanchor='left',
         ))
     _hist_fig.update_layout(
@@ -1481,7 +1491,7 @@ try:
         plot_bgcolor='rgba(0,0,0,0)',
         title=dict(text='累計売上の分布', font=dict(size=14)),
         xaxis=dict(
-            title='累計売上 (¥)', tickformat=',',
+            title=f'累計売上 ({cur_symbol(CUR)})', tickformat=',',
             gridcolor='rgba(255,255,255,0.06)',
             zeroline=False,
             showline=True, linewidth=1, linecolor='rgba(255,255,255,0.15)',
@@ -1518,12 +1528,12 @@ try:
     )
     # 分布統計（小フォントで1行表示）
     _stats_items = [
-        ("平均値", f"¥{_rev_data.mean():,.0f}"),
-        ("最小値", f"¥{_rev_data.min():,.0f}"),
-        ("25%ile", f"¥{_rev_data.quantile(0.25):,.0f}"),
-        ("中央値", f"¥{_rev_data.quantile(0.50):,.0f}"),
-        ("75%ile", f"¥{_rev_data.quantile(0.75):,.0f}"),
-        ("最大値", f"¥{_rev_data.max():,.0f}"),
+        ("平均値", f"{fmt_c(_rev_data.mean(), CUR)}"),
+        ("最小値", f"{fmt_c(_rev_data.min(), CUR)}"),
+        ("25%ile", f"{fmt_c(_rev_data.quantile(0.25), CUR)}"),
+        ("中央値", f"{fmt_c(_rev_data.quantile(0.50), CUR)}"),
+        ("75%ile", f"{fmt_c(_rev_data.quantile(0.75), CUR)}"),
+        ("最大値", f"{fmt_c(_rev_data.max(), CUR)}"),
     ]
     _stats_html = ''.join(
         f'<span style="margin-right:1.5em;"><span style="color:#666;font-size:0.68rem;">{lbl}</span>'
@@ -1642,8 +1652,8 @@ if k < 1.0:
 else:
     k_desc = "継続後に解約増・投資回収が比較的短期"
 metrics = [
-    (f"¥{ltv_rev:,.0f}", "LTV∞",       "売上ベース"),
-    (f"¥{cac_upper:,.0f}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
+    (f"{fmt_c(ltv_rev, CUR)}", "LTV∞",       "売上ベース"),
+    (f"{fmt_c(cac_upper, CUR)}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
     (f"{k:.3f}",           "Weibull k", f"{k_desc}"),
     (f"{lam + ltv_offset_days:.1f}日", "Weibull λ", "値が大きいほどLTV∞到達が長期化"),
     (f"{r2:.3f}",          "R²",        "0.9以上が理想 / 1.0が最高精度"),
@@ -1696,7 +1706,7 @@ if business_type == "都度購入型":
             f"k={k:.3f}の初期離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
             f"{single_churn_rate:.0f}%です。"
             f"リピートした顧客の多くは初回購入からλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上購買を継続する傾向があります。"
-            f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}ですが、"
+            f"LTV∞は{fmt_c(ltv_rev, CUR)}でCAC上限は{fmt_c(cac_upper, CUR)}ですが、"
             f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
         )
     else:
@@ -1704,7 +1714,7 @@ if business_type == "都度購入型":
             f"k={k:.3f}の逓増離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
             f"{single_churn_rate:.0f}%です。"
             f"リピートした顧客の多くは初回購入からλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上購買を継続する傾向があります。"
-            f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}、比較的短期での投資回収が見込めます。"
+            f"LTV∞は{fmt_c(ltv_rev, CUR)}でCAC上限は{fmt_c(cac_upper, CUR)}、比較的短期での投資回収が見込めます。"
         )
 else:  # サブスク
     if k < 1.0:
@@ -1712,7 +1722,7 @@ else:  # サブスク
             f"k={k:.3f}の初期離脱型です。最初の契約期間のみで解約した顧客は"
             f"{single_churn_rate:.0f}%です。"
             f"初期を乗り越えた顧客の多くはλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上継続する傾向があります。"
-            f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}ですが、"
+            f"LTV∞は{fmt_c(ltv_rev, CUR)}でCAC上限は{fmt_c(cac_upper, CUR)}ですが、"
             f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
         )
     else:
@@ -1720,7 +1730,7 @@ else:  # サブスク
             f"k={k:.3f}の逓増離脱型です。最初の契約期間のみで解約した顧客は"
             f"{single_churn_rate:.0f}%です。"
             f"初期を乗り越えた顧客の多くはλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上継続する傾向があります。"
-            f"LTV∞は¥{ltv_rev:,.0f}でCAC上限は¥{cac_upper:,.0f}、比較的短期での投資回収が見込めます。"
+            f"LTV∞は{fmt_c(ltv_rev, CUR)}でCAC上限は{fmt_c(cac_upper, CUR)}、比較的短期での投資回収が見込めます。"
         )
 
 if r2 >= 0.95:
@@ -1889,7 +1899,7 @@ with _col_ltv:
         fig_ltv.add_trace(go.Scatter(x=_mx, y=_my, mode='markers', marker=dict(color=_color, size=6, symbol='circle'), showlegend=False, hoverinfo='skip'))
 
     fig_ltv.add_hline(y=ltv_rev, line_dash='dot', line_color='#56b4d3', line_width=1, opacity=0.4,
-        annotation_text=f'LTV∞ ¥{ltv_rev:,.0f}', annotation_position='right',
+        annotation_text=f'LTV∞ {fmt_c(ltv_rev, CUR)}', annotation_position='right',
         annotation_font=dict(color='#56b4d3', size=10))
     fig_ltv.add_shape(type='line', x0=lam_actual, x1=lam_actual, y0=0, y1=ltv_rev,
         line=dict(color='#a8dadc', width=1.5, dash='dash'), layer='above')
@@ -1991,9 +2001,9 @@ for h in horizons:
         lh_gp  = ltv_horizon_offset(k, lam, gp_daily,   h, ltv_offset_days)
     tbl_rows.append({
         'ホライズン':    fmt_horizon(h),
-        'LTV（売上）':   f'¥{lh_rev:,.0f}',
-        'LTV（粗利）':   f'¥{lh_gp:,.0f}',
-        'CAC上限':       f'¥{lh_gp/cac_n:,.0f}',
+        'LTV（売上）':   f'{fmt_c(lh_rev, CUR)}',
+        'LTV（粗利）':   f'{fmt_c(lh_gp, CUR)}',
+        'CAC上限':       f'{fmt_c(lh_gp/cac_n, CUR)}',
         'LTV∞到達率':   f'{lh_rev/ltv_rev*100:.1f}%',
         '_type': 'normal',
     })
@@ -2009,9 +2019,9 @@ else:
 lam_pct  = lam_rev / ltv_rev * 100
 tbl_rows.append({
     'ホライズン':    f'λ  {round(lam + ltv_offset_days):,}日',
-    'LTV（売上）':   f'¥{lam_rev:,.0f}',
-    'LTV（粗利）':   f'¥{lam_gp:,.0f}',
-    'CAC上限':       f'¥{lam_gp/cac_n:,.0f}',
+    'LTV（売上）':   f'{fmt_c(lam_rev, CUR)}',
+    'LTV（粗利）':   f'{fmt_c(lam_gp, CUR)}',
+    'CAC上限':       f'{fmt_c(lam_gp/cac_n, CUR)}',
     'LTV∞到達率':   f'{lam_pct:.1f}%',
     '_type': 'lambda',
 })
@@ -2026,9 +2036,9 @@ else:
     gp_99  = ltv_horizon_offset(k, lam, gp_daily,   days_99, ltv_offset_days)
 tbl_rows.append({
     'ホライズン':    f'LTV∞到達率: 99%  （{int(days_99):,}日）',
-    'LTV（売上）':   f'¥{rev_99:,.0f}',
-    'LTV（粗利）':   f'¥{gp_99:,.0f}',
-    'CAC上限':       f'¥{gp_99/cac_n:,.0f}',
+    'LTV（売上）':   f'{fmt_c(rev_99, CUR)}',
+    'LTV（粗利）':   f'{fmt_c(gp_99, CUR)}',
+    'CAC上限':       f'{fmt_c(gp_99/cac_n, CUR)}',
     'LTV∞到達率':   '99.0%',
     '_type': '99pct',
 })
@@ -2036,9 +2046,9 @@ tbl_rows.append({
 # LTV∞行
 tbl_rows.append({
     'ホライズン':    'LTV∞',
-    'LTV（売上）':   f'¥{ltv_rev:,.0f}',
-    'LTV（粗利）':   f'¥{ltv_val:,.0f}',
-    'CAC上限':       f'¥{ltv_val/cac_n:,.0f}',
+    'LTV（売上）':   f'{fmt_c(ltv_rev, CUR)}',
+    'LTV（粗利）':   f'{fmt_c(ltv_val, CUR)}',
+    'CAC上限':       f'{fmt_c(ltv_val/cac_n, CUR)}',
     'LTV∞到達率':   '100%',
     '_type': 'ltv_inf',
 })
@@ -2176,16 +2186,16 @@ insight_html = f"""
   <div style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#3a6a7a; margin-bottom:12px;'>このテーブルの読み方</div>
   <div>・{lam_desc}</div>
   <div>・{k_desc}</div>
-  <div>・LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。</div>
+  <div>・LTV∞（{fmt_c(ltv_rev, CUR)}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。</div>
   <div style='margin-top:8px;'>
-    <span style='color:#56b4d3;'>1年時点</span>でLTV∞の<b style='color:#a8dadc;'>{pct_1y:.1f}%</b>（¥{ltv_1y:,.0f}）、
-    <span style='color:#56b4d3;'>2年時点</span>で<b style='color:#a8dadc;'>{pct_2y:.1f}%</b>（¥{ltv_2y:,.0f}）、
-    <span style='color:#56b4d3;'>3年時点</span>で<b style='color:#a8dadc;'>{pct_3y:.1f}%</b>（¥{ltv_3y:,.0f}）に到達します。
+    <span style='color:#56b4d3;'>1年時点</span>でLTV∞の<b style='color:#a8dadc;'>{pct_1y:.1f}%</b>（{fmt_c(ltv_1y, CUR)}）、
+    <span style='color:#56b4d3;'>2年時点</span>で<b style='color:#a8dadc;'>{pct_2y:.1f}%</b>（{fmt_c(ltv_2y, CUR)}）、
+    <span style='color:#56b4d3;'>3年時点</span>で<b style='color:#a8dadc;'>{pct_3y:.1f}%</b>（{fmt_c(ltv_3y, CUR)}）に到達します。
   </div>
-  <div style='margin-top:8px;'>・CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約 <b style='color:#a8dadc;'>{cac_recover_rev_str}</b> / 粗利ベース 約 <b style='color:#56b4d3;'>{cac_recover_gp_str}</b></div>
+  <div style='margin-top:8px;'>・CAC上限（{fmt_c(cac_upper, CUR)}）の回収期間：売上ベース 約 <b style='color:#a8dadc;'>{cac_recover_rev_str}</b> / 粗利ベース 約 <b style='color:#56b4d3;'>{cac_recover_gp_str}</b></div>
   <div style='margin-top:12px; padding-top:10px; border-top:1px solid #1a3a4a;'>
     <span style='color:#56b4d3; font-weight:600;'>CAC設計の目安</span>：回収期間に迷ったら、
-    <b style='color:#a8dadc;'>λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}</b>
+    <b style='color:#a8dadc;'>λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）{fmt_c(lam_gp, CUR)}</b>
     を用いてCAC上限を算出してください。λは{"リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == "都度購入型" else "多くの顧客が離脱するまでの期間の目安"}をデータが示した答えです。
   </div>
 </div>
@@ -2216,9 +2226,9 @@ prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル
 【分析結果】
 ・ビジネスタイプ: {business_type} / 休眠判定: {dormancy_label}
 ・顧客数: {len(df):,}件（解約済み: {churned_count:,}件 / 継続中: {active_count:,}件 / 解約率: {churn_rate:.1f}%）
-・Daily ARPU（売上）: ¥{arpu_daily:,.2f} / Daily GP（粗利）: ¥{gp_daily:,.2f} / GPM: {gpm:.1%}
-・LTV∞（売上ベース）: ¥{ltv_rev:,.0f} / LTV∞（粗利ベース）: ¥{ltv_val:,.0f}
-・CAC上限（{cac_label}）: ¥{cac_upper:,.0f}
+・Daily ARPU（売上）: {fmt_c(arpu_daily, CUR)} / Daily GP（粗利）: {fmt_c(gp_daily, CUR)} / GPM: {gpm:.1%}
+・LTV∞（売上ベース）: {fmt_c(ltv_rev, CUR)} / LTV∞（粗利ベース）: {fmt_c(ltv_val, CUR)}
+・CAC上限（{cac_label}）: {fmt_c(cac_upper, CUR)}
 ・Weibull k（形状）: {k:.4f} → {k_pattern}
 ・Weibull λ（尺度）: {lam+ltv_offset_days if business_type=="都度購入型" else lam:.1f}日 / R²（フィット精度）: {r2:.4f}
 ・分析手法: Kaplan-Meier法 + Weibullモデルによる生存分析"""
@@ -2237,8 +2247,8 @@ with tab2:
     p2 = prompt_base + f"""
 
 【質問】―― 上記の数値から直接導ける意思決定を具体的に答えてください ――
-1. このビジネスのλ={lam_display:.0f}日（約{lam_display/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}をCAC上限の基準とした場合、LTV:CAC={cac_n:.1f}:1の設定でCACの目安はいくらですか？またこの設定は適切ですか？
-2. k={k:.4f}のビジネスにおいて、LTV∞をそのままCAC判断に使うリスクを説明してください。λ日基準・1年基準・2年基準それぞれのCAC上限（1年:¥{ltv_1y*gpm/cac_n:,.0f}、2年:¥{ltv_2y*gpm/cac_n:,.0f}、λ={round(lam_display)}日:¥{lam_gp/cac_n:,.0f})を比較して、最も実務的な基準はどれですか？
+1. このビジネスのλ={lam_display:.0f}日（約{lam_display/365:.1f}年）時点の暫定LTV（粗利）{fmt_c(lam_gp, CUR)}をCAC上限の基準とした場合、LTV:CAC={cac_n:.1f}:1の設定でCACの目安はいくらですか？またこの設定は適切ですか？
+2. k={k:.4f}のビジネスにおいて、LTV∞をそのままCAC判断に使うリスクを説明してください。λ日基準・1年基準・2年基準それぞれのCAC上限（1年:{fmt_c(ltv_1y*gpm/cac_n, CUR)}、2年:{fmt_c(ltv_2y*gpm/cac_n, CUR)}、λ={round(lam_display)}日:{fmt_c(lam_gp/cac_n, CUR)})を比較して、最も実務的な基準はどれですか？
 3. λ={lam_display:.0f}日を踏まえると、{acq_label}後何日目にリテンション施策を打つのが最も効果的ですか？
 4. {k_pattern}に対して最も効果的なリテンション施策のタイミングと種類を教えてください。"""
     st.code(p2, language=None)
@@ -2367,12 +2377,12 @@ if True:
             ('【分析結果】', ''),
             ('顧客数（総数）', len(df)),
             ('うち解約済み', int(df['event'].sum())),
-            ('Daily ARPU（売上ベース・¥）', round(arpu_daily, 2)),
+            (f'Daily ARPU（売上ベース・{cur_symbol(CUR)}）', round(arpu_daily, 2)),
             ('粗利率（GPM）', f'{gpm:.1%}'),
-            ('Daily GP（粗利ベース・¥）', round(gp_daily, 2)),
-            ('LTV∞ 売上ベース（¥）', round(ltv_rev, 0)),
-            ('LTV∞ 粗利ベース（CAC算出用）（¥）', round(ltv_val, 0)),
-            (f'CAC上限（{cac_label}）（¥）', round(cac_upper, 0)),
+            (f'Daily GP（粗利ベース・{cur_symbol(CUR)}）', round(gp_daily, 2)),
+            (f'LTV∞ 売上ベース（{cur_symbol(CUR)}）', round(ltv_rev, 0)),
+            (f'LTV∞ 粗利ベース（CAC算出用）（{cur_symbol(CUR)}）', round(ltv_val, 0)),
+            (f'CAC上限（{cac_label}）（{cur_symbol(CUR)}）', round(cac_upper, 0)),
             ('', ''),
             ('【Weibullパラメータ】', ''),
             ('k（形状パラメータ）', round(k, 4)),
@@ -2408,7 +2418,7 @@ if True:
 
         # Horizon sheet
         ws3 = wb.create_sheet('暫定LTV')
-        ws3.append(['ホライズン（日）', '暫定LTV（¥）', 'LTV∞比（%）', f'CAC上限（¥）'])
+        ws3.append(['ホライズン（日）', f'暫定LTV（{cur_symbol(CUR)}）', 'LTV∞比（%）', f'CAC上限（{cur_symbol(CUR)}）'])
         for h in horizons:
             if business_type == "都度購入型":
                 # 都度購入型：LTV_short（固定）+ LTV_long（Weibull積分）
@@ -2587,6 +2597,7 @@ if True:
             arpu_long=arpu_long if 'arpu_long' in dir() else arpu_daily,
             outlier_label=_outlier_label,
             all_seg_results=all_seg_results,
+            cur=CUR,
         )
 
         import base64 as _b64
@@ -2723,16 +2734,16 @@ if True:
 
         _sum_data = [
             ['指標', '値'],
-            ['LTV∞（売上ベース）', f'¥{ltv_rev:,.0f}'],
-            ['LTV∞（粗利ベース・CAC算出用）', f'¥{ltv_val:,.0f}'],
-            [f'CAC上限（粗利ベース・{cac_label}）', f'¥{cac_upper:,.0f}'],
+            ['LTV∞（売上ベース）', f'{fmt_c(ltv_rev, CUR)}'],
+            ['LTV∞（粗利ベース・CAC算出用）', f'{fmt_c(ltv_val, CUR)}'],
+            [f'CAC上限（粗利ベース・{cac_label}）', f'{fmt_c(cac_upper, CUR)}'],
             ['Weibull k（形状パラメータ）', f'{k:.4f}　→　{_k_desc_pdf}'],
             ['Weibull λ（尺度パラメータ）', f'{lam_display:.1f}日（約{lam_display/365:.1f}年）'],
             ['R²（フィット精度）', f'{r2:.4f}　→　{"良好（0.9以上）" if r2 >= 0.9 else "△ やや低め（0.9未満）"}'],
             ['顧客数', f'{len(df):,}件'],
             ['異常値除外', f'{n_outlier:,}件（{_outlier_label_pdf}）'],
             ['解約済み / 継続中', f'{int(df["event"].sum()):,}件 / {int((df["event"]==0).sum()):,}件'],
-            ['Daily ARPU（売上）', f'¥{arpu_daily:,.2f}'],
+            ['Daily ARPU（売上）', f'{fmt_c(arpu_daily, CUR)}'],
             ['GPM（粗利率）', f'{gpm:.1%}'],
             ['ビジネスタイプ', business_type],
         ]
@@ -2809,7 +2820,7 @@ if True:
             _my = [_td[min(range(len(t_range)), key=lambda i: abs(t_range[i] - d))] for d in _mx]
             ax_lp.scatter(_mx, _my, color=_tc, s=25, zorder=5)
 
-        ax_lp.annotate(f'LTV∞ ¥{ltv_rev:,.0f}', xy=(max(t_range)*0.7, ltv_rev),
+        ax_lp.annotate(f'LTV∞ {fmt_c(ltv_rev, CUR)}', xy=(max(t_range)*0.7, ltv_rev),
                        fontsize=8, color='#56b4d3', va='bottom')
         ax_lp.annotate(f'λ={round(lam_actual)}日', xy=(lam_actual, max(rev_line)*0.5),
                        fontsize=8, color='#a8dadc', ha='center',
@@ -2830,7 +2841,7 @@ if True:
             ax_lp.set_ylabel('Amount', fontsize=9, color='#888')
 
         ax_lp.tick_params(colors='#888', labelsize=8)
-        ax_lp.yaxis.set_major_formatter(plt_pdf.FuncFormatter(lambda x, _: f'¥{x:,.0f}'))
+        ax_lp.yaxis.set_major_formatter(plt_pdf.FuncFormatter(lambda x, _: f'{fmt_c(x, CUR)}'))
         ax_lp.grid(True, alpha=0.15, color='#2a3040')
         ax_lp.legend(fontsize=8, facecolor='#0E1117', edgecolor='#2a3040',
                     labelcolor='#ccc', loc='upper left')
@@ -2869,10 +2880,10 @@ if True:
         _guide_lines = [
             lam_desc,
             k_desc,
-            f'LTV∞（¥{ltv_rev:,.0f}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。',
-            f'1年時点でLTV∞の{pct_1y:.1f}%（¥{ltv_1y:,.0f}）、2年時点で{pct_2y:.1f}%（¥{ltv_2y:,.0f}）、3年時点で{pct_3y:.1f}%（¥{ltv_3y:,.0f}）に到達します。',
-            f'CAC上限（¥{cac_upper:,.0f}）の回収期間：売上ベース 約{cac_recover_rev_str} / 粗利ベース 約{cac_recover_gp_str}',
-            f'CAC設計の目安：λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）¥{lam_gp:,.0f}を用いてCAC上限を算出してください。',
+            f'LTV∞（{fmt_c(ltv_rev, CUR)}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。',
+            f'1年時点でLTV∞の{pct_1y:.1f}%（{fmt_c(ltv_1y, CUR)}）、2年時点で{pct_2y:.1f}%（{fmt_c(ltv_2y, CUR)}）、3年時点で{pct_3y:.1f}%（{fmt_c(ltv_3y, CUR)}）に到達します。',
+            f'CAC上限（{fmt_c(cac_upper, CUR)}）の回収期間：売上ベース 約{cac_recover_rev_str} / 粗利ベース 約{cac_recover_gp_str}',
+            f'CAC設計の目安：λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）{fmt_c(lam_gp, CUR)}を用いてCAC上限を算出してください。',
         ]
         for gl in _guide_lines:
             story.append(Paragraph(f'・{gl}', s_small))
@@ -2898,8 +2909,8 @@ if True:
                 if sc in all_seg_results:
                     for _, _r in all_seg_results[sc].iterrows():
                         pdf_rows.append([str(_r['セグメント']), f'{int(_r["顧客数"]):,}',
-                                        f'¥{_r["LTV∞（売上）"]:,.0f}', f'¥{_r["LTV∞（粗利）"]:,.0f}',
-                                        f'¥{_r["CAC上限（粗利）"]:,.0f}',
+                                        f'{fmt_c(_r["LTV∞（売上）"], CUR)}', f'{fmt_c(_r["LTV∞（粗利）"], CUR)}',
+                                        f'{fmt_c(_r["CAC上限（粗利）"], CUR)}',
                                         f'{_r["k"]:.3f}', f'{_r["λ（日）"]:.1f}', f'{_r["R²"]:.3f}'])
                         _seg_results.append({'n': int(_r['顧客数']), 'ltv_r': _r['LTV∞（売上）'],
                                             'ltv_g': _r['LTV∞（粗利）'], 'cac': _r['CAC上限（粗利）']})
@@ -2918,8 +2929,8 @@ if True:
                         s_label
                     ))
                     story.append(Paragraph(
-                        f"LTV∞(売上): ¥{best_pdf['ltv_r']:,.0f}（全セグメント平均比 +{prem:.1f}%）"
-                        f" | 許容CAC上限 ¥{best_pdf['cac']:,.0f}",
+                        f"LTV∞(売上): {fmt_c(best_pdf['ltv_r'], CUR)}（全セグメント平均比 +{prem:.1f}%）"
+                        f" | 許容CAC上限 {fmt_c(best_pdf['cac'], CUR)}",
                         s_small
                     ))
                     story.append(Spacer(1, 0.4 * cm))
@@ -2928,7 +2939,7 @@ if True:
                 if len(pdf_rows) > 1:
                     import matplotlib.pyplot as plt_seg_bar
                     _seg_names = [r[0] for r in pdf_rows[1:]]
-                    _seg_ltvs = [float(r[2].replace('¥', '').replace(',', '')) for r in pdf_rows[1:]]
+                    _seg_ltvs = [float(r[2].replace(cur_symbol(CUR), '').replace(',', '')) for r in pdf_rows[1:]]
                     # 降順ソートして上位10件に制限
                     _sorted_idx = sorted(range(len(_seg_ltvs)), key=lambda i: _seg_ltvs[i], reverse=True)[:10]
                     _seg_names = [_seg_names[i] for i in _sorted_idx]
@@ -2950,7 +2961,7 @@ if True:
                     ax_bar.set_yticks(range(len(_seg_names)))
                     ax_bar.set_yticklabels(_seg_names, fontsize=8, color='#ccc')
                     ax_bar.tick_params(colors='#888', labelsize=8)
-                    ax_bar.xaxis.set_major_formatter(plt_seg_bar.FuncFormatter(lambda x, _: f'¥{x:,.0f}'))
+                    ax_bar.xaxis.set_major_formatter(plt_seg_bar.FuncFormatter(lambda x, _: f'{fmt_c(x, CUR)}'))
                     ax_bar.xaxis.tick_top()
                     ax_bar.xaxis.set_label_position('top')
                     ax_bar.set_axisbelow(True)
@@ -2961,7 +2972,7 @@ if True:
                     for bar, val in zip(bars, _seg_ltvs):
                         ax_bar.text(bar.get_width() - max(_seg_ltvs) * 0.01,
                                    bar.get_y() + bar.get_height() / 2,
-                                   f'¥{val:,.0f}', va='center', ha='right',
+                                   f'{fmt_c(val, CUR)}', va='center', ha='right',
                                    fontsize=8, color='#ffffff', fontweight='bold')
                     fig_bar.tight_layout()
                     buf_bar = io.BytesIO()
@@ -2984,7 +2995,7 @@ if True:
                 story.append(Paragraph(f'{sc}: 分析結果のサマリー', s_h3))
                 pdf_rows_show = ([pdf_rows[0]] +
                                 sorted(pdf_rows[1:],
-                                       key=lambda x: float(x[2].replace('¥', '').replace(',', '')),
+                                       key=lambda x: float(x[2].replace(cur_symbol(CUR), '').replace(',', '')),
                                        reverse=True)[:10])
                 # 加重平均行
                 if _seg_results:
@@ -2993,8 +3004,8 @@ if True:
                     _wavg_g = sum(s['ltv_g'] * s['n'] for s in _seg_results) / _total_n
                     _wavg_c = sum(s['cac'] * s['n'] for s in _seg_results) / _total_n
                     pdf_rows_show.append(['加重平均', f'{_total_n:,}',
-                                         f'¥{_wavg_r:,.0f}', f'¥{_wavg_g:,.0f}',
-                                         f'¥{_wavg_c:,.0f}', '—', '—', '—'])
+                                         f'{fmt_c(_wavg_r, CUR)}', f'{fmt_c(_wavg_g, CUR)}',
+                                         f'{fmt_c(_wavg_c, CUR)}', '—', '—', '—'])
 
                 _seg_title_cw = 4.5 * cm
                 _seg_data_cw = (CONTENT_W - _seg_title_cw) / 7
@@ -3056,7 +3067,7 @@ if True:
                             km_sv2 = _compute_km_df(df_sv2)
 
                         story.append(Paragraph(
-                            f'{str(sv)}　（{len(df_sv2):,}件 / LTV∞ ¥{ltv_inf_sv2:,.0f} '
+                            f'{str(sv)}　（{len(df_sv2):,}件 / LTV∞ {fmt_c(ltv_inf_sv2, CUR)} '
                             f'/ k={k_sv2:.3f} / λ={lam_sv2:.1f}日 / R²={r2_sv2:.3f}）',
                             s_label
                         ))
@@ -3138,9 +3149,9 @@ if True:
                             label_h = f'{h}日' if h < 365 else f'{h // 365}年'
                             _pct_sv2 = lh_sv2 / ltv_inf_sv2 * 100 if ltv_inf_sv2 > 0 else 0
                             hor_data2.append([
-                                label_h, f'¥{lh_sv2:,.0f}',
+                                label_h, f'{fmt_c(lh_sv2, CUR)}',
                                 f'{_pct_sv2:.1f}%',
-                                f'¥{lh_gp_sv2 / cac_n:,.0f}',
+                                f'{fmt_c(lh_gp_sv2 / cac_n, CUR)}',
                                 f'{_pct_sv2:.1f}%',
                             ])
                         # λ行
@@ -3152,9 +3163,9 @@ if True:
                             _lg_lam_sv2 = _lh_lam_sv2 * gpm
                         _pct_lam_sv2 = _lh_lam_sv2 / ltv_inf_sv2 * 100 if ltv_inf_sv2 > 0 else 0
                         hor_data2.append([
-                            f'λ  {round(lam_sv2_actual)}日', f'¥{_lh_lam_sv2:,.0f}',
+                            f'λ  {round(lam_sv2_actual)}日', f'{fmt_c(_lh_lam_sv2, CUR)}',
                             f'{_pct_lam_sv2:.1f}%',
-                            f'¥{_lg_lam_sv2 / cac_n:,.0f}',
+                            f'{fmt_c(_lg_lam_sv2 / cac_n, CUR)}',
                             f'{_pct_lam_sv2:.1f}%',
                         ])
                         # 99%到達行
@@ -3172,25 +3183,25 @@ if True:
                                 _lh99_sv2 = ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, _d99_sv2, ltv_offset_days)
                                 _lg99_sv2 = _lh99_sv2 * gpm
                             hor_data2.append([
-                                f'99%到達 {fmt_horizon(_d99_sv2)}', f'¥{_lh99_sv2:,.0f}',
+                                f'99%到達 {fmt_horizon(_d99_sv2)}', f'{fmt_c(_lh99_sv2, CUR)}',
                                 '99.0%',
-                                f'¥{_lg99_sv2 / cac_n:,.0f}',
+                                f'{fmt_c(_lg99_sv2 / cac_n, CUR)}',
                                 '99.0%',
                             ])
                         except Exception:
                             _r99_approx = ltv_inf_sv2 * 0.99
                             hor_data2.append([
-                                '99%到達', f'¥{_r99_approx:,.0f}',
+                                '99%到達', f'{fmt_c(_r99_approx, CUR)}',
                                 '99.0%',
-                                f'¥{_r99_approx * gpm / cac_n:,.0f}',
+                                f'{fmt_c(_r99_approx * gpm / cac_n, CUR)}',
                                 '99.0%',
                             ])
                         # LTV∞行
                         _ltv_g_sv2 = _pdf_sr['LTV∞（粗利）']
                         hor_data2.append([
-                            'LTV∞', f'¥{ltv_inf_sv2:,.0f}',
+                            'LTV∞', f'{fmt_c(ltv_inf_sv2, CUR)}',
                             '100.0%',
-                            f'¥{_ltv_g_sv2 / cac_n:,.0f}',
+                            f'{fmt_c(_ltv_g_sv2 / cac_n, CUR)}',
                             '100.0%',
                         ])
                         _seg_ltv_title_cw = 4 * cm
@@ -3339,12 +3350,12 @@ if segment_cols_input.strip():
                 cac_best    = best_seg['CAC上限（粗利）']
                 cac_avg_seg = (seg_df['CAC上限（粗利）'] * seg_df['顧客数']).sum() / seg_df['顧客数'].sum()
                 cac_diff    = cac_best - cac_avg_seg
-                cac_str     = f"許容CAC上限 ¥{cac_best:,.0f}（全セグメント平均より¥{abs(cac_diff):,.0f}{'高く' if cac_diff >= 0 else '低く'}設定可能）"
+                cac_str     = f"許容CAC上限 {fmt_c(cac_best, CUR)}（全セグメント平均より{fmt_c(abs(cac_diff), CUR)}{'高く' if cac_diff >= 0 else '低く'}設定可能）"
                 st.markdown(f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-left:3px solid #56b4d3; border-radius:8px; padding:10px 16px; margin-bottom:8px; font-size:0.82rem; color:#ccc;'>
   <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4;'>Top Pick</span>　<b style='color:#a8dadc;'>{best_seg['セグメント']}</b>　
   <span style='color:#888; margin:0 6px;'>|</span>
-  LTV∞(売上): <b style='color:#a8dadc;'>¥{best_seg['LTV∞（売上）']:,.0f}</b>（全セグメント平均比 +{premium:.1f}%）
+  LTV∞(売上): <b style='color:#a8dadc;'>{fmt_c(best_seg['LTV∞（売上）'], CUR)}</b>（全セグメント平均比 +{premium:.1f}%）
   <span style='color:#888; margin:0 6px;'>|</span>
   {cac_str}
 </div>""", unsafe_allow_html=True)
@@ -3363,11 +3374,11 @@ if segment_cols_input.strip():
                 x=seg_vals,
                 orientation='h',
                 marker=dict(color=bar_colors_rev),
-                text=[f'¥{v:,.0f}' for v in seg_vals],
+                text=[f'{fmt_c(v, CUR)}' for v in seg_vals],
                 textposition='inside',
                 insidetextanchor='end',
                 textfont=dict(color='white', size=10),
-                hovertemplate='%{y}: ¥%{x:,.0f}<extra></extra>',
+                hovertemplate='%{y}: ' + cur_symbol(CUR) + '%{x:,.0f}<extra></extra>',
             ))
             fig_plotly.update_yaxes(
                 tickfont=dict(color='#aaa', size=10 if n_seg <= 20 else 8),
@@ -3375,10 +3386,10 @@ if segment_cols_input.strip():
                 linecolor='#1a3040',
             )
             fig_plotly.update_xaxes(
-                title_text='LTV∞（¥）',
+                title_text=f'LTV∞（{cur_symbol(CUR)}）',
                 tickfont=dict(color='#888'),
                 gridcolor='#1a3040',
-                tickprefix='¥',
+                tickprefix=cur_symbol(CUR),
                 tickformat=',',
                 showgrid=True,
                 side='top',
@@ -3434,7 +3445,7 @@ if segment_cols_input.strip():
                         val = f'{int(val):,}'
                         align = 'right'
                     elif col in ['LTV∞（売上）', 'LTV∞（粗利）', 'CAC上限（粗利）']:
-                        val = f'¥{val:,.0f}'
+                        val = f'{fmt_c(val, CUR)}'
                         align = 'right'
                     elif col == 'k':
                         val = f'{val:.3f}'
@@ -3464,9 +3475,9 @@ if segment_cols_input.strip():
             avg_row_vals = {
                 'セグメント': '加重平均',
                 '顧客数':      f'{total_n:,}',
-                'LTV∞（売上）': f'¥{weighted_ltv_rev:,.0f}',
-                'LTV∞（粗利）': f'¥{weighted_ltv_gp:,.0f}',
-                'CAC上限（粗利）': f'¥{weighted_cac:,.0f}',
+                'LTV∞（売上）': f'{fmt_c(weighted_ltv_rev, CUR)}',
+                'LTV∞（粗利）': f'{fmt_c(weighted_ltv_gp, CUR)}',
+                'CAC上限（粗利）': f'{fmt_c(weighted_cac, CUR)}',
                 'k': '—', 'λ（日）': '—', 'R²': '—',
             }
             avg_row_html = "<tr style='background:#0d1f2d; border-top:1px solid #1a3a4a;'>"
@@ -3488,7 +3499,7 @@ if segment_cols_input.strip():
             # NOTEのみ（加重平均はテーブル内に移動）
             st.markdown(f"""
 <div style='background:#0a1520; border:1px solid #1a3040; border-radius:8px; padding:10px 18px; margin-top:6px; font-size:0.78rem; color:#888; line-height:1.7;'>
-  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。全体LTV∞（¥{ltv_rev:,.0f}）との差（{diff_str}）は統計的に正常な現象です。広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。
+  <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:#3a6a7a;'>Note</span> — 加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。全体LTV∞（{fmt_c(ltv_rev, CUR)}）との差（{diff_str}）は統計的に正常な現象です。広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。
 </div>""", unsafe_allow_html=True)
 
 
@@ -3521,7 +3532,7 @@ if segment_cols_input.strip():
                 is_best = (sv == seg_df.iloc[0]['セグメント'])
 
                 with st.expander(
-                    f"{sv}{' ·  Priority' if is_best else ''}  ·  {n_s:,} customers  ·  LTV∞ ¥{sr['LTV∞（売上）']:,.0f}  ·  k={k_s:.3f}  ·  λ={lam_s:.1f}d  ·  R²={r2_s:.3f}",
+                    f"{sv}{' ·  Priority' if is_best else ''}  ·  {n_s:,} customers  ·  LTV∞ {fmt_c(sr['LTV∞（売上）'], CUR)}  ·  k={k_s:.3f}  ·  λ={lam_s:.1f}d  ·  R²={r2_s:.3f}",
                     expanded=is_best
                 ):
                     try:
@@ -3640,7 +3651,7 @@ if segment_cols_input.strip():
                         fig_hor_s.add_trace(go.Scatter(x=t_range_s, y=gp_line_s,  name='LTV（粗利）', mode='lines', line=dict(color='#a8dadc', width=2, dash='dash')))
                         fig_hor_s.add_trace(go.Scatter(x=t_range_s, y=cac_line_s, name='CAC上限',    mode='lines', line=dict(color='#4a7a8a', width=1.5, dash='dot')))
                         fig_hor_s.add_hline(y=ltv_inf_s_offset, line_dash='dot', line_color='#56b4d3', line_width=1, opacity=0.4,
-                            annotation_text=f'LTV∞ ¥{ltv_inf_s_offset:,.0f}', annotation_position='right', annotation_font=dict(color='#56b4d3', size=10))
+                            annotation_text=f'LTV∞ {fmt_c(ltv_inf_s_offset, CUR)}', annotation_position='right', annotation_font=dict(color='#56b4d3', size=10))
                         fig_hor_s.add_shape(type='line', x0=lam_s_actual, x1=lam_s_actual, y0=0, y1=ltv_inf_s_offset,
                             line=dict(color='#a8dadc', width=1.5, dash='dash'), layer='above')
                         fig_hor_s.add_annotation(x=lam_s_actual, y=0.85 if k_s < 1.0 else 0.35, yref='paper',
@@ -3665,7 +3676,7 @@ if segment_cols_input.strip():
                                     py_s = [ltv_horizon_offset(k_s, lam_s, arpu_v, p, ltv_offset_days) for p in plot_pts_s]
                             fig_hor_s.add_trace(go.Scatter(x=px_s, y=py_s, mode='markers',
                                 marker=dict(color=color, size=5, line=dict(color='#111820', width=1)),
-                                showlegend=False, hovertemplate='%{x}日: ¥%{y:,.0f}<extra></extra>'))
+                                showlegend=False, hovertemplate='%{x}日: ' + cur_symbol(CUR) + '%{y:,.0f}<extra></extra>'))
 
                         tick_vals_s = [180, 365, 730, 1095, 1460, 1825]
                         tick_text_s = ['180日', '1年', '2年', '3年', '4年', '5年']
@@ -3707,18 +3718,18 @@ if segment_cols_input.strip():
                             label = f'{h}日' if h < 365 else f'{h//365}年（{h}日）'
                             bg = BG_ROW1_S if idx_h % 2 == 0 else BG_ROW2_S
                             pct = lh_rev_s / ltv_inf_s_offset * 100
-                            hor_html_rows += f"<tr style='background:{bg};'><td style='text-align:left; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; width:28%;'>{label}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lh_rev_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lh_gp_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lh_gp_s/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{pct:.1f}%</td></tr>"
+                            hor_html_rows += f"<tr style='background:{bg};'><td style='text-align:left; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; width:28%;'>{label}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(lh_rev_s, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(lh_gp_s, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(lh_gp_s/cac_n, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#c8d0d8; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{pct:.1f}%</td></tr>"
 
                         # λ行
                         lam_pct_s = lam_s_rev / ltv_inf_s_offset * 100
-                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>λ {lam_s_int}日</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lam_s_rev:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lam_s_gp:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{lam_s_gp/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{lam_pct_s:.1f}%</td></tr>"
+                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>λ {lam_s_int}日</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(lam_s_rev, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(lam_s_gp, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(lam_s_gp/cac_n, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{lam_pct_s:.1f}%</td></tr>"
 
                         # 99%行
-                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞到達率: 99%（{int(rev_99_s_d):,}日）</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{rev_99_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{gp_99_s:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{gp_99_s/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>99.0%</td></tr>"
+                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞到達率: 99%（{int(rev_99_s_d):,}日）</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(rev_99_s, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(gp_99_s, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(gp_99_s/cac_n, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>99.0%</td></tr>"
 
                         # LTV∞行
                         _ltv_gp_s_tbl = ltv_inf_s_offset * gpm if business_type == '都度購入型' else ltv_inf_offset(k_s, lam_s, arpu_s * gpm, ltv_offset_days)[0]
-                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{ltv_inf_s_offset:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{_ltv_gp_s_tbl:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>¥{_ltv_gp_s_tbl/cac_n:,.0f}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>100%</td></tr>"
+                        hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(ltv_inf_s_offset, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(_ltv_gp_s_tbl, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(_ltv_gp_s_tbl/cac_n, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>100%</td></tr>"
 
                         hor_tbl_html = f"""
 <table style='width:100%; border-collapse:collapse; margin-top:4px; table-layout:fixed;'>
@@ -3753,7 +3764,7 @@ else:
 # ══════════════════════════════════════════════════════════════
 
 with st.expander("読み込んだデータを確認"):
-    st.write(f"有効データ: {len(df):,}件 ／ 解約: {df['event'].sum():,}件 ／ 継続中: {(df['event']==0).sum():,}件 ／ Daily ARPU: ¥{arpu_daily:,.2f}")
+    st.write(f"有効データ: {len(df):,}件 ／ 解約: {df['event'].sum():,}件 ／ 継続中: {(df['event']==0).sum():,}件 ／ Daily ARPU: {fmt_c(arpu_daily, CUR)}")
     st.dataframe(
         df[['customer_id','start_date','end_date','duration','event','arpu_daily']].head(30),
         hide_index=True
