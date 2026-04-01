@@ -603,8 +603,8 @@ with st.sidebar:
 
     _s1_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
     _s1_age_prob = [0.15, 0.35, 0.28, 0.17, 0.05]
-    _s1_age_k    = {'18-24': 0.82, '25-34': 0.86, '35-44': 0.88, '45+': 0.84, '不明': 0.83}
-    _s1_age_lam  = {'18-24': 210,  '25-34': 250,  '35-44': 260,  '45+': 230,  '不明': 220}
+    _s1_age_k    = {'18-24': 0.82, '25-34': 0.85, '35-44': 0.86, '45+': 0.84, '不明': 0.85}
+    _s1_age_lam  = {'18-24': 200,  '25-34': 250,  '35-44': 270,  '45+': 230,  '不明': 140}
     s1_age       = np.random.choice(_s1_age_vals, n_sample, p=_s1_age_prob)
 
     _s1_dev_vals = ['PC', 'スマホ', 'タブレット', 'その他']
@@ -663,8 +663,8 @@ with st.sidebar:
 
     _s2_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
     _s2_age_prob = [0.12, 0.35, 0.30, 0.18, 0.05]
-    _s2_age_k    = {'18-24': 1.03, '25-34': 1.12, '35-44': 1.14, '45+': 1.08, '不明': 1.06}
-    _s2_age_lam  = {'18-24': 230,  '25-34': 310,  '35-44': 330,  '45+': 280,  '不明': 260}
+    _s2_age_k    = {'18-24': 1.03, '25-34': 1.13, '35-44': 1.16, '45+': 1.08, '不明': 0.98}
+    _s2_age_lam  = {'18-24': 220,  '25-34': 320,  '35-44': 350,  '45+': 280,  '不明': 180}
     s2_age       = np.random.choice(_s2_age_vals, n_sample, p=_s2_age_prob)
 
     _s2_occ_vals = ['会社員', '経営者・自営など', '学生', 'その他']
@@ -731,8 +731,8 @@ with st.sidebar:
 
     _s3_age_vals = ['18-24', '25-34', '35-44', '45-54', '55+', '不明']
     _s3_age_prob = [0.10, 0.30, 0.28, 0.18, 0.09, 0.05]
-    _s3_age_k    = {'18-24': 0.72, '25-34': 0.78, '35-44': 0.80, '45-54': 0.76, '55+': 0.73, '不明': 0.74}
-    _s3_age_lam  = {'18-24': 170,  '25-34': 220,  '35-44': 230,  '45-54': 200,  '55+': 180,  '不明': 190}
+    _s3_age_k    = {'18-24': 0.72, '25-34': 0.79, '35-44': 0.82, '45-54': 0.76, '55+': 0.73, '不明': 0.68}
+    _s3_age_lam  = {'18-24': 160,  '25-34': 230,  '35-44': 250,  '45-54': 200,  '55+': 175,  '不明': 140}
     s3_age       = np.random.choice(_s3_age_vals, n_sample, p=_s3_age_prob)
 
     _s3_gen_vals = ['女性', '男性', '未回答']
@@ -1021,7 +1021,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v313</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v314</div>
 </div>
 """, unsafe_allow_html=True)
 
