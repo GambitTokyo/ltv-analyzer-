@@ -416,7 +416,7 @@ def generate_pptx(
             pp_rows=[]
             if all_seg_results and sc in all_seg_results:
                 for _, _r in all_seg_results[sc].iterrows():
-                    pp_rows.append({'seg':str(_r['セグメント']),'n':int(_r['顧客数']),'ltv_r':_r['LTV∞（売上）'],'ltv_g':_r['LTV∞（粗利）'],'cac':_r['CAC上限（粗利）'],'k':_r['k'],'lam':_r['λ_raw'],'r2':_r['R²']})
+                    pp_rows.append({'seg':str(_r['セグメント']),'n':int(_r['顧客数']),'ltv_r':_r['LTV∞（売上）'],'ltv_g':_r['LTV∞（粗利）'],'cac':_r['CAC上限（粗利）'],'k':_r['k'],'lam':_r['λ_raw'],'r2':_r['R²'],'arpu_s':_r['arpu_s'],'arpu_long_s':_r['arpu_long_s'],'arpu_0_dorm_s':_r['arpu_0_dorm_s']})
             else:
                 for sv in sorted(df[sc].dropna().unique()):
                     df_s=df[df[sc]==sv]
@@ -427,7 +427,7 @@ def generate_pptx(
                         arpu_s=df_s['arpu_daily'].mean(); gp_s=arpu_s*gpm
                         _si=lam_s*gamma(1+1/k_s)
                         ltv_r=((_si+ltv_offset_days)*arpu_s); ltv_g=((_si+ltv_offset_days)*gp_s)
-                        pp_rows.append({'seg':str(sv),'n':len(df_s),'ltv_r':ltv_r,'ltv_g':ltv_g,'cac':ltv_g/cac_n,'k':k_s,'lam':lam_s,'r2':r2_s})
+                        pp_rows.append({'seg':str(sv),'n':len(df_s),'ltv_r':ltv_r,'ltv_g':ltv_g,'cac':ltv_g/cac_n,'k':k_s,'lam':lam_s,'r2':r2_s,'arpu_s':arpu_s,'arpu_long_s':arpu_s,'arpu_0_dorm_s':arpu_s})
                     except: continue
             if not pp_rows: continue
             pp_rows.sort(key=lambda x:x['ltv_r'],reverse=True)
@@ -465,8 +465,18 @@ def generate_pptx(
                 tmpl_idx=8 if ri==0 else 9
                 sx=_copy_slide(prs,tmpl_idx)
                 buf_km=buf_wb=None
+                _arpu_s=row['arpu_s']; _arpu_long_s=row['arpu_long_s']; _arpu_0_dorm_s=row['arpu_0_dorm_s']
+                _dorm_s=dormancy_days or 180 if business_type=='都度購入型' else ltv_offset_days
                 try:
-                    df_s=df[df[sc]==row['seg']]; km_s=_compute_km_df(df_s); arpu_s=df_s['arpu_daily'].mean()
+                    df_s=df[df[sc]==row['seg']]
+                    # グラフ描画用KM（数値には使わない）
+                    if ltv_offset_days > 0:
+                        _df_s_fit=df_s.copy(); _df_s_fit['duration']=_df_s_fit['duration']-ltv_offset_days
+                        _df_s_fit.loc[_df_s_fit['duration']<=0,'event']=0; _df_s_fit.loc[_df_s_fit['duration']<=0,'duration']=1
+                        _df_s_fit['duration']=_df_s_fit['duration'].clip(lower=1)
+                        km_s=_compute_km_df(_df_s_fit)
+                    else:
+                        km_s=_compute_km_df(df_s)
                     fig_km,ax_km=plt.subplots(figsize=(4,2.8),dpi=120); fig_km.patch.set_facecolor(BG); ax_km.set_facecolor(BG)
                     ax_km.step(km_s['time'],km_s['survival'],where='post',color='#56b4d3',lw=1.5)
                     t_fit=list(range(int(km_s['time'].max()))); s_fit=[math.exp(-(t/row['lam'])**row['k']) for t in t_fit]
@@ -476,7 +486,10 @@ def generate_pptx(
                     ax_km.grid(True,alpha=0.15,color='#1a3040'); fig_km.tight_layout()
                     buf_km=io.BytesIO(); fig_km.savefig(buf_km,format='png',dpi=120,facecolor=BG); buf_km.seek(0); plt.close(fig_km)
                     x_s=list(range(1,int(max(1825,row['lam']*2)),max(1,int(row['lam']*2)//200)))
-                    y_s=[ltv_horizon_offset(row['k'],row['lam'],arpu_s,t,ltv_offset_days) for t in x_s]
+                    if business_type=='都度購入型':
+                        y_s=[ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,t,_dorm_s) for t in x_s]
+                    else:
+                        y_s=[ltv_horizon_offset(row['k'],row['lam'],_arpu_s,t,ltv_offset_days) for t in x_s]
                     fig_wb,ax_wb=plt.subplots(figsize=(4,2.8),dpi=120); fig_wb.patch.set_facecolor(BG); ax_wb.set_facecolor(BG)
                     ax_wb.plot(x_s,y_s,color='#56b4d3',lw=1.5)
                     ax_wb.axvline(row['lam'],color='#a8dadc',lw=1,ls='--',alpha=0.7)
@@ -488,25 +501,39 @@ def generate_pptx(
                 except: pass
                 rows_sx=[]
                 for h in horizons:
-                    lr_s=ltv_horizon_offset(row['k'],row['lam'],df[df[sc]==row['seg']]['arpu_daily'].mean(),h,ltv_offset_days)
-                    lg_s=lr_s*gpm
+                    if business_type=='都度購入型':
+                        lr_s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,h,_dorm_s)
+                        lg_s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s*gpm,_arpu_long_s*gpm,h,_dorm_s)
+                    else:
+                        lr_s=ltv_horizon_offset(row['k'],row['lam'],_arpu_s,h,ltv_offset_days)
+                        lg_s=lr_s*gpm
                     rows_sx.append([fmt_horizon(h),f'¥{lr_s:,.0f}',f'¥{lg_s:,.0f}',f'¥{lg_s/cac_n:,.0f}',f'{lr_s/row["ltv_r"]*100:.1f}%'])
-                lam_r_s=ltv_horizon_offset(row['k'],row['lam'],df[df[sc]==row['seg']]['arpu_daily'].mean(),row['lam'],ltv_offset_days)
-                rows_sx.append([f'λ {round(row["lam"]):,}日',f'¥{lam_r_s:,.0f}',f'¥{lam_r_s*gpm:,.0f}',f'¥{lam_r_s*gpm/cac_n:,.0f}',f'{lam_r_s/row["ltv_r"]*100:.1f}%'])
+                # λ行
+                _lam_actual_s=row['lam']+ltv_offset_days
+                if business_type=='都度購入型':
+                    lam_r_s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,_lam_actual_s,_dorm_s)
+                    lam_g_s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s*gpm,_arpu_long_s*gpm,_lam_actual_s,_dorm_s)
+                else:
+                    lam_r_s=ltv_horizon_offset(row['k'],row['lam'],_arpu_s,_lam_actual_s,ltv_offset_days)
+                    lam_g_s=lam_r_s*gpm
+                rows_sx.append([f'λ {round(row["lam"]):,}日',f'¥{lam_r_s:,.0f}',f'¥{lam_g_s:,.0f}',f'¥{lam_g_s/cac_n:,.0f}',f'{lam_r_s/row["ltv_r"]*100:.1f}%'])
                 try:
                     from scipy.optimize import brentq as _bq
-                    _arpu=df[df[sc]==row['seg']]['arpu_daily'].mean()
-                    if np.isnan(_arpu) or _arpu <= 0:
-                        _arpu = row['ltv_r'] / (row['lam'] * gamma(1+1/row['k']) + ltv_offset_days)
-                    d99s=_bq(lambda h:ltv_horizon_offset(row['k'],row['lam'],_arpu,h,ltv_offset_days)/row['ltv_r']-0.99,1,500000)
-                    r99s=ltv_horizon_offset(row['k'],row['lam'],_arpu,d99s,ltv_offset_days)
-                    rows_sx.append([f'LTV∞到達率: 99%（{int(d99s):,}日）',f'¥{r99s:,.0f}',f'¥{r99s*gpm:,.0f}',f'¥{r99s*gpm/cac_n:,.0f}','99.0%'])
+                    if business_type=='都度購入型':
+                        d99s=_bq(lambda h:ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,h,_dorm_s)/row['ltv_r']-0.99,1,500000)
+                        r99s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,d99s,_dorm_s)
+                        g99s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s*gpm,_arpu_long_s*gpm,d99s,_dorm_s)
+                    else:
+                        d99s=_bq(lambda h:ltv_horizon_offset(row['k'],row['lam'],_arpu_s,h,ltv_offset_days)/row['ltv_r']-0.99,1,500000)
+                        r99s=ltv_horizon_offset(row['k'],row['lam'],_arpu_s,d99s,ltv_offset_days)
+                        g99s=r99s*gpm
+                    rows_sx.append([f'LTV∞到達率: 99%（{int(d99s):,}日）',f'¥{r99s:,.0f}',f'¥{g99s:,.0f}',f'¥{g99s/cac_n:,.0f}','99.0%'])
                 except:
-                    # 99%到達行を近似で追加（brentq失敗時のフォールバック）
                     r99_approx = row['ltv_r'] * 0.99
-                    rows_sx.append([f'LTV∞到達率: 99%',f'¥{r99_approx:,.0f}',f'¥{r99_approx*gpm:,.0f}',f'¥{r99_approx*gpm/cac_n:,.0f}','99.0%'])
+                    g99_approx = row['ltv_g']* 0.99
+                    rows_sx.append([f'LTV∞到達率: 99%',f'¥{r99_approx:,.0f}',f'¥{g99_approx:,.0f}',f'¥{g99_approx/cac_n:,.0f}','99.0%'])
                 # LTV∞行
-                rows_sx.append([f'LTV∞',f'¥{row["ltv_r"]:,.0f}',f'¥{row["ltv_r"]*gpm:,.0f}',f'¥{row["ltv_r"]*gpm/cac_n:,.0f}','100%'])
+                rows_sx.append([f'LTV∞',f'¥{row["ltv_r"]:,.0f}',f'¥{row["ltv_g"]:,.0f}',f'¥{row["ltv_g"]/cac_n:,.0f}','100%'])
                 for sh in sx.shapes:
                     if sh.name=='タイトル 8': _set_text(sh,f'{sc}: {row["seg"]}')
                     elif sh.name=='Picture 6' and buf_km: buf_km.seek(0); _replace_image(sx,sh,buf_km)

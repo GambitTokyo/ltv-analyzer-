@@ -1021,7 +1021,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v316</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v324</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2441,54 +2441,66 @@ if True:
                         ws_seg.append([_r['セグメント'], _r['顧客数'], round(_r['LTV∞（売上）'],0), round(_r['LTV∞（粗利）'],0), round(_r['CAC上限（粗利）'],0), round(_r['k'],4), round(_r['λ（日）'],1), round(_r['R²'],4), eff])
                 ws_seg.column_dimensions['A'].width = 20
 
-                # ── セグメント別暫定LTV詳細シート ──
+                # ── セグメント別暫定LTV詳細シート（all_seg_resultsから参照）──
                 ws_seg_hor = wb.create_sheet(f'SEG_{sc}_暫定LTV'[:31])
                 hor_header = ['セグメント', 'ホライズン', 'LTV（売上）', 'LTV（粗利）', 'CAC上限', 'LTV∞到達率（%）']
                 ws_seg_hor.append(hor_header)
                 hor_points = [180, 365, 730, 1095, 1825]
-                # all_seg_resultsのLTV∞降順に合わせる
-                _xl_seg_order = list(all_seg_results[sc]['セグメント']) if sc in all_seg_results else sorted(df[sc].dropna().unique())
-                for sv in _xl_seg_order:
-                    df_s = df[df[sc] == sv]
-                    if len(df_s) < 10 or df_s['event'].sum() < 5:
-                        continue
-                    try:
-                        km_s = _compute_km_df(df_s)
-                        k_s, lam_s, r2_s, _ = _fit_weibull_df(km_s)
-                        if k_s is None: continue
-                        arpu_s = df_s['revenue_total'].sum() / df_s['duration'].sum() if billing_cycle == '日次（都度購入）' else df_s['arpu_daily'].mean()
+                if sc in all_seg_results:
+                    for _, _r in all_seg_results[sc].iterrows():
+                        k_s    = _r['k']
+                        lam_s  = _r['λ_raw']
+                        arpu_s = _r['arpu_s']
+                        arpu_long_s  = _r['arpu_long_s']
+                        arpu_0_dorm_s = _r['arpu_0_dorm_s']
                         gp_s   = arpu_s * gpm
-                        ltv_inf_s, _ = ltv_inf_offset(k_s, lam_s, arpu_s, ltv_offset_days)
-                        lam_s_actual = lam_s + ltv_offset_days
-                        # 通常ホライズン
-                        for h in hor_points:
-                            label = f'{h}日' if h < 365 else f'{h//365}年（{h}日）'
-                            lh_r = ltv_horizon_offset(k_s, lam_s, arpu_s, h, ltv_offset_days)
-                            lh_g = ltv_horizon_offset(k_s, lam_s, gp_s,   h, ltv_offset_days)
-                            pct  = round(lh_r / ltv_inf_s * 100, 1) if ltv_inf_s > 0 else 0
-                            ws_seg_hor.append([str(sv), label, round(lh_r,0), round(lh_g,0), round(lh_g/cac_n,0), pct])
-                        # λ行
-                        lam_r = ltv_horizon_offset(k_s, lam_s, arpu_s, lam_s_actual, ltv_offset_days)
-                        lam_g = ltv_horizon_offset(k_s, lam_s, gp_s,   lam_s_actual, ltv_offset_days)
-                        lam_pct = round(lam_r / ltv_inf_s * 100, 1) if ltv_inf_s > 0 else 0
-                        ws_seg_hor.append([str(sv), f'λ（{int(lam_s_actual)}日）', round(lam_r,0), round(lam_g,0), round(lam_g/cac_n,0), lam_pct])
-                        # 99%到達行
+                        ltv_inf_s = _r['LTV∞（売上）']
+                        lam_s_actual = _r['λ（日）']
+                        _dorm_s = dormancy_days or 180 if business_type == '都度購入型' else ltv_offset_days
+                        sv = str(_r['セグメント'])
                         try:
-                            days_99_s = brentq(lambda h: ltv_horizon_offset(k_s, lam_s, arpu_s, h, ltv_offset_days) / ltv_inf_s - 0.99, 1, 500000)
-                            r99_r = ltv_horizon_offset(k_s, lam_s, arpu_s, days_99_s, ltv_offset_days)
-                            r99_g = ltv_horizon_offset(k_s, lam_s, gp_s,   days_99_s, ltv_offset_days)
-                            ws_seg_hor.append([str(sv), f'LTV∞到達率: 99%（{int(days_99_s):,}日）', round(r99_r,0), round(r99_g,0), round(r99_g/cac_n,0), 99.0])
+                            # 通常ホライズン
+                            for h in hor_points:
+                                label = f'{h}日' if h < 365 else f'{h//365}年（{h}日）'
+                                if business_type == '都度購入型':
+                                    lh_r = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, h, _dorm_s)
+                                    lh_g = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, h, _dorm_s)
+                                else:
+                                    lh_r = ltv_horizon_offset(k_s, lam_s, arpu_s, h, ltv_offset_days)
+                                    lh_g = ltv_horizon_offset(k_s, lam_s, gp_s,   h, ltv_offset_days)
+                                pct  = round(lh_r / ltv_inf_s * 100, 1) if ltv_inf_s > 0 else 0
+                                ws_seg_hor.append([sv, label, round(lh_r,0), round(lh_g,0), round(lh_g/cac_n,0), pct])
+                            # λ行
+                            if business_type == '都度購入型':
+                                lam_r = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, lam_s_actual, _dorm_s)
+                                lam_g = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, lam_s_actual, _dorm_s)
+                            else:
+                                lam_r = ltv_horizon_offset(k_s, lam_s, arpu_s, lam_s_actual, ltv_offset_days)
+                                lam_g = ltv_horizon_offset(k_s, lam_s, gp_s,   lam_s_actual, ltv_offset_days)
+                            lam_pct = round(lam_r / ltv_inf_s * 100, 1) if ltv_inf_s > 0 else 0
+                            ws_seg_hor.append([sv, f'λ（{int(lam_s_actual)}日）', round(lam_r,0), round(lam_g,0), round(lam_g/cac_n,0), lam_pct])
+                            # 99%到達行
+                            try:
+                                if business_type == '都度購入型':
+                                    days_99_s = brentq(lambda h: ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, h, _dorm_s) / ltv_inf_s - 0.99, 1, 500000)
+                                    r99_r = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, days_99_s, _dorm_s)
+                                    r99_g = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, days_99_s, _dorm_s)
+                                else:
+                                    days_99_s = brentq(lambda h: ltv_horizon_offset(k_s, lam_s, arpu_s, h, ltv_offset_days) / ltv_inf_s - 0.99, 1, 500000)
+                                    r99_r = ltv_horizon_offset(k_s, lam_s, arpu_s, days_99_s, ltv_offset_days)
+                                    r99_g = ltv_horizon_offset(k_s, lam_s, gp_s,   days_99_s, ltv_offset_days)
+                                ws_seg_hor.append([sv, f'LTV∞到達率: 99%（{int(days_99_s):,}日）', round(r99_r,0), round(r99_g,0), round(r99_g/cac_n,0), 99.0])
+                            except Exception:
+                                r99_approx = ltv_inf_s * 0.99
+                                g99_approx = r99_approx * gpm
+                                ws_seg_hor.append([sv, 'LTV∞到達率: 99%', round(r99_approx,0), round(g99_approx,0), round(g99_approx/cac_n,0), 99.0])
+                            # LTV∞行
+                            ltv_g_s = _r['LTV∞（粗利）']
+                            ws_seg_hor.append([sv, 'LTV∞', round(ltv_inf_s,0), round(ltv_g_s,0), round(ltv_g_s/cac_n,0), 100.0])
+                            # 空行で区切り
+                            ws_seg_hor.append([''] * 6)
                         except Exception:
-                            r99_approx = ltv_inf_s * 0.99
-                            g99_approx = r99_approx * gpm
-                            ws_seg_hor.append([str(sv), 'LTV∞到達率: 99%', round(r99_approx,0), round(g99_approx,0), round(g99_approx/cac_n,0), 99.0])
-                        # LTV∞行
-                        ltv_g_s = ltv_inf_s * gpm
-                        ws_seg_hor.append([str(sv), 'LTV∞', round(ltv_inf_s,0), round(ltv_g_s,0), round(ltv_g_s/cac_n,0), 100.0])
-                        # 空行で区切り
-                        ws_seg_hor.append([''] * 6)
-                    except Exception:
-                        continue
+                            continue
                 ws_seg_hor.column_dimensions['A'].width = 20
                 ws_seg_hor.column_dimensions['B'].width = 18
 
@@ -3013,22 +3025,35 @@ if True:
                 story.append(Spacer(1, 0.6 * cm))
 
                 _seg_detail_count = 0
-                # all_seg_resultsのLTV∞降順で出力
-                _pdf_detail_order = list(all_seg_results[sc]["セグメント"]) if sc in all_seg_results else sorted(seg_vals)
-                for sv in _pdf_detail_order:
-
+                # all_seg_resultsのLTV∞降順で出力（all_seg_detailsから参照）
+                _pdf_seg_list = all_seg_details.get(sc, [])
+                for _pdf_sr in _pdf_seg_list:
+                    sv = _pdf_sr['セグメント']
                     df_sv2 = df[df[sc] == sv]
                     if len(df_sv2) < 10 or df_sv2['event'].sum() < 5:
                         continue
                     try:
-                        km_sv2 = _compute_km_df(df_sv2)
-                        k_sv2, lam_sv2, r2_sv2, _ = _fit_weibull_df(km_sv2)
-                        if k_sv2 is None:
-                            continue
-                        arpu_sv2 = (df_sv2['revenue_total'].sum() / df_sv2['duration'].sum()
-                                    if billing_cycle == '日次（都度購入）'
-                                    else df_sv2['arpu_daily'].mean())
-                        ltv_inf_sv2 = (lam_sv2 * gamma(1 + 1 / k_sv2) + ltv_offset_days) * arpu_sv2
+                        # パラメータはall_seg_resultsから取得（再計算しない）
+                        k_sv2    = _pdf_sr['k']
+                        lam_sv2  = _pdf_sr['λ_raw']
+                        r2_sv2   = _pdf_sr['R²']
+                        arpu_sv2 = _pdf_sr['arpu_s']
+                        arpu_long_sv2  = _pdf_sr['arpu_long_s']
+                        arpu_0_dorm_sv2 = _pdf_sr['arpu_0_dorm_s']
+                        ltv_inf_sv2 = _pdf_sr['LTV∞（売上）']
+                        lam_sv2_actual = _pdf_sr['λ（日）']
+                        _dorm_sv2 = dormancy_days or 180 if business_type == '都度購入型' else ltv_offset_days
+
+                        # グラフ描画用にKMは計算（数値には使わない）
+                        if ltv_offset_days > 0:
+                            _df_sv2_fit = df_sv2.copy()
+                            _df_sv2_fit['duration'] = _df_sv2_fit['duration'] - ltv_offset_days
+                            _df_sv2_fit.loc[_df_sv2_fit['duration'] <= 0, 'event'] = 0
+                            _df_sv2_fit.loc[_df_sv2_fit['duration'] <= 0, 'duration'] = 1
+                            _df_sv2_fit['duration'] = _df_sv2_fit['duration'].clip(lower=1)
+                            km_sv2 = _compute_km_df(_df_sv2_fit)
+                        else:
+                            km_sv2 = _compute_km_df(df_sv2)
 
                         story.append(Paragraph(
                             f'{str(sv)}　（{len(df_sv2):,}件 / LTV∞ ¥{ltv_inf_sv2:,.0f} '
@@ -3104,34 +3129,52 @@ if True:
                         hor_data2 = [['ホライズン', 'LTV（売上）', 'LTV∞比',
                                      'CAC上限（粗利）', 'LTV∞到達率']]
                         for h in horizons:
-                            lh_sv2 = ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, h, ltv_offset_days)
+                            if business_type == '都度購入型':
+                                lh_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2, arpu_long_sv2, h, _dorm_sv2)
+                                lh_gp_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2*gpm, arpu_long_sv2*gpm, h, _dorm_sv2)
+                            else:
+                                lh_sv2 = ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, h, ltv_offset_days)
+                                lh_gp_sv2 = lh_sv2 * gpm
                             label_h = f'{h}日' if h < 365 else f'{h // 365}年'
-                            _pct_sv2 = lh_sv2 / ltv_inf_sv2 * 100
+                            _pct_sv2 = lh_sv2 / ltv_inf_sv2 * 100 if ltv_inf_sv2 > 0 else 0
                             hor_data2.append([
                                 label_h, f'¥{lh_sv2:,.0f}',
                                 f'{_pct_sv2:.1f}%',
-                                f'¥{lh_sv2 * gpm / cac_n:,.0f}',
+                                f'¥{lh_gp_sv2 / cac_n:,.0f}',
                                 f'{_pct_sv2:.1f}%',
                             ])
                         # λ行
-                        _lh_lam_sv2 = ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, lam_sv2 + ltv_offset_days, ltv_offset_days)
-                        _pct_lam_sv2 = _lh_lam_sv2 / ltv_inf_sv2 * 100
+                        if business_type == '都度購入型':
+                            _lh_lam_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2, arpu_long_sv2, lam_sv2_actual, _dorm_sv2)
+                            _lg_lam_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2*gpm, arpu_long_sv2*gpm, lam_sv2_actual, _dorm_sv2)
+                        else:
+                            _lh_lam_sv2 = ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, lam_sv2_actual, ltv_offset_days)
+                            _lg_lam_sv2 = _lh_lam_sv2 * gpm
+                        _pct_lam_sv2 = _lh_lam_sv2 / ltv_inf_sv2 * 100 if ltv_inf_sv2 > 0 else 0
                         hor_data2.append([
-                            f'λ  {round(lam_sv2)}日', f'¥{_lh_lam_sv2:,.0f}',
+                            f'λ  {round(lam_sv2_actual)}日', f'¥{_lh_lam_sv2:,.0f}',
                             f'{_pct_lam_sv2:.1f}%',
-                            f'¥{_lh_lam_sv2 * gpm / cac_n:,.0f}',
+                            f'¥{_lg_lam_sv2 / cac_n:,.0f}',
                             f'{_pct_lam_sv2:.1f}%',
                         ])
                         # 99%到達行
                         try:
-                            _d99_sv2 = brentq(
-                                lambda hh: ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, hh, ltv_offset_days) / ltv_inf_sv2 - 0.99,
-                                1, 500000)
-                            _lh99_sv2 = ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, _d99_sv2, ltv_offset_days)
+                            if business_type == '都度購入型':
+                                _d99_sv2 = brentq(
+                                    lambda hh: ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2, arpu_long_sv2, hh, _dorm_sv2) / ltv_inf_sv2 - 0.99,
+                                    1, 500000)
+                                _lh99_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2, arpu_long_sv2, _d99_sv2, _dorm_sv2)
+                                _lg99_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2*gpm, arpu_long_sv2*gpm, _d99_sv2, _dorm_sv2)
+                            else:
+                                _d99_sv2 = brentq(
+                                    lambda hh: ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, hh, ltv_offset_days) / ltv_inf_sv2 - 0.99,
+                                    1, 500000)
+                                _lh99_sv2 = ltv_horizon_offset(k_sv2, lam_sv2, arpu_sv2, _d99_sv2, ltv_offset_days)
+                                _lg99_sv2 = _lh99_sv2 * gpm
                             hor_data2.append([
                                 f'99%到達 {fmt_horizon(_d99_sv2)}', f'¥{_lh99_sv2:,.0f}',
                                 '99.0%',
-                                f'¥{_lh99_sv2 * gpm / cac_n:,.0f}',
+                                f'¥{_lg99_sv2 / cac_n:,.0f}',
                                 '99.0%',
                             ])
                         except Exception:
@@ -3143,10 +3186,11 @@ if True:
                                 '99.0%',
                             ])
                         # LTV∞行
+                        _ltv_g_sv2 = _pdf_sr['LTV∞（粗利）']
                         hor_data2.append([
                             'LTV∞', f'¥{ltv_inf_sv2:,.0f}',
                             '100.0%',
-                            f'¥{ltv_inf_sv2 * gpm / cac_n:,.0f}',
+                            f'¥{_ltv_g_sv2 / cac_n:,.0f}',
                             '100.0%',
                         ])
                         _seg_ltv_title_cw = 4 * cm
