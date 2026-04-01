@@ -176,7 +176,7 @@ def _set_note_text(sh, note_text):
     elif len(runs) == 1:
         runs[0].text = prefix + body
 
-def _set_s4_guide(sh, g):
+def _set_s4_guide(sh, g, cur='JPY'):
     if not sh.has_text_frame: return
     txBody = sh.text_frame._txBody
     for p in txBody.findall(f'{{{A}}}p'): txBody.remove(p)
@@ -233,7 +233,7 @@ def _set_s4_guide(sh, g):
         (f' を用いてCAC上限を算出してください。λは{g["lam_meaning"]}をデータが示した答えです。', 'C8D0D8', False)], sz)
 
 # ── グラフ（S5: 日本語に戻す） ──
-def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x_max):
+def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x_max, cur='JPY'):
     fp = _fp()
     fig, ax = plt.subplots(figsize=(10, 4), dpi=120)
     fig.patch.set_facecolor(BG); ax.set_facecolor(BG)
@@ -273,7 +273,7 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
     return buf
 
 # ── S7/S13 棒グラフ：数値ラベル+X軸数値+加重平均ライン数値 ──
-def _make_bar_graph(pp_rows, best, avg_ltv):
+def _make_bar_graph(pp_rows, best, avg_ltv, cur='JPY'):
     fp = _fp()
     fig, ax = plt.subplots(figsize=(6, max(2.5, len(pp_rows)*0.45)), dpi=120)
     fig.patch.set_facecolor(BG); ax.set_facecolor(BG)
@@ -394,8 +394,8 @@ def generate_pptx(
         if sh.name=='テキスト ボックス 3' and sh.has_text_frame:
             if _tbl_shape:
                 sh.top = _tbl_shape.top + _tbl_shape.height + 600000  # テーブル底 + 隙間
-            if s4_guide_data: _set_s4_guide(sh, s4_guide_data)
-    buf_s5=_make_ltv_graph(t_range,rev_line,gp_line,cac_line,ltv_rev,lam_actual,x_max)
+            if s4_guide_data: _set_s4_guide(sh, s4_guide_data, cur)
+    buf_s5=_make_ltv_graph(t_range,rev_line,gp_line,cac_line,ltv_rev,lam_actual,x_max,cur)
     for sh in prs.slides[4].shapes:
         if sh.name=='コンテンツ プレースホルダー 7':
             sh.left=int(0.5*914400); sh.top=int(1.6*914400); sh.width=int(12.2*914400); sh.height=int(4.3*914400)
@@ -452,7 +452,7 @@ def generate_pptx(
                         for r in tf.paragraphs[1].runs: r.text=''
                         if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=f'LTV∞(売上): {fmt_c(best["ltv_r"], cur)}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 {fmt_c(best["cac"], cur)}（全セグメント平均より{cac_diff_str}）'
                 elif sh.name=='コンテンツ プレースホルダー 8':
-                    buf7=_make_bar_graph(pp_rows[:10],best,avg_ltv); _replace_image(s7,sh,buf7)
+                    buf7=_make_bar_graph(pp_rows[:10],best,avg_ltv,cur); _replace_image(s7,sh,buf7)
             s8=_copy_slide(prs,7); top10=pp_rows[:10]
             dr8=[[r['seg'],f'{r["n"]:,}',f'{fmt_c(r["ltv_r"], cur)}',f'{fmt_c(r["ltv_g"], cur)}',f'{fmt_c(r["cac"], cur)}',f'{r["k"]:.3f}',f'{r["lam"]:.1f}',f'{r["r2"]:.3f}'] for r in top10]
             ft8=['加重平均',f'{n_total:,}',f'{fmt_c(avg_ltv, cur)}',f'{fmt_c(w_ltv_g, cur)}',f'{fmt_c(w_cac, cur)}','—','—','—']
