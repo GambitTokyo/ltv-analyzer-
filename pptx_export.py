@@ -383,10 +383,15 @@ def generate_pptx(
     rows_s4.append([f'λ {round(lam_actual):,}日',f'¥{lam_rev:,.0f}',f'¥{lam_gp:,.0f}',f'¥{lam_gp/cac_n:,.0f}',f'{lam_rev/ltv_rev*100:.1f}%'])
     rows_s4.append([f'LTV∞到達率: 99%（{int(days_99):,}日）',f'¥{rev_99:,.0f}',f'¥{gp_99:,.0f}',f'¥{gp_99/cac_n:,.0f}','99.0%'])
     rows_s4.append([f'LTV∞',f'¥{ltv_rev:,.0f}',f'¥{cac_upper*cac_n:,.0f}',f'¥{cac_upper:,.0f}','100%'])
+    _tbl_shape = None
     for sh in s4.shapes:
-        if sh.shape_type==19: _write_table_styled(sh.table,None,rows_s4,special_last_n=3,data_font_size=8)
-        elif sh.name=='テキスト ボックス 3' and sh.has_text_frame:
-            sh.top=sh.top+1100000
+        if sh.shape_type==19:
+            _tbl_shape = sh
+            _write_table_styled(sh.table,None,rows_s4,special_last_n=3,data_font_size=8)
+    for sh in s4.shapes:
+        if sh.name=='テキスト ボックス 3' and sh.has_text_frame:
+            if _tbl_shape:
+                sh.top = _tbl_shape.top + _tbl_shape.height + 137160  # テーブル底 + 約0.15in隙間
             if s4_guide_data: _set_s4_guide(sh, s4_guide_data)
     buf_s5=_make_ltv_graph(t_range,rev_line,gp_line,cac_line,ltv_rev,lam_actual,x_max)
     for sh in prs.slides[4].shapes:
