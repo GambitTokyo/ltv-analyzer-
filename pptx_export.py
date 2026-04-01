@@ -1,6 +1,7 @@
 """PPTX Export Module v245"""
 import io, copy, os, math
 from math import gamma
+import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -490,10 +491,15 @@ def generate_pptx(
                 try:
                     from scipy.optimize import brentq as _bq
                     _arpu=df[df[sc]==row['seg']]['arpu_daily'].mean()
-                    d99s=_bq(lambda h:ltv_horizon_offset(row['k'],row['lam'],_arpu,h,ltv_offset_days)/row['ltv_r']-0.99,1,100000)
+                    if np.isnan(_arpu) or _arpu <= 0:
+                        _arpu = row['ltv_r'] / (row['lam'] * gamma(1+1/row['k']) + ltv_offset_days)
+                    d99s=_bq(lambda h:ltv_horizon_offset(row['k'],row['lam'],_arpu,h,ltv_offset_days)/row['ltv_r']-0.99,1,500000)
                     r99s=ltv_horizon_offset(row['k'],row['lam'],_arpu,d99s,ltv_offset_days)
                     rows_sx.append([f'LTV∞到達率: 99%（{int(d99s):,}日）',f'¥{r99s:,.0f}',f'¥{r99s*gpm:,.0f}',f'¥{r99s*gpm/cac_n:,.0f}','99.0%'])
-                except: pass
+                except:
+                    # 99%到達行を近似で追加（brentq失敗時のフォールバック）
+                    r99_approx = row['ltv_r'] * 0.99
+                    rows_sx.append([f'LTV∞到達率: 99%',f'¥{r99_approx:,.0f}',f'¥{r99_approx*gpm:,.0f}',f'¥{r99_approx*gpm/cac_n:,.0f}','99.0%'])
                 # LTV∞行
                 rows_sx.append([f'LTV∞',f'¥{row["ltv_r"]:,.0f}',f'¥{row["ltv_r"]*gpm:,.0f}',f'¥{row["ltv_r"]*gpm/cac_n:,.0f}','100%'])
                 for sh in sx.shapes:
