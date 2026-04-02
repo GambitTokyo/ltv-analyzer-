@@ -11,7 +11,11 @@ import warnings
 import calendar
 import plotly.graph_objects as go
 from scipy.optimize import brentq
-from lang import fmt_c, cur_symbol, cur_decimal, CURRENCIES, LANG_DEFAULTS
+from lang import (fmt_c, cur_symbol, cur_decimal, CURRENCIES, LANG_DEFAULTS,
+                  T, set_lang, get_lang,
+                  BIZ_SUBSCRIPTION, BIZ_SPOT,
+                  BILLING_CALENDAR_MONTHLY, BILLING_ANNUAL_365, BILLING_CUSTOM_DAYS,
+                  BILLING_FIXED_30, BILLING_DAILY_SPOT)
 warnings.filterwarnings('ignore')
 
 # ── Page config ──────────────────────────────────────────────
@@ -523,18 +527,15 @@ def load_and_preprocess_csv(file_bytes, dormancy_days, billing_cycle, business_t
     df['duration']     = (df['end_resolved'] - df['start_date']).dt.days
 
     # サブスクの最低契約期間を保証
-    if business_type != '都度購入型':
-        if billing_cycle == 'カレンダーベース（月またぎ）← 月額サブスク推奨':
+    if business_type != BIZ_SPOT:
+        if billing_cycle == BILLING_CALENDAR_MONTHLY:
             min_dur = 30
-        elif billing_cycle == '30日固定 ← 30日プラン':
+        elif billing_cycle == BILLING_FIXED_30:
             min_dur = 30
-        elif billing_cycle == '365日固定 ← 年額サブスク':
+        elif billing_cycle == BILLING_ANNUAL_365:
             min_dur = 365
-        elif '日数固定' in billing_cycle:
-            try:
-                min_dur = int(billing_cycle.split('日数固定')[0].strip().split()[-1])
-            except Exception:
-                min_dur = 30
+        elif billing_cycle == BILLING_CUSTOM_DAYS:
+            min_dur = custom_cycle_days if custom_cycle_days else 30
         else:
             min_dur = 30
         df['duration'] = df['duration'].clip(lower=min_dur)
@@ -573,16 +574,17 @@ def weibull_s(t, k, lam):
 # ══════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.markdown("### 言語 / 通貨")
+    st.markdown(T('sidebar_lang_currency'))
     _lang_options = {'日本語': 'ja', 'English': 'en'}
-    _lang_sel = st.selectbox("言語 / Language", list(_lang_options.keys()), index=0)
+    _lang_sel = st.selectbox(T('sidebar_lang_label'), list(_lang_options.keys()), index=0)
     LANG = _lang_options[_lang_sel]
+    set_lang(LANG)
     _cur_default = LANG_DEFAULTS.get(LANG, 'JPY')
     _cur_options = list(CURRENCIES.keys())
     _cur_idx = _cur_options.index(_cur_default) if _cur_default in _cur_options else 0
-    CUR = st.selectbox("通貨 / Currency", _cur_options, index=_cur_idx)
+    CUR = st.selectbox(T('sidebar_cur_label'), _cur_options, index=_cur_idx)
 
-    st.markdown("### データ入力")
+    st.markdown(T('sidebar_data_input'))
 
     # ══════════════════════════════════════════════════════
     # サンプルデータ生成
@@ -802,7 +804,7 @@ with st.sidebar:
     cowork_csv   = sample_cowork.to_csv(index=False).encode('utf-8-sig')
     skincare_csv = sample_skincare.to_csv(index=False).encode('utf-8-sig')
 
-    st.markdown("<span style='color:#c8d0d8; font-size:0.78rem;'>サンプルデータを選択してお試しください。</span>", unsafe_allow_html=True)
+    st.markdown(f"<span style='color:#c8d0d8; font-size:0.78rem;'>{T('sidebar_sample_hint')}</span>", unsafe_allow_html=True)
 
     # サンプルデータをセッションステートで管理
     if 'sample_df' not in st.session_state:
@@ -811,44 +813,44 @@ with st.sidebar:
         st.session_state.sample_label = None
 
     _sample_options = {
-        'サブスク型：動画学習（日割りOFF）': ('elearn', sample_elearn),
-        'サブスク型：コワーキング（日割りON）': ('cowork', sample_cowork),
-        '都度購入型：コスメ系EC':           ('skincare', sample_skincare),
+        T('sample_elearn'):   ('elearn', sample_elearn),
+        T('sample_cowork'):   ('cowork', sample_cowork),
+        T('sample_skincare'): ('skincare', sample_skincare),
     }
     _btn_s = "display:block; width:100%; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5; box-sizing:border-box;"
     _selected_sample = st.selectbox(
-        'サンプルデータを選択',
-        ['（選択してください）'] + list(_sample_options.keys()),
+        T('sidebar_sample_select'),
+        [T('sidebar_sample_placeholder')] + list(_sample_options.keys()),
         key='sample_select',
         label_visibility='collapsed'
     )
-    if _selected_sample != '（選択してください）' and st.session_state.get('_prev_sample') != _selected_sample:
+    if _selected_sample != T('sidebar_sample_placeholder') and st.session_state.get('_prev_sample') != _selected_sample:
         st.session_state._prev_sample = _selected_sample
         _key, _df = _sample_options[_selected_sample]
         st.session_state.sample_df = _df
         st.session_state.sample_label = _selected_sample
         # サンプルに応じてデフォルト設定をセッションに保存
         if _key == 'elearn':
-            st.session_state['_sample_biz']     = 'サブスク・継続課金型'
+            st.session_state['_sample_biz']     = BIZ_SUBSCRIPTION
             st.session_state['_sample_prorate'] = False
             st.session_state['_sample_seg']     = 'channel, age_group, device'
-            st.session_state['_sample_report_title']  = '動画学習プラットフォーム 顧客LTV分析'
-            st.session_state['_sample_client_name']   = 'LearnPlus株式会社'
-            st.session_state['_sample_analyst_name']  = 'マーケティング部'
+            st.session_state['_sample_report_title']  = T('sample_elearn_title')
+            st.session_state['_sample_client_name']   = T('sample_elearn_client')
+            st.session_state['_sample_analyst_name']  = T('sample_elearn_analyst')
         elif _key == 'cowork':
-            st.session_state['_sample_biz']     = 'サブスク・継続課金型'
+            st.session_state['_sample_biz']     = BIZ_SUBSCRIPTION
             st.session_state['_sample_prorate'] = True
             st.session_state['_sample_seg']     = 'channel, age_group, occupation'
-            st.session_state['_sample_report_title']  = 'コワーキングスペース 会員LTV分析'
-            st.session_state['_sample_client_name']   = 'WorkHub株式会社'
-            st.session_state['_sample_analyst_name']  = '事業企画部'
+            st.session_state['_sample_report_title']  = T('sample_cowork_title')
+            st.session_state['_sample_client_name']   = T('sample_cowork_client')
+            st.session_state['_sample_analyst_name']  = T('sample_cowork_analyst')
         else:  # skincare
-            st.session_state['_sample_biz']     = '都度購入型'
+            st.session_state['_sample_biz']     = BIZ_SPOT
             st.session_state['_sample_prorate'] = False
             st.session_state['_sample_seg']     = 'channel, age_group, gender'
-            st.session_state['_sample_report_title']  = 'コスメ系EC 顧客LTV分析'
-            st.session_state['_sample_client_name']   = 'GlowSkin株式会社'
-            st.session_state['_sample_analyst_name']  = 'CRM推進チーム'
+            st.session_state['_sample_report_title']  = T('sample_skincare_title')
+            st.session_state['_sample_client_name']   = T('sample_skincare_client')
+            st.session_state['_sample_analyst_name']  = T('sample_skincare_analyst')
         st.rerun()
 
     # サンプルデータCSVダウンロード
@@ -857,113 +859,105 @@ with st.sidebar:
         'cowork':   ('sample_cowork.csv',   cowork_csv),
         'skincare': ('sample_skincare.csv', skincare_csv),
     }
-    _active_sample = _selected_sample if _selected_sample != '（選択してください）' else st.session_state.get('_prev_sample', None)
+    _active_sample = _selected_sample if _selected_sample != T('sidebar_sample_placeholder') else st.session_state.get('_prev_sample', None)
     if _active_sample and _active_sample in _sample_options:
         _dl_key = _sample_options[_active_sample][0]
         _dl_fn, _dl_data = _dl_map[_dl_key]
         st.download_button(
-            label="サンプルCSVをダウンロード（データフォーマット確認用）",
+            label=T('sidebar_sample_dl'),
             data=_dl_data,
             file_name=_dl_fn,
             mime='text/csv',
             key='sample_csv_dl'
         )
 
-    uploaded = st.file_uploader("CSVをアップロード", type=['csv'])
+    uploaded = st.file_uploader(T('sidebar_upload_csv'), type=['csv'])
 
     # サンプルボタン or アップロードでデータを確定
     if uploaded is not None:
         st.session_state.sample_df = None  # アップロード優先
         st.session_state.sample_label = None
 
-    st.markdown("### 異常値処理")
+    st.markdown(T('sidebar_outlier'))
     _oc1, _oc2 = st.columns(2)
     with _oc1:
         outlier_upper_pct = st.number_input(
-            "上位除外 (%)", min_value=0.0, max_value=20.0,
+            T('sidebar_outlier_upper'), min_value=0.0, max_value=20.0,
             value=0.0, step=0.5, format="%.1f",
-            help="累計金額の上位○%を除外します。0%で除外なし。"
+            help=T('sidebar_outlier_upper_help')
         )
     with _oc2:
         outlier_lower_pct = st.number_input(
-            "下位除外 (%)", min_value=0.0, max_value=20.0,
+            T('sidebar_outlier_lower'), min_value=0.0, max_value=20.0,
             value=0.0, step=0.5, format="%.1f",
-            help="累計金額の下位○%を除外します。0%で除外なし。"
+            help=T('sidebar_outlier_lower_help')
         )
     outlier_removal = (outlier_upper_pct > 0) or (outlier_lower_pct > 0)
-    st.caption(
-        "売上分布のヒストグラムとカットラインが分析結果の手前に表示されます。"
-        "分布を確認してから除外率を調整してください。"
-    )
+    st.caption(T('sidebar_outlier_caption'))
 
-    st.markdown("### ビジネスタイプ")
-    _biz_options = ["サブスク・継続課金型", "都度購入型"]
-    _biz_default = st.session_state.get('_sample_biz', 'サブスク・継続課金型')
-    _biz_idx = _biz_options.index(_biz_default) if _biz_default in _biz_options else 0
-    business_type = st.radio(
-        "ビジネスタイプ",
-        _biz_options,
+    st.markdown(T('sidebar_biz_type'))
+    _biz_options_map = {T('biz_subscription'): BIZ_SUBSCRIPTION, T('biz_spot'): BIZ_SPOT}
+    _biz_display = list(_biz_options_map.keys())
+    _biz_default = st.session_state.get('_sample_biz', BIZ_SUBSCRIPTION)
+    # session_stateの内部キーから表示名を逆引き
+    _biz_default_display = [k for k, v in _biz_options_map.items() if v == _biz_default]
+    _biz_default_display = _biz_default_display[0] if _biz_default_display else _biz_display[0]
+    _biz_idx = _biz_display.index(_biz_default_display) if _biz_default_display in _biz_display else 0
+    _biz_selected_display = st.radio(
+        T('sidebar_biz_type_label'),
+        _biz_display,
         index=_biz_idx,
     )
+    business_type = _biz_options_map[_biz_selected_display]
 
-    if business_type == "サブスク・継続課金型":
-        st.caption(
-            "解約日（end_date）をベースに離脱を判定します。"
-            "end_dateが空欄の顧客は継続中として扱われます。"
-        )
+    if business_type == BIZ_SUBSCRIPTION:
+        st.caption(T('sidebar_sub_caption'))
         dormancy_days = None  # 休眠判定なし
-        billing_cycle_display = st.radio(
-            "契約期間",
-            [
-                "月額（カレンダーベース）",
-                "年額（365日固定）",
-                "カスタム入力（日数固定）",
-            ],
+        _billing_display_map = {
+            T('billing_monthly_calendar'): BILLING_CALENDAR_MONTHLY,
+            T('billing_annual_365'):       BILLING_ANNUAL_365,
+            T('billing_custom_days'):      BILLING_CUSTOM_DAYS,
+        }
+        _billing_display_list = list(_billing_display_map.keys())
+        billing_cycle_display_text = st.radio(
+            T('sidebar_billing_period'),
+            _billing_display_list,
             index=0,
         )
-        _billing_map = {
-            "月額（カレンダーベース）": "カレンダーベース（月またぎ）← 月額サブスク推奨",
-            "年額（365日固定）": "365日固定 ← 年額サブスク",
-            "カスタム入力（日数固定）": "カスタム入力（日数固定）",
-        }
-        billing_cycle = _billing_map[billing_cycle_display]
+        billing_cycle = _billing_display_map[billing_cycle_display_text]
 
-        if billing_cycle_display == "カスタム入力（日数固定）":
-            custom_cycle_days = st.number_input("契約日数", min_value=1, max_value=365, value=30)
+        if billing_cycle == BILLING_CUSTOM_DAYS:
+            custom_cycle_days = st.number_input(T('sidebar_custom_cycle_days'), min_value=1, max_value=365, value=30)
         else:
             custom_cycle_days = None
-        st.caption("月額：毎月同じ日に更新（例：5/15契約 → 6/15・7/15…）。年額：365日固定。カスタム：隔月・四半期など任意の日数。")
+        st.caption(T('sidebar_billing_caption'))
 
-        st.markdown("<div style='font-size:0.82rem; color:#c8d0d8; margin-bottom:4px;'>解約時の日割り計算あり</div>", unsafe_allow_html=True)
-        prorate_cancel = st.toggle("解約時の日割り計算あり", value=st.session_state.get("_sample_prorate", False), label_visibility="collapsed")
-        st.caption("OFFの場合、解約日を契約更新日に丸めます（一般的なサブスク）。ONの場合、実際の解約日をそのまま使用します。")
+        st.markdown(f"<div style='font-size:0.82rem; color:#c8d0d8; margin-bottom:4px;'>{T('sidebar_prorate_label')}</div>", unsafe_allow_html=True)
+        prorate_cancel = st.toggle(T('sidebar_prorate_label'), value=st.session_state.get("_sample_prorate", False), label_visibility="collapsed")
+        st.caption(T('sidebar_prorate_caption'))
 
-    else:  # 都度購入型
-        st.caption(
-            "最終購買日（last_purchase_date）をベースに休眠判定します。"
-            "CSVに last_purchase_date 列が必要です。"
-        )
-        billing_cycle = "日次（都度購入）"
+    else:  # spot
+        st.caption(T('sidebar_spot_caption'))
+        billing_cycle = BILLING_DAILY_SPOT
         custom_cycle_days = None
         prorate_cancel = False
+        _dormancy_map = {
+            T('dormancy_180d'): 180,
+            T('dormancy_365d'): 365,
+            T('dormancy_730d'): 730,
+            T('dormancy_custom'): None,
+        }
         dormancy_option = st.radio(
-            "休眠判定期間",
-            [
-                "180日",
-                "365日",
-                "730日",
-                "カスタム入力",
-            ],
+            T('sidebar_dormancy_period'),
+            list(_dormancy_map.keys()),
             index=0,
         )
-        st.caption(
-            "あなたのビジネスに合った休眠顧客の認定期間を設定してください。"
-            "判断が難しい場合は、自社データで最終購買から再購買が発生しなくなる日数を確認することをお勧めします。"
-        )
-        if dormancy_option == "カスタム入力":
-            dormancy_days = st.number_input("休眠判定日数", min_value=30, max_value=3650, value=180)
+        st.caption(T('sidebar_dormancy_caption'))
+        _dormancy_val = _dormancy_map[dormancy_option]
+        if _dormancy_val is None:
+            dormancy_days = st.number_input(T('sidebar_dormancy_days_label'), min_value=30, max_value=3650, value=180)
         else:
-            dormancy_days = int(dormancy_option.split("日")[0])
+            dormancy_days = _dormancy_val
 
     horizon_days = 730  # 内部計算用デフォルト
 
@@ -981,47 +975,38 @@ with st.sidebar:
             _gpm_default = 60
         elif 'fec' in _fn or 'fashion' in _fn or 'spot' in _fn:
             _gpm_default = 40
-    gpm = st.slider("粗利率：売上に占める（売上－変動費）の割合", 0, 100, _gpm_default, 1) / 100
-    st.caption(f"LTV∞の表示は売上ベース。CAC上限の算出には粗利ベース（売上×{gpm:.0%}）を使用します。")
+    gpm = st.slider(T('sidebar_gpm_label'), 0, 100, _gpm_default, 1) / 100
+    st.caption(T('sidebar_gpm_caption', gpm=f"{gpm:.0%}"))
 
-    st.markdown("### CAC 上限")
-    cac_n = st.slider("N（LTV:CAC = N:1）", 1.0, 10.0, 3.0, 0.5)
+    st.markdown(T('sidebar_cac'))
+    cac_n = st.slider(T('sidebar_cac_slider'), 1.0, 10.0, 3.0, 0.5)
     cac_label = f"LTV:CAC = {cac_n}:1"
     cac_mode = 'LTV : CAC = N : 1'
     cac_recover_days = None
-    st.caption(f"例：LTV:CAC = 3:1 の場合、CAC上限 = LTV（粗利）÷ 3")
+    st.caption(T('sidebar_cac_caption'))
 
-    st.markdown("### セグメント分析")
+    st.markdown(T('sidebar_segment'))
     segment_cols_input = st.text_input(
-        "セグメント列名（カンマ区切りで複数指定可）",
+        T('sidebar_seg_input_label'),
         value=st.session_state.get('_sample_seg', ''),
-        placeholder="例：plan, channel, age_group（最大5列）",
+        placeholder=T('sidebar_seg_placeholder'),
     )
-    st.caption(
-        "CSVの列名をカンマ区切りで入力してください。"
-        "セグメント別のLTV∞を自動比較し、優先獲得セグメントを特定します。\n"
-        "1列あたり最大50種類・最大5列。代表的な軸：プラン・チャネル・年齢層・性別・地域など。"
-    )
-    st.markdown("### 表示件数")
+    st.caption(T('sidebar_seg_caption'))
+    st.markdown(T('sidebar_display_limit'))
     seg_display_limit = st.slider(
-        "詳細表示（暫定LTV・生存曲線）の上位N件",
+        T('sidebar_display_slider'),
         min_value=1, max_value=10, value=5,
     )
-    st.caption(
-        "セグメント（例：都道府県）の項目数（例：47）が多いほどブラウザの描画に時間がかかります。"
-        "表示する上位N項目を絞ることで速度が大幅に改善されます。\n"
-        "エクスポートされる各ファイルには全項目出力されます。\n"
-        "まず上位5項目で傾向を確認し、必要に応じて増やすことをお勧めします。"
-    )
+    st.caption(T('sidebar_display_caption'))
 
     cac_input = 0
     cac_known = False
 
     st.markdown("")
-    st.markdown("### レポート情報")
-    report_title = st.text_input("レポートタイトル", st.session_state.get('_sample_report_title', ''), placeholder="月額SaaS顧客LTV分析など")
-    client_name  = st.text_input("クライアント名", st.session_state.get('_sample_client_name', ''), placeholder="会社・ブランド・商品/サービスなど")
-    analyst_name = st.text_input("作成者", st.session_state.get('_sample_analyst_name', ''), placeholder="氏名・チーム・部署・組織など")
+    st.markdown(T('sidebar_report_info'))
+    report_title = st.text_input(T('sidebar_report_title'), st.session_state.get('_sample_report_title', ''), placeholder=T('sidebar_report_title_ph'))
+    client_name  = st.text_input(T('sidebar_client_name'), st.session_state.get('_sample_client_name', ''), placeholder=T('sidebar_client_name_ph'))
+    analyst_name = st.text_input(T('sidebar_analyst_name'), st.session_state.get('_sample_analyst_name', ''), placeholder=T('sidebar_analyst_name_ph'))
 
 # ══════════════════════════════════════════════════════════════
 # Header
@@ -1031,7 +1016,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v328</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v329</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1078,13 +1063,13 @@ if 'sample' in _qp and st.session_state.get('sample_df') is None:
     _s = _qp['sample']
     if _s == 'elearn':
         st.session_state.sample_df    = sample_elearn
-        st.session_state.sample_label = 'サブスク型：動画学習（日割りOFF）'
+        st.session_state.sample_label = T('sample_elearn')
     elif _s == 'cowork':
         st.session_state.sample_df    = sample_cowork
-        st.session_state.sample_label = 'サブスク型：コワーキング（日割りON）'
+        st.session_state.sample_label = T('sample_cowork')
     elif _s == 'skincare':
         st.session_state.sample_df    = sample_skincare
-        st.session_state.sample_label = '都度購入型：コスメ系EC'
+        st.session_state.sample_label = T('sample_skincare')
     st.query_params.clear()
 
 # ══════════════════════════════════════════════════════════════
@@ -1181,7 +1166,7 @@ try:
     df['end_resolved'] = result[0]
     df['event']        = result[1]
 
-    if business_type == '都度購入型' and 'last_purchase_date' in df.columns:
+    if business_type == BIZ_SPOT and 'last_purchase_date' in df.columns:
         # 都度購入型：duration = last_purchase_date - start_date（dormancy_days除外）
         # アクティブ顧客（event=0）：基準日 - start_date
         # 休眠離脱顧客（event=1）：last_purchase_date - start_date + dormancy_days
@@ -1201,17 +1186,17 @@ try:
     df['duration_raw'] = df['duration']
 
     # サブスクの最低契約期間を保証（契約期間未満のdurationを引き上げる）
-    if business_type != '都度購入型':
-        if '365日固定' in billing_cycle:
+    if business_type != BIZ_SPOT:
+        if billing_cycle == BILLING_ANNUAL_365:
             min_contract = 365
-        elif custom_cycle_days and 'カスタム' in billing_cycle:
+        elif billing_cycle == BILLING_CUSTOM_DAYS and custom_cycle_days:
             min_contract = custom_cycle_days
         else:
             min_contract = 30
 
         if not prorate_cancel:
             # 日割りなし：durationを契約更新日に丸める
-            if billing_cycle_display == '月額（カレンダーベース）':
+            if billing_cycle == BILLING_CALENDAR_MONTHLY:
                 # start_dateから月単位で次の更新日を計算
                 import calendar as _cal
                 def round_to_renewal(row):
@@ -1263,7 +1248,7 @@ try:
         if pd.isna(rev) or dur <= 0:
             return np.nan
 
-        if billing_cycle == "日次（都度購入）":
+        if billing_cycle == BILLING_DAILY_SPOT:
             # 都度購入：累計売上 ÷ 継続日数
             return rev / dur
 
@@ -1271,7 +1256,7 @@ try:
         if prorate_cancel:
             return rev / max(dur, 1)
 
-        elif billing_cycle == "カレンダーベース（月またぎ）← 月額サブスク推奨":
+        elif billing_cycle == BILLING_CALENDAR_MONTHLY:
             # 契約開始日の「日」を基準に何ヶ月分更新されたかを数える
             s, e = start, end_r
             renewals = 0
@@ -1295,12 +1280,12 @@ try:
             avg_days = max(total_days, 1)
             return (rev / renewals) / avg_days
 
-        elif billing_cycle == "30日固定 ← 30日プラン":
+        elif billing_cycle == BILLING_FIXED_30:
             import math
             renewals = max(math.ceil(dur / 30), 1)
             return (rev / renewals) / 30
 
-        elif billing_cycle == "365日固定 ← 年額サブスク":
+        elif billing_cycle == BILLING_ANNUAL_365:
             import math
             renewals = max(math.ceil(dur / 365), 1)
             return (rev / renewals) / 365
@@ -1342,7 +1327,7 @@ try:
         n_outlier = before - len(df)
 
     # ARPU計算
-    if billing_cycle == "日次（都度購入）":
+    if billing_cycle == BILLING_DAILY_SPOT:
         # ── 都度購入型：ARPU_short / ARPU_long / ARPU_0-dormancy の3段階計算 ──
         _dorm = dormancy_days or 180
 
@@ -1409,8 +1394,8 @@ try:
     gp_daily = arpu_daily * gpm
 
     # ビジネスタイプ依存ラベル（データ読み込みブロック内で使用）
-    acq_label  = "初回購入" if business_type == "都度購入型" else "契約"
-    date_label = "初回購入日" if business_type == "都度購入型" else "契約開始日"
+    acq_label  = "初回購入" if business_type == BIZ_SPOT else "契約"
+    date_label = "初回購入日" if business_type == BIZ_SPOT else "契約開始日"
 
     # ── 通知メッセージ ──
     if n_dormant > 0:
@@ -1562,17 +1547,17 @@ except Exception as e:
 # ══════════════════════════════════════════════════════════════
 
 # ── オフセット設定 ──
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     # 都度購入型：dormancy_daysをオフセットとして使用
     # t=0〜dormancy_daysはS(t)=1.0で確定なのでWeibullフィットから切り離す
     ltv_offset_days = dormancy_days or 180
 elif prorate_cancel:
     ltv_offset_days = 0
-elif billing_cycle_display == "月額（カレンダーベース）":
+elif billing_cycle == BILLING_CALENDAR_MONTHLY:
     ltv_offset_days = 30.44
-elif billing_cycle_display == "年額（365日固定）":
+elif billing_cycle == BILLING_ANNUAL_365:
     ltv_offset_days = 365
-elif billing_cycle_display == "カスタム入力（日数固定）":
+elif billing_cycle == BILLING_CUSTOM_DAYS:
     ltv_offset_days = custom_cycle_days or 30
 else:
     ltv_offset_days = 30.44
@@ -1623,7 +1608,7 @@ def ltv_horizon_spot(k, lam, arpu_0d, arpu_long, h, dorm):
         ltv_l = 0
     return ltv_s + ltv_l
 
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     # LTV = LTV_short（固定部分）+ LTV_long（Weibull積分部分）
     _dorm_off = dormancy_days or 180
     _ltv_short_rev = _dorm_off * arpu_0_dorm   # t=0〜dormancy_daysの固定積分
@@ -1632,7 +1617,7 @@ if business_type == "都度購入型":
     surv_int = _dorm_off + _surv_long
 else:
     ltv_rev, surv_int = ltv_inf_offset(k, lam, arpu_daily, ltv_offset_days)  # 売上ベース
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     _gp_short  = _dorm_off * (arpu_0_dorm * gpm)
     _gp_long_v, _ = ltv_inf_offset(k, lam, arpu_long * gpm, 0)
     ltv_val = _gp_short + _gp_long_v
@@ -1676,7 +1661,7 @@ if r2 < 0.85:
 # ── サマリー解説ボックス ──────────────────────────────────────
 
 # 単発離脱率の計算
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     # 初回購入後に1度も再購入せず離脱した顧客の割合
     churn_period = dormancy_days if dormancy_days else 365
     if 'last_purchase_date' in df.columns and df['last_purchase_date'].notna().any():
@@ -1689,9 +1674,9 @@ if business_type == "都度購入型":
     period_label = f"{churn_period}日"
 else:
     # 最初の契約期間のみで解約した割合（実データから直接計算）
-    if '365日固定' in billing_cycle:
+    if billing_cycle == BILLING_ANNUAL_365:
         _min_c = 365
-    elif custom_cycle_days and 'カスタム' in billing_cycle:
+    elif billing_cycle == BILLING_CUSTOM_DAYS and custom_cycle_days:
         _min_c = custom_cycle_days
     else:
         _min_c = 30
@@ -1700,7 +1685,7 @@ else:
     single_churn_rate = ((df["event"] == 1) & (df[_dur_col] <= churn_period)).sum() / len(df) * 100
     period_label = f"{churn_period}日（1契約期間）"
 
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     if k < 1.0:
         k_summary = (
             f"k={k:.3f}の初期離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
@@ -1767,7 +1752,7 @@ st.markdown("<div class='section-title'>分析モデルの信頼性</div>", unsa
 c1, c2 = st.columns(2)
 
 # ── グラフ描画用データ準備 ──
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     # 都度購入型：
     # durationには既にdormancy_daysが含まれているので、
     # KM・Weibullともにオフセット加算不要
@@ -1868,7 +1853,7 @@ lam_actual = lam + ltv_offset_days  # 実際のλ位置（オフセット込み�
 x_max = max(1825, round(lam_actual) + 100) if lam_actual > 1825 else 1825
 
 t_range = list(range(1, x_max + 1, max(1, x_max // 300)))
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     _dorm_off = dormancy_days or 180
     rev_line = [ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, t, _dorm_off) for t in t_range]
     gp_line  = [ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, t, _dorm_off) for t in t_range]
@@ -1966,7 +1951,7 @@ except Exception:
 
 # λ時点と99%到達日数を逆算
 try:
-    if business_type == "都度購入型":
+    if business_type == BIZ_SPOT:
         _dorm_off = dormancy_days or 180
         days_99 = brentq(
             lambda h: ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_off) / ltv_rev - 0.99,
@@ -1992,7 +1977,7 @@ def fmt_horizon(days):
 # テーブルデータ構築
 tbl_rows = []
 for h in horizons:
-    if business_type == "都度購入型":
+    if business_type == BIZ_SPOT:
         _dorm_off = dormancy_days or 180
         lh_rev = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, _dorm_off)
         lh_gp  = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, _dorm_off)
@@ -2009,7 +1994,7 @@ for h in horizons:
     })
 
 # λ行
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     _dorm_off = dormancy_days or 180
     lam_rev = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, lam + _dorm_off, _dorm_off)
     lam_gp  = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, lam + _dorm_off, _dorm_off)
@@ -2027,7 +2012,7 @@ tbl_rows.append({
 })
 
 # 99%到達行
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     _dorm_off = dormancy_days or 180
     rev_99 = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, days_99, _dorm_off)
     gp_99  = ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, days_99, _dorm_off)
@@ -2109,7 +2094,7 @@ st.markdown(tbl_html, unsafe_allow_html=True)
 
 
 # 解釈ガイドを自動生成
-if business_type == "都度購入型":
+if business_type == BIZ_SPOT:
     _dorm_off = dormancy_days or 180
     ltv_1y = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, 365,  _dorm_off)
     ltv_2y = ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, 730,  _dorm_off)
@@ -2128,7 +2113,7 @@ def recover_str(days):
 
 try:
     cac_recover_rev = brentq(
-        lambda h: (ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, dormancy_days or 180) if business_type == "都度購入型" else ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)) - cac_upper,
+        lambda h: (ltv_horizon_spot(k, lam, arpu_0_dorm, arpu_long, h, dormancy_days or 180) if business_type == BIZ_SPOT else ltv_horizon_offset(k, lam, arpu_daily, h, ltv_offset_days)) - cac_upper,
         1, 36500
     )
     cac_recover_rev_str = recover_str(cac_recover_rev)
@@ -2137,7 +2122,7 @@ except Exception:
 
 try:
     cac_recover_gp = brentq(
-        lambda h: (ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, dormancy_days or 180) if business_type == "都度購入型" else ltv_horizon_offset(k, lam, gp_daily, h, ltv_offset_days)) - cac_upper,
+        lambda h: (ltv_horizon_spot(k, lam, arpu_0_dorm*gpm, arpu_long*gpm, h, dormancy_days or 180) if business_type == BIZ_SPOT else ltv_horizon_offset(k, lam, gp_daily, h, ltv_offset_days)) - cac_upper,
         1, 36500
     )
     cac_recover_gp_str = recover_str(cac_recover_gp)
@@ -2149,7 +2134,7 @@ cac_recover_days = cac_recover_rev if cac_recover_rev_str != "算出不可" else
 cac_recover_str  = cac_recover_rev_str
 
 # λの解釈（都度購入型はlam+dormancy_daysで表示）
-lam_display = lam + ltv_offset_days if business_type == "都度購入型" else lam
+lam_display = lam + ltv_offset_days if business_type == BIZ_SPOT else lam
 if lam_display < 180:
     lam_desc = f"λ={lam_display:.0f}日は非常に短く、顧客の大半が半年以内に離脱するビジネスです。"
 elif lam_display < 365:
@@ -2196,7 +2181,7 @@ insight_html = f"""
   <div style='margin-top:12px; padding-top:10px; border-top:1px solid #1a3a4a;'>
     <span style='color:#56b4d3; font-weight:600;'>CAC設計の目安</span>：回収期間に迷ったら、
     <b style='color:#a8dadc;'>λ={round(lam_actual):,}日（約{lam_actual/365:.1f}年）時点の暫定LTV（粗利）{fmt_c(lam_gp, CUR)}</b>
-    を用いてCAC上限を算出してください。λは{"リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == "都度購入型" else "多くの顧客が離脱するまでの期間の目安"}をデータが示した答えです。
+    を用いてCAC上限を算出してください。λは{"リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == BIZ_SPOT else "多くの顧客が離脱するまでの期間の目安"}をデータが示した答えです。
   </div>
 </div>
 """
@@ -2216,8 +2201,8 @@ churned_count  = int(df['event'].sum())
 active_count   = int((df['event']==0).sum())
 churn_rate     = churned_count / len(df) * 100
 # ビジネスタイプで「契約」「初回購入」を切り替え
-acq_label  = "初回購入" if business_type == "都度購入型" else "契約"
-date_label = "初回購入日" if business_type == "都度購入型" else "契約開始日"
+acq_label  = "初回購入" if business_type == BIZ_SPOT else "契約"
+date_label = "初回購入日" if business_type == BIZ_SPOT else "契約開始日"
 
 k_pattern      = f"初期集中型（{acq_label}直後の離脱が多い）" if k < 1 else "逓増型（時間とともに離脱が増える）"
 
@@ -2230,7 +2215,7 @@ prompt_base = f"""私はLTV分析ツール（Kaplan-Meier法 × Weibullモデル
 ・LTV∞（売上ベース）: {fmt_c(ltv_rev, CUR)} / LTV∞（粗利ベース）: {fmt_c(ltv_val, CUR)}
 ・CAC上限（{cac_label}）: {fmt_c(cac_upper, CUR)}
 ・Weibull k（形状）: {k:.4f} → {k_pattern}
-・Weibull λ（尺度）: {lam+ltv_offset_days if business_type=="都度購入型" else lam:.1f}日 / R²（フィット精度）: {r2:.4f}
+・Weibull λ（尺度）: {lam+ltv_offset_days if business_type==BIZ_SPOT else lam:.1f}日 / R²（フィット精度）: {r2:.4f}
 ・分析手法: Kaplan-Meier法 + Weibullモデルによる生存分析"""
 
 with tab1:
@@ -2294,7 +2279,7 @@ if segment_cols_input.strip():
                 _pre_k, _pre_lam, _pre_r2, _ = _fit_weibull_df(_pre_km)
                 if _pre_k is None:
                     continue
-                if business_type == '都度購入型' and 'last_purchase_date' in _pre_df.columns:
+                if business_type == BIZ_SPOT and 'last_purchase_date' in _pre_df.columns:
                     _pre_dorm = dormancy_days or 180
                     _gap = (_pre_df['last_purchase_date'] - _pre_df['start_date']).dt.days.fillna(-1)
                     _days = (today - _pre_df['last_purchase_date']).dt.days.fillna(0)
@@ -2315,7 +2300,7 @@ if segment_cols_input.strip():
                     _arpu_0_dorm = _arpu
                     _pre_dorm = ltv_offset_days
                 _gp = _arpu * gpm
-                if business_type == '都度購入型':
+                if business_type == BIZ_SPOT:
                     _ltv_short = _pre_dorm * _arpu_0_dorm
                     _ltv_long, _ = ltv_inf_offset(_pre_k, _pre_lam, _arpu_long, 0)
                     _ltv_r = _ltv_short + _ltv_long
@@ -2386,7 +2371,7 @@ if True:
             ('', ''),
             ('【Weibullパラメータ】', ''),
             ('k（形状パラメータ）', round(k, 4)),
-            ('λ（尺度パラメータ・日）', round(lam + ltv_offset_days if business_type == '都度購入型' else lam, 2)),
+            ('λ（尺度パラメータ・日）', round(lam + ltv_offset_days if business_type == BIZ_SPOT else lam, 2)),
             ('R²', round(r2, 4)),
         ]
         for i, (label, val) in enumerate(summary_data, start=5):
@@ -2400,7 +2385,7 @@ if True:
         ws2.append(['t (days)', 'S(t) KM Observed', 'S(t) Weibull Fit'])
         # t=0：生存率100%
         ws2.append([0, 1.0, 1.0])
-        if business_type == "都度購入型":
+        if business_type == BIZ_SPOT:
             # 都度購入型：オフセット後のkm_dfを使い、t軸を元に戻す
             ws2.append([int(ltv_offset_days), 1.0, 1.0])
             for _, row in km_df.iterrows():
@@ -2420,7 +2405,7 @@ if True:
         ws3 = wb.create_sheet('暫定LTV')
         ws3.append(['ホライズン（日）', f'暫定LTV（{cur_symbol(CUR)}）', 'LTV∞比（%）', f'CAC上限（{cur_symbol(CUR)}）'])
         for h in horizons:
-            if business_type == "都度購入型":
+            if business_type == BIZ_SPOT:
                 # 都度購入型：LTV_short（固定）+ LTV_long（Weibull積分）
                 _dorm_off = dormancy_days or 180
                 _h_short  = min(h, _dorm_off)
@@ -2466,13 +2451,13 @@ if True:
                         gp_s   = arpu_s * gpm
                         ltv_inf_s = _r['LTV∞（売上）']
                         lam_s_actual = _r['λ（日）']
-                        _dorm_s = dormancy_days or 180 if business_type == '都度購入型' else ltv_offset_days
+                        _dorm_s = dormancy_days or 180 if business_type == BIZ_SPOT else ltv_offset_days
                         sv = str(_r['セグメント'])
                         try:
                             # 通常ホライズン
                             for h in hor_points:
                                 label = f'{h}日' if h < 365 else f'{h//365}年（{h}日）'
-                                if business_type == '都度購入型':
+                                if business_type == BIZ_SPOT:
                                     lh_r = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, h, _dorm_s)
                                     lh_g = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, h, _dorm_s)
                                 else:
@@ -2481,7 +2466,7 @@ if True:
                                 pct  = round(lh_r / ltv_inf_s * 100, 1) if ltv_inf_s > 0 else 0
                                 ws_seg_hor.append([sv, label, round(lh_r,0), round(lh_g,0), round(lh_g/cac_n,0), pct])
                             # λ行
-                            if business_type == '都度購入型':
+                            if business_type == BIZ_SPOT:
                                 lam_r = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, lam_s_actual, _dorm_s)
                                 lam_g = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, lam_s_actual, _dorm_s)
                             else:
@@ -2491,7 +2476,7 @@ if True:
                             ws_seg_hor.append([sv, f'λ（{int(lam_s_actual)}日）', round(lam_r,0), round(lam_g,0), round(lam_g/cac_n,0), lam_pct])
                             # 99%到達行
                             try:
-                                if business_type == '都度購入型':
+                                if business_type == BIZ_SPOT:
                                     days_99_s = brentq(lambda h: ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, h, _dorm_s) / ltv_inf_s - 0.99, 1, 500000)
                                     r99_r = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, days_99_s, _dorm_s)
                                     r99_g = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, days_99_s, _dorm_s)
@@ -2536,10 +2521,10 @@ if True:
 
         _TMPL_PATH = _os.path.join(_here, 'LTV-analyzer.pptx')
 
-        _billing_disp = billing_cycle_display if 'billing_cycle_display' in dir() else billing_cycle.split('←')[0].strip()
+        _billing_disp = billing_cycle_display_text if 'billing_cycle_display_text' in dir() else T('biz_spot')
 
         # S4ガイドデータを組み立て
-        _lam_display = lam + ltv_offset_days if business_type == "都度購入型" else lam
+        _lam_display = lam + ltv_offset_days if business_type == BIZ_SPOT else lam
         _s4_guide = {
             'lam_desc': lam_desc,
             'k_desc': k_desc,
@@ -2553,7 +2538,7 @@ if True:
             'lam_actual_round': round(_lam_display),
             'lam_years': _lam_display / 365,
             'lam_gp': lam_gp,
-            'lam_meaning': "リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == "都度購入型" else "多くの顧客が離脱するまでの期間の目安",
+            'lam_meaning': "リピート顧客の63.2%が離脱するまでの期間（初回購入起点）" if business_type == BIZ_SPOT else "多くの顧客が離脱するまでの期間の目安",
         }
 
         # 異常値処理の表示文字列
@@ -2747,7 +2732,7 @@ if True:
             ['GPM（粗利率）', f'{gpm:.1%}'],
             ['ビジネスタイプ', business_type],
         ]
-        if business_type == "都度購入型":
+        if business_type == BIZ_SPOT:
             _sum_data.append(['休眠判定', dormancy_label])
         else:
             _prorate_val = 'ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else 'OFF'
@@ -3053,7 +3038,7 @@ if True:
                         arpu_0_dorm_sv2 = _pdf_sr['arpu_0_dorm_s']
                         ltv_inf_sv2 = _pdf_sr['LTV∞（売上）']
                         lam_sv2_actual = _pdf_sr['λ（日）']
-                        _dorm_sv2 = dormancy_days or 180 if business_type == '都度購入型' else ltv_offset_days
+                        _dorm_sv2 = dormancy_days or 180 if business_type == BIZ_SPOT else ltv_offset_days
 
                         # グラフ描画用にKMは計算（数値には使わない）
                         if ltv_offset_days > 0:
@@ -3140,7 +3125,7 @@ if True:
                         hor_data2 = [['ホライズン', 'LTV（売上）', 'LTV∞比',
                                      'CAC上限（粗利）', 'LTV∞到達率']]
                         for h in horizons:
-                            if business_type == '都度購入型':
+                            if business_type == BIZ_SPOT:
                                 lh_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2, arpu_long_sv2, h, _dorm_sv2)
                                 lh_gp_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2*gpm, arpu_long_sv2*gpm, h, _dorm_sv2)
                             else:
@@ -3155,7 +3140,7 @@ if True:
                                 f'{_pct_sv2:.1f}%',
                             ])
                         # λ行
-                        if business_type == '都度購入型':
+                        if business_type == BIZ_SPOT:
                             _lh_lam_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2, arpu_long_sv2, lam_sv2_actual, _dorm_sv2)
                             _lg_lam_sv2 = ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2*gpm, arpu_long_sv2*gpm, lam_sv2_actual, _dorm_sv2)
                         else:
@@ -3170,7 +3155,7 @@ if True:
                         ])
                         # 99%到達行
                         try:
-                            if business_type == '都度購入型':
+                            if business_type == BIZ_SPOT:
                                 _d99_sv2 = brentq(
                                     lambda hh: ltv_horizon_spot(k_sv2, lam_sv2, arpu_0_dorm_sv2, arpu_long_sv2, hh, _dorm_sv2) / ltv_inf_sv2 - 0.99,
                                     1, 500000)
@@ -3522,8 +3507,8 @@ if segment_cols_input.strip():
                 arpu_0_dorm_s= sr['arpu_0_dorm_s']
                 gp_s         = arpu_s * gpm
                 df_sv        = df[df[seg_col] == sv]
-                _dorm_s      = dormancy_days or 180 if business_type == '都度購入型' else ltv_offset_days
-                if business_type == '都度購入型':
+                _dorm_s      = dormancy_days or 180 if business_type == BIZ_SPOT else ltv_offset_days
+                if business_type == BIZ_SPOT:
                     _ltv_short_s = _dorm_s * arpu_0_dorm_s
                     _ltv_long_s, _ = ltv_inf_offset(k_s, lam_s, arpu_long_s, 0)
                     ltv_inf_s = _ltv_short_s + _ltv_long_s
@@ -3634,14 +3619,14 @@ if segment_cols_input.strip():
                         lam_s_int = round(lam_s_actual)
                         x_max_s = max(1825, lam_s_int + 100) if lam_s_actual > 1825 else 1825
                         t_range_s = list(range(1, x_max_s + 1, max(1, x_max_s // 300)))
-                        if business_type == '都度購入型':
+                        if business_type == BIZ_SPOT:
                             rev_line_s = [ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, t, _dorm_s) for t in t_range_s]
                             gp_line_s  = [ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, t, _dorm_s) for t in t_range_s]
                         else:
                             rev_line_s = [ltv_horizon_offset(k_s, lam_s, arpu_s, t, ltv_offset_days) for t in t_range_s]
                             gp_line_s  = [ltv_horizon_offset(k_s, lam_s, arpu_s * gpm, t, ltv_offset_days) for t in t_range_s]
                         cac_line_s = [v / cac_n for v in gp_line_s]
-                        if business_type == '都度購入型':
+                        if business_type == BIZ_SPOT:
                             ltv_inf_s_offset = ltv_inf_s
                         else:
                             ltv_inf_s_offset, _ = ltv_inf_offset(k_s, lam_s, arpu_s, ltv_offset_days)
@@ -3662,7 +3647,7 @@ if segment_cols_input.strip():
                         plot_pts_s = sorted(set([p for p in [180, 365, 730, 1095, 1460, 1825, lam_s_int] if p <= x_max_s]))
                         for arpu_v, color in [(arpu_s, '#56b4d3'), (arpu_s * gpm, '#a8dadc'), (arpu_s * gpm / cac_n, '#4a7a8a')]:
                             px_s = [p for p in plot_pts_s]
-                            if business_type == '都度購入型':
+                            if business_type == BIZ_SPOT:
                                 if arpu_v == arpu_s * gpm / cac_n:
                                     py_s = [ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, p, _dorm_s) / cac_n for p in plot_pts_s]
                                 elif arpu_v == arpu_s * gpm:
@@ -3694,7 +3679,7 @@ if segment_cols_input.strip():
                         ACCENT_S = '#56b4d3'; BG_HEAD_S = '#0d1f2d'; BG_ROW1_S = '#0d1520'; BG_ROW2_S = '#0a1018'
                         SEP_S = '#1a3a4a'
                         all_horizons_s = [180, 365, 730, 1095, 1825]
-                        if business_type == '都度購入型':
+                        if business_type == BIZ_SPOT:
                             lam_s_rev  = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, lam_s_actual, _dorm_s)
                             lam_s_gp   = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, lam_s_actual, _dorm_s)
                             rev_99_s_d = brentq(lambda h: ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, h, _dorm_s) / ltv_inf_s_offset - 0.99, 1, 365000)
@@ -3709,7 +3694,7 @@ if segment_cols_input.strip():
 
                         hor_html_rows = ''
                         for idx_h, h in enumerate(all_horizons_s):
-                            if business_type == '都度購入型':
+                            if business_type == BIZ_SPOT:
                                 lh_rev_s = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s, arpu_long_s, h, _dorm_s)
                                 lh_gp_s  = ltv_horizon_spot(k_s, lam_s, arpu_0_dorm_s*gpm, arpu_long_s*gpm, h, _dorm_s)
                             else:
@@ -3728,7 +3713,7 @@ if segment_cols_input.strip():
                         hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞到達率: 99%（{int(rev_99_s_d):,}日）</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(rev_99_s, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(gp_99_s, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(gp_99_s/cac_n, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>99.0%</td></tr>"
 
                         # LTV∞行
-                        _ltv_gp_s_tbl = ltv_inf_s_offset * gpm if business_type == '都度購入型' else ltv_inf_offset(k_s, lam_s, arpu_s * gpm, ltv_offset_days)[0]
+                        _ltv_gp_s_tbl = ltv_inf_s_offset * gpm if business_type == BIZ_SPOT else ltv_inf_offset(k_s, lam_s, arpu_s * gpm, ltv_offset_days)[0]
                         hor_html_rows += f"<tr style='background:{BG_HEAD_S}; border-top:1px solid {SEP_S};'><td style='text-align:left; padding:8px 14px; color:#a8dadc; font-size:0.85rem; width:28%;'>LTV∞</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(ltv_inf_s_offset, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(_ltv_gp_s_tbl, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>{fmt_c(_ltv_gp_s_tbl/cac_n, CUR)}</td><td style='text-align:right; padding:8px 14px; color:#a8dadc; font-size:0.85rem; font-variant-numeric:tabular-nums; width:18%;'>100%</td></tr>"
 
                         hor_tbl_html = f"""

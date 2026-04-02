@@ -13,7 +13,7 @@ from pptx.oxml.ns import qn
 from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 from lxml import etree
 from datetime import date
-from lang import fmt_c, cur_symbol
+from lang import fmt_c, cur_symbol, T, BIZ_SUBSCRIPTION, BIZ_SPOT
 
 _JP_FP = None
 def _init():
@@ -343,11 +343,13 @@ def generate_pptx(
             # 1行目：データ期間 | 顧客数 | 解約済み | 継続中 | 異常値の処理
             i1=f"データ期間: {_ds} – {_de}　|　顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　継続中: {(df['event']==0).sum():,}件　|　異常値の処理：{outlier_label}"
             # 2行目：ビジネスタイプ | 請求サイクル/休眠判定 | 日割り(サブスクのみ) | Daily ARPU | GPM
-            if business_type == '都度購入型':
+            if business_type == BIZ_SPOT:
+                _biz_disp = T('biz_spot')
                 _dorm_disp = f'{dormancy_days}日' if dormancy_days else '180日'
-                i2=f"{business_type}　|　休眠判定: {_dorm_disp}　|　Daily ARPU: {fmt_c(arpu_daily, cur, 2)}　|　GPM: {gpm:.0%}"
+                i2=f"{_biz_disp}　|　休眠判定: {_dorm_disp}　|　Daily ARPU: {fmt_c(arpu_daily, cur, 2)}　|　GPM: {gpm:.0%}"
             else:
-                i2=f"{business_type}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}　|　Daily ARPU: {fmt_c(arpu_daily, cur, 2)}　|　GPM: {gpm:.0%}"
+                _biz_disp = T('biz_subscription')
+                i2=f"{_biz_disp}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}　|　Daily ARPU: {fmt_c(arpu_daily, cur, 2)}　|　GPM: {gpm:.0%}"
             if len(tf.paragraphs)>=1:
                 for r in tf.paragraphs[0].runs: r.text=''
                 if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=i1
@@ -365,7 +367,7 @@ def generate_pptx(
                 if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text='結論'
                 for r in tf.paragraphs[1].runs: r.text=''
                 if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=k_summary+r2_summary
-    s3=prs.slides[2]; ld=lam+ltv_offset_days if business_type=='都度購入型' else lam
+    s3=prs.slides[2]; ld=lam+ltv_offset_days if business_type==BIZ_SPOT else lam
     for sh in s3.shapes:
         if sh.name=='Picture 3': buf1.seek(0); _replace_image(s3,sh,buf1)
         elif sh.name=='Picture 4': buf2.seek(0); _replace_image(s3,sh,buf2)
@@ -373,7 +375,7 @@ def generate_pptx(
         elif sh.name=='TextBox 8': _set_text(sh, f"λ（尺度パラメータ） = {ld:.1f}日（約{ld/365:.1f}年）\n→ 大きいほどLTV∞到達が長期化する。λ日時点での暫定LTV到達率はk値により異なる（k=1のとき63.2%）\n→ {rc}")
     s4=prs.slides[3]; rows_s4=[]
     for h in horizons:
-        if business_type=='都度購入型':
+        if business_type==BIZ_SPOT:
             dp=dormancy_days or 180
             _a0 = arpu_0_dorm if arpu_0_dorm is not None else arpu_daily
             _al = arpu_long if arpu_long is not None else arpu_daily
@@ -468,7 +470,7 @@ def generate_pptx(
                 sx=_copy_slide(prs,tmpl_idx)
                 buf_km=buf_wb=None
                 _arpu_s=row['arpu_s']; _arpu_long_s=row['arpu_long_s']; _arpu_0_dorm_s=row['arpu_0_dorm_s']
-                _dorm_s=dormancy_days or 180 if business_type=='都度購入型' else ltv_offset_days
+                _dorm_s=dormancy_days or 180 if business_type==BIZ_SPOT else ltv_offset_days
                 try:
                     df_s=df[df[sc]==row['seg']]
                     # グラフ描画用KM（数値には使わない）
@@ -488,7 +490,7 @@ def generate_pptx(
                     ax_km.grid(True,alpha=0.15,color='#1a3040'); fig_km.tight_layout()
                     buf_km=io.BytesIO(); fig_km.savefig(buf_km,format='png',dpi=120,facecolor=BG); buf_km.seek(0); plt.close(fig_km)
                     x_s=list(range(1,int(max(1825,row['lam']*2)),max(1,int(row['lam']*2)//200)))
-                    if business_type=='都度購入型':
+                    if business_type==BIZ_SPOT:
                         y_s=[ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,t,_dorm_s) for t in x_s]
                     else:
                         y_s=[ltv_horizon_offset(row['k'],row['lam'],_arpu_s,t,ltv_offset_days) for t in x_s]
@@ -503,7 +505,7 @@ def generate_pptx(
                 except: pass
                 rows_sx=[]
                 for h in horizons:
-                    if business_type=='都度購入型':
+                    if business_type==BIZ_SPOT:
                         lr_s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,h,_dorm_s)
                         lg_s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s*gpm,_arpu_long_s*gpm,h,_dorm_s)
                     else:
@@ -512,7 +514,7 @@ def generate_pptx(
                     rows_sx.append([fmt_horizon(h),f'{fmt_c(lr_s, cur)}',f'{fmt_c(lg_s, cur)}',f'{fmt_c(lg_s/cac_n, cur)}',f'{lr_s/row["ltv_r"]*100:.1f}%'])
                 # λ行
                 _lam_actual_s=row['lam']+ltv_offset_days
-                if business_type=='都度購入型':
+                if business_type==BIZ_SPOT:
                     lam_r_s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,_lam_actual_s,_dorm_s)
                     lam_g_s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s*gpm,_arpu_long_s*gpm,_lam_actual_s,_dorm_s)
                 else:
@@ -521,7 +523,7 @@ def generate_pptx(
                 rows_sx.append([f'λ {round(row["lam"]):,}日',f'{fmt_c(lam_r_s, cur)}',f'{fmt_c(lam_g_s, cur)}',f'{fmt_c(lam_g_s/cac_n, cur)}',f'{lam_r_s/row["ltv_r"]*100:.1f}%'])
                 try:
                     from scipy.optimize import brentq as _bq
-                    if business_type=='都度購入型':
+                    if business_type==BIZ_SPOT:
                         d99s=_bq(lambda h:ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,h,_dorm_s)/row['ltv_r']-0.99,1,500000)
                         r99s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,d99s,_dorm_s)
                         g99s=ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s*gpm,_arpu_long_s*gpm,d99s,_dorm_s)
