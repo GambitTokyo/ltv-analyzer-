@@ -137,8 +137,8 @@ _DICT = {
 
     # ── サイドバー: サンプルデータ名 ──────────────────────────
     'sample_elearn':   {'ja': 'サブスク型：動画学習（日割りOFF）', 'en': 'Subscription: e-Learning (no prorate)'},
-    'sample_cowork':   {'ja': 'サブスク型：コワーキング（日割りON）', 'en': 'Subscription: Coworking (prorate ON)'},
-    'sample_skincare': {'ja': '都度購入型：コスメ系EC', 'en': 'Spot Purchase: Skincare EC'},
+    'sample_cowork':   {'ja': 'サブスク型：コワーキング（日割りON）', 'en': 'Subscription: Coworking Space (prorate ON)'},
+    'sample_skincare': {'ja': '都度購入型：コスメ系EC', 'en': 'Spot Purchase: Cosmetics EC'},
 
     # ── サイドバー: サンプルデータのレポート情報 ───────────────
     'sample_elearn_title':    {'ja': '動画学習プラットフォーム 顧客LTV分析', 'en': 'e-Learning Platform Customer LTV Analysis'},
@@ -147,7 +147,7 @@ _DICT = {
     'sample_cowork_title':    {'ja': 'コワーキングスペース 会員LTV分析', 'en': 'Coworking Space Member LTV Analysis'},
     'sample_cowork_client':   {'ja': 'WorkHub株式会社', 'en': 'WorkHub Inc.'},
     'sample_cowork_analyst':  {'ja': '事業企画部', 'en': 'Business Planning Dept.'},
-    'sample_skincare_title':  {'ja': 'コスメ系EC 顧客LTV分析', 'en': 'Skincare EC Customer LTV Analysis'},
+    'sample_skincare_title':  {'ja': 'コスメ系EC 顧客LTV分析', 'en': 'Cosmetics EC Customer LTV Analysis'},
     'sample_skincare_client': {'ja': 'GlowSkin株式会社', 'en': 'GlowSkin Inc.'},
     'sample_skincare_analyst':{'ja': 'CRM推進チーム', 'en': 'CRM Team'},
 
