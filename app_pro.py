@@ -574,11 +574,11 @@ def weibull_s(t, k, lam):
 # ══════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.markdown(T('sidebar_lang_currency'))
     _lang_options = {'日本語': 'ja', 'English': 'en'}
-    _lang_sel = st.selectbox(T('sidebar_lang_label'), list(_lang_options.keys()), index=0)
+    _lang_sel = st.selectbox("Language", list(_lang_options.keys()), index=0)
     LANG = _lang_options[_lang_sel]
     set_lang(LANG)
+    # ここから全てのT()が正しい言語で返る
     _cur_default = LANG_DEFAULTS.get(LANG, 'JPY')
     _cur_options = list(CURRENCIES.keys())
     _cur_idx = _cur_options.index(_cur_default) if _cur_default in _cur_options else 0
