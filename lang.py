@@ -355,4 +355,12 @@ _DICT = {
     'pptx_table_howto':         {'ja': 'このテーブルの読み方', 'en': 'How to read this table'},
     'pptx_conclusion':          {'ja': '結論', 'en': 'Conclusion'},
 
+    # ── セグメント ヒント ─────────────────────────────────────
+    'seg_hint_info':            {'ja': 'サイドバーの「セグメント分析」にCSVの列名を入力してください。例：`plan, channel`',
+                                 'en': 'Enter CSV column names in "Segment Analysis" on the sidebar. e.g., `plan, channel`'},
+    'seg_hint_howto':           {'ja': '**使い方：**\n1. CSVにセグメント列を追加（例：`plan`列に「月額」「年額」など）\n2. サイドバーに列名を入力\n3. セグメント別LTV∞・優先獲得推奨が自動で出力されます',
+                                 'en': '**How to use:**\n1. Add segment columns to your CSV (e.g., a `plan` column with "monthly", "annual", etc.)\n2. Enter column names in the sidebar\n3. LTV∞ by segment and acquisition priorities are automatically generated'},
+    'seg_max_cols':             {'ja': 'セグメント軸は最大{max}列まで指定できます（処理速度の確保のため）。現在{n}列指定されています。先頭{max}列のみ分析します。残りの列は別途入力してください。',
+                                 'en': 'Up to {max} segment columns are supported (for performance). {n} columns specified — only the first {max} will be analyzed.'},
+
 }

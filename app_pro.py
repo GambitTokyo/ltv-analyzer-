@@ -1034,7 +1034,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v331</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v332</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1043,10 +1043,11 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════
 
 if uploaded is None and st.session_state.get('sample_df') is None:
-    st.info("サイドバーからCSVをアップロードするか、サンプルデータを選択してください。")
+    st.info(T('main_no_file_info'))
 
-    st.markdown("<div class='section-title'>CSV フォーマット</div>", unsafe_allow_html=True)
-    st.markdown("""
+    st.markdown(f"<div class='section-title'>{T('main_csv_format_title')}</div>", unsafe_allow_html=True)
+    if get_lang() == 'ja':
+        st.markdown("""
 | 列名 | 内容 | 形式 | 例 |
 |------|------|------|----|
 | `customer_id` | 顧客ID | 任意の文字列 | C0001 |
@@ -1061,14 +1062,30 @@ if uploaded is None and st.session_state.get('sample_df') is None:
 > ARPU daily はビジネスタイプに応じて自動計算されます。\n
 > セグメント列は1列あたり最大50種類のユニーク値まで対応しています（都道府県47個も対応）。
     """)
+    else:
+        st.markdown("""
+| Column | Description | Format | Example |
+|--------|-------------|--------|---------| 
+| `customer_id` | Customer ID | Any string | C0001 |
+| `start_date` | Start date / first purchase date | YYYY-MM-DD | 2023-01-01 |
+| `end_date` | End date (subscription: blank if active) | YYYY-MM-DD | 2024-03-15 |
+| `last_purchase_date` | Last purchase date (spot purchase: optional) | YYYY-MM-DD | 2024-06-01 |
+| `revenue` | **Cumulative revenue** | Numeric | 48000 |
+| Segment columns (any name) | **Advanced**: plan, channel, age group, etc. | String | plan_A |
 
-    st.markdown("<div class='section-title'>分析の流れ</div>", unsafe_allow_html=True)
+> **Always include segment columns for the Advanced version.** Multiple columns supported.\n
+> Column names don't need to match exactly. Columns containing `start`, `end`, `last`, or `revenue` are auto-detected.\n
+> Daily ARPU is automatically calculated based on business type.\n
+> Each segment column supports up to 50 unique values.
+    """)
+
+    st.markdown(f"<div class='section-title'>{T('main_analysis_flow_title')}</div>", unsafe_allow_html=True)
     cols = st.columns(4)
     steps = [
-        ("① KM法", "実測データから生存曲線を作成"),
-        ("② Weibull", "連続曲線にフィッティング"),
-        ("③ LTV∞", "生存積分 × ARPU で算出"),
-        ("④ CAC上限", "LTV比率で逆算"),
+        (T('main_step1_title'), T('main_step1_desc')),
+        (T('main_step2_title'), T('main_step2_desc')),
+        (T('main_step3_title'), T('main_step3_desc')),
+        (T('main_step4_title'), T('main_step4_desc')),
     ]
     for col, (title, desc) in zip(cols, steps):
         with col:
@@ -1123,7 +1140,7 @@ try:
 
     missing = [k for k in ['start_date','end_date','revenue'] if k not in col_map]
     if missing:
-        st.error(f" 列が見つかりません: {missing}\n\n列名に `start`・`end`・`revenue` を含む列が必要です。サイドバーからサンプルCSVをダウンロードして形式を確認してください。")
+        st.error(T('main_col_missing', missing=str(missing)))
         st.stop()
 
     # last_purchase_date 列の自動認識
@@ -1141,7 +1158,7 @@ try:
 
     bad_dates = df['start_date'].isna().sum()
     if bad_dates > 0:
-        st.warning(f" {bad_dates}行で `start_date` が読み取れませんでした。該当行は除外します。")
+        st.warning(T('main_bad_dates', n=f"{bad_dates:,}"))
     df = df.dropna(subset=['start_date'])
 
     today = pd.Timestamp.today()
@@ -1415,24 +1432,25 @@ try:
     gp_daily = arpu_daily * gpm
 
     # ビジネスタイプ依存ラベル（データ読み込みブロック内で使用）
-    acq_label  = "初回購入" if business_type == BIZ_SPOT else "契約"
-    date_label = "初回購入日" if business_type == BIZ_SPOT else "契約開始日"
+    acq_label  = T('common_first_purchase') if business_type == BIZ_SPOT else T('common_acquisition')
+    date_label = T('common_first_purchase_date') if business_type == BIZ_SPOT else T('common_start_date')
 
     # ── 通知メッセージ ──
     if n_dormant > 0:
-        st.info(f"{n_dormant:,}件を休眠顧客（最終購買から{dormancy_days}日超）として実質離脱に変換しました。")
+        st.info(T('main_dormant_converted', n=f"{n_dormant:,}", days=str(dormancy_days)))
     if n_corrected > 0:
-        st.info(f"ℹ {n_corrected}件：{date_label}と終端日が同日のため1日に補正しました。")
+        st.info(T('main_same_day_corrected', n=f"{n_corrected:,}", label=date_label))
     if n_excluded > 0:
-        st.warning(f" {n_excluded}件：start_dateが未来の日付のため除外しました（入力ミスの可能性）。")
+        st.warning(T('main_future_excluded', n=f"{n_excluded:,}"))
     if n_outlier > 0:
         _parts = []
         if n_outlier_upper > 0:
-            _parts.append(f"上位{n_outlier_upper:,}件（上位{outlier_upper_pct:.1f}%）")
+            _parts.append(f"upper {n_outlier_upper:,} ({outlier_upper_pct:.1f}%)" if get_lang() == 'en' else f"上位{n_outlier_upper:,}件（上位{outlier_upper_pct:.1f}%）")
         if n_outlier_lower > 0:
-            _parts.append(f"下位{n_outlier_lower:,}件（下位{outlier_lower_pct:.1f}%）")
+            _parts.append(f"lower {n_outlier_lower:,} ({outlier_lower_pct:.1f}%)" if get_lang() == 'en' else f"下位{n_outlier_lower:,}件（下位{outlier_lower_pct:.1f}%）")
         _pct = n_outlier / (n_outlier + len(df)) * 100
-        st.info(f"{n_outlier:,}件を異常値として除外しました（{'、'.join(_parts)}）。除外率 {_pct:.1f}%、残り {len(df):,}件で分析します。")
+        _join_char = ', ' if get_lang() == 'en' else '、'
+        st.info(T('main_outlier_removed', n=f"{n_outlier:,}", parts=_join_char.join(_parts), pct=_pct, remaining=f"{len(df):,}"))
 
     # ── 売上分布ヒストグラム ──
     import plotly.graph_objects as go
@@ -1495,16 +1513,16 @@ try:
         template='plotly_dark',
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
-        title=dict(text='累計売上の分布', font=dict(size=14)),
+        title=dict(text=T('chart_revenue_dist'), font=dict(size=14)),
         xaxis=dict(
-            title=f'累計売上', tickformat=',',
+            title=T('chart_cumulative_rev'), tickformat=',',
             gridcolor='rgba(255,255,255,0.06)',
             zeroline=False,
             showline=True, linewidth=1, linecolor='rgba(255,255,255,0.15)',
             mirror=False,
         ),
         yaxis=dict(
-            title='顧客数',
+            title=T('chart_customer_count'),
             gridcolor='rgba(255,255,255,0.06)',
             zeroline=False,
             layer='below traces',
@@ -1553,14 +1571,14 @@ try:
     )
     st.plotly_chart(_hist_fig, use_container_width=True)
     if n_dormant == 0 and n_corrected == 0 and n_excluded == 0 and n_outlier == 0:
-        st.success(f" 全{n_input:,}件のデータを正常に読み込みました。")
+        st.success(T('main_data_loaded', n=f"{n_input:,}"))
 
     if len(df) < 10:
-        st.error(" 有効なデータが10件未満です。分析には最低10件の顧客データが必要です。")
+        st.error(T('main_data_too_few'))
         st.stop()
 
 except Exception as e:
-    st.error(f" データ読み込みエラー: {e}\n\nCSVの形式を確認してください。サンプルCSVをダウンロードして参照してください。")
+    st.error(T('main_data_error', e=str(e)))
     st.stop()
 
 # ══════════════════════════════════════════════════════════════
@@ -1599,7 +1617,7 @@ else:
 k, lam, r2, fit_df = _fit_weibull_df(km_df)
 
 if k is None:
-    st.error(" Weibullフィッティングに失敗しました。解約済み顧客が少なすぎる可能性があります（最低10件の解約データが必要）。")
+    st.error(T('main_weibull_fail'))
     st.stop()
 
 # LTV計算（オフセット分を加算）
@@ -1650,19 +1668,20 @@ cac_upper = ltv_val / cac_n
 # Metrics
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>分析結果サマリー</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='section-title'>{T('main_summary_title')}</div>", unsafe_allow_html=True)
 m1, m2, m3, m4, m5 = st.columns(5)
 
 if k < 1.0:
-    k_desc = "初期離脱大・投資回収が比較的長期"
+    k_desc = T('summary_k_early')
 else:
-    k_desc = "継続後に解約増・投資回収が比較的短期"
+    k_desc = T('summary_k_late')
+_lam_unit = T('common_days')
 metrics = [
-    (f"{fmt_c(ltv_rev, CUR)}", "LTV∞",       "売上ベース"),
-    (f"{fmt_c(cac_upper, CUR)}", f"CAC上限",  f"{cac_label}（粗利ベース）"),
+    (f"{fmt_c(ltv_rev, CUR)}", "LTV∞",       T('summary_rev_basis')),
+    (f"{fmt_c(cac_upper, CUR)}", "CAC Cap" if get_lang() == 'en' else "CAC上限",  f"{cac_label} {T('summary_cac_gp_basis')}"),
     (f"{k:.3f}",           "Weibull k", f"{k_desc}"),
-    (f"{lam + ltv_offset_days:.1f}日", "Weibull λ", "値が大きいほどLTV∞到達が長期化"),
-    (f"{r2:.3f}",          "R²",        "0.9以上が理想 / 1.0が最高精度"),
+    (f"{lam + ltv_offset_days:.1f}{_lam_unit}", "Weibull λ", T('summary_k_desc_long')),
+    (f"{r2:.3f}",          "R²",        T('summary_r2_note')),
 ]
 for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
     with col:
@@ -1677,7 +1696,7 @@ for col, (val, title, desc) in zip([m1,m2,m3,m4,m5], metrics):
 
 # R² warning
 if r2 < 0.85:
-    st.warning(f" R²={r2:.3f} — フィット精度がやや低めです。データ点数を増やすか、観測期間を見直してください。")
+    st.warning(T('summary_r2_warning', r2=r2))
 
 # ── サマリー解説ボックス ──────────────────────────────────────
 
@@ -1692,7 +1711,7 @@ if business_type == BIZ_SPOT:
         single_churn_rate = ((_gap == 0) & (_days_since >= churn_period)).sum() / len(df) * 100
     else:
         single_churn_rate = ((df['event'] == 1) & (df['duration'] <= churn_period)).sum() / len(df) * 100
-    period_label = f"{churn_period}日"
+    period_label = T('common_days_unit', n=churn_period)
 else:
     # 最初の契約期間のみで解約した割合（実データから直接計算）
     if billing_cycle == BILLING_ANNUAL_365:
@@ -1704,47 +1723,30 @@ else:
     churn_period = _min_c
     _dur_col = "duration_raw" if "duration_raw" in df.columns else "duration"
     single_churn_rate = ((df["event"] == 1) & (df[_dur_col] <= churn_period)).sum() / len(df) * 100
-    period_label = f"{churn_period}日（1契約期間）"
+    period_label = T('common_days_unit', n=churn_period)
+
+_lam_val = lam + ltv_offset_days
+_lam_y = _lam_val / 365
+_ltv_str = fmt_c(ltv_rev, CUR)
+_cac_str = fmt_c(cac_upper, CUR)
 
 if business_type == BIZ_SPOT:
     if k < 1.0:
-        k_summary = (
-            f"k={k:.3f}の初期離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
-            f"{single_churn_rate:.0f}%です。"
-            f"リピートした顧客の多くは初回購入からλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上購買を継続する傾向があります。"
-            f"LTV∞は{fmt_c(ltv_rev, CUR)}でCAC上限は{fmt_c(cac_upper, CUR)}ですが、"
-            f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
-        )
+        k_summary = T('conclusion_spot_early_churn', k=k, period=period_label, rate=single_churn_rate, lam=_lam_val, lam_y=_lam_y, ltv=_ltv_str, cac=_cac_str)
     else:
-        k_summary = (
-            f"k={k:.3f}の逓増離脱型です。初回購入後{period_label}以内に再購入しなかった顧客（単発購入）は"
-            f"{single_churn_rate:.0f}%です。"
-            f"リピートした顧客の多くは初回購入からλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上購買を継続する傾向があります。"
-            f"LTV∞は{fmt_c(ltv_rev, CUR)}でCAC上限は{fmt_c(cac_upper, CUR)}、比較的短期での投資回収が見込めます。"
-        )
+        k_summary = T('conclusion_spot_late_churn', k=k, period=period_label, rate=single_churn_rate, lam=_lam_val, lam_y=_lam_y, ltv=_ltv_str, cac=_cac_str)
 else:  # サブスク
     if k < 1.0:
-        k_summary = (
-            f"k={k:.3f}の初期離脱型です。最初の契約期間のみで解約した顧客は"
-            f"{single_churn_rate:.0f}%です。"
-            f"初期を乗り越えた顧客の多くはλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上継続する傾向があります。"
-            f"LTV∞は{fmt_c(ltv_rev, CUR)}でCAC上限は{fmt_c(cac_upper, CUR)}ですが、"
-            f"投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。"
-        )
+        k_summary = T('conclusion_sub_early_churn', k=k, rate=single_churn_rate, lam=_lam_val, lam_y=_lam_y, ltv=_ltv_str, cac=_cac_str)
     else:
-        k_summary = (
-            f"k={k:.3f}の逓増離脱型です。最初の契約期間のみで解約した顧客は"
-            f"{single_churn_rate:.0f}%です。"
-            f"初期を乗り越えた顧客の多くはλ={lam+ltv_offset_days:.0f}日（約{(lam+ltv_offset_days)/365:.1f}年）以上継続する傾向があります。"
-            f"LTV∞は{fmt_c(ltv_rev, CUR)}でCAC上限は{fmt_c(cac_upper, CUR)}、比較的短期での投資回収が見込めます。"
-        )
+        k_summary = T('conclusion_sub_late_churn', k=k, rate=single_churn_rate, lam=_lam_val, lam_y=_lam_y, ltv=_ltv_str, cac=_cac_str)
 
 if r2 >= 0.95:
-    r2_summary = f"R²={r2:.3f}はモデル精度が非常に高く、この推定値は意思決定に十分活用できます。"
+    r2_summary = T('conclusion_r2_high', r2=r2)
 elif r2 >= 0.85:
-    r2_summary = f"R²={r2:.3f}は許容範囲内の精度です。推定値に±15%程度の幅を見込んでください。"
+    r2_summary = T('conclusion_r2_mid', r2=r2)
 else:
-    r2_summary = f"R²={r2:.3f}はやや低めです。推定値の信頼性に注意してください。"
+    r2_summary = T('conclusion_r2_low', r2=r2)
 
 summary_text = f"{k_summary}{r2_summary}"
 
@@ -1760,7 +1762,7 @@ st.markdown(f"""
         padding-bottom: 4px;
         margin-bottom: 10px;
         display: inline-block;
-    '>結論</div>
+    '>{T('summary_conclusion')}</div>
     <div style='font-size: 0.95rem; color: #a8dadc; letter-spacing: 0.01em;'>{summary_text}</div>
 </div>
 """, unsafe_allow_html=True)
@@ -1769,7 +1771,7 @@ st.markdown(f"""
 # Charts
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>分析モデルの信頼性</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='section-title'>{T('chart_reliability_title')}</div>", unsafe_allow_html=True)
 c1, c2 = st.columns(2)
 
 # ── グラフ描画用データ準備 ──
@@ -1809,7 +1811,7 @@ with c1:
     plt.close()
 
 with c1:
-    st.caption("Survival Curve：実測のKM曲線（実線）にWeibullモデルをフィット（破線）。右に伸びるほど顧客が長く継続している。")
+    st.caption(T('chart_survival_caption'))
 
 with c2:
     fig, ax = plt.subplots(figsize=(6, 3.8))
@@ -1829,7 +1831,7 @@ with c2:
     plt.close()
 
 with c2:
-    st.caption("Weibull Linearization Plot：生存率を対数変換して直線化したもの。R²が1.0に近いほどWeibullモデルのフィット精度が高い。")
+    st.caption(T('chart_linearization_caption'))
 
 # Save chart images for export
 fig1, ax1 = plt.subplots(figsize=(7, 4))
@@ -1863,7 +1865,7 @@ plt.close()
 # Horizon table
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='section-title'>{T('chart_interim_ltv_title')}</div>", unsafe_allow_html=True)
 
 horizons = [180, 365, 730, 1095, 1825]  # 180日・1年・2年・3年・5年
 
@@ -1921,7 +1923,7 @@ with _col_ltv:
         font=dict(color='#ccc', size=10),
         legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
         xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals, ticktext=tick_text, tickfont=dict(color='#888'), range=[0, x_max + 50]),
-        yaxis=dict(title='金額', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
+        yaxis=dict(title=T('chart_amount'), gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
     )
     st.plotly_chart(fig_ltv, use_container_width=True)
 
@@ -2212,18 +2214,18 @@ st.markdown(insight_html, unsafe_allow_html=True)
 # AI Prompt Generator
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>AI Prompt Generator</div>", unsafe_allow_html=True)
-st.markdown("<div class='help-box'>この結果の読み方や戦略への活用方法がわからない場合は、以下のプロンプトをClaude・ChatGPT・Geminiにコピペしてください。テキストボックス右上の <b>コピーアイコン</b> をクリックすると全文コピーできます。</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='section-title'>{T('section_ai_prompt')}</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='help-box'>{T('prompt_help_box')}</div>", unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["分析結果の解釈", "マーケティング意思決定", "分析の限界と改善"])
+tab1, tab2, tab3 = st.tabs([T('prompt_tab1'), T('prompt_tab2'), T('prompt_tab3')])
 
-dormancy_label = "なし（解約日ベース）" if dormancy_days is None else f"{dormancy_days}日"
+dormancy_label = T('common_none') + " (end_date)" if dormancy_days is None else T('common_days_unit', n=dormancy_days)
 churned_count  = int(df['event'].sum())
 active_count   = int((df['event']==0).sum())
 churn_rate     = churned_count / len(df) * 100
 # ビジネスタイプで「契約」「初回購入」を切り替え
-acq_label  = "初回購入" if business_type == BIZ_SPOT else "契約"
-date_label = "初回購入日" if business_type == BIZ_SPOT else "契約開始日"
+acq_label  = T('common_first_purchase') if business_type == BIZ_SPOT else T('common_acquisition')
+date_label = T('common_first_purchase_date') if business_type == BIZ_SPOT else T('common_start_date')
 
 k_pattern      = f"初期集中型（{acq_label}直後の離脱が多い）" if k < 1 else "逓増型（時間とともに離脱が増える）"
 
@@ -2353,7 +2355,7 @@ if segment_cols_input.strip():
 # Export buttons
 # ══════════════════════════════════════════════════════════════
 
-st.markdown("<div class='section-title'>Export</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='section-title'>{T('section_export')}</div>", unsafe_allow_html=True)
 
 # ── Excel export ─────────────────────────────────────────────
 if True:
@@ -3309,19 +3311,15 @@ if segment_cols_input.strip():
     invalid_seg_cols = [c for c in seg_cols if c not in df.columns]
 
     if invalid_seg_cols:
-        st.warning(f" 以下の列が見つかりませんでした: {invalid_seg_cols}")
+        st.warning(T('seg_col_not_found', cols=str(invalid_seg_cols)))
 
     MAX_SEG_COLS = 5
     if len(valid_seg_cols) > MAX_SEG_COLS:
-        st.warning(
-            f" セグメント軸は最大{MAX_SEG_COLS}列まで指定できます（処理速度の確保のため）。"
-            f"現在{len(valid_seg_cols)}列指定されています。"
-            f"先頭{MAX_SEG_COLS}列のみ分析します。残りの列は別途入力してください。"
-        )
+        st.warning(T('seg_max_cols', max=MAX_SEG_COLS, n=len(valid_seg_cols)))
         valid_seg_cols = valid_seg_cols[:MAX_SEG_COLS]
 
     if valid_seg_cols:
-        st.markdown("<div class='section-title'>セグメント別 LTV 分析</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='section-title'>{T('section_segment')}</div>", unsafe_allow_html=True)
 
         # セグメント一覧リンク
         _seg_links = " &nbsp;|&nbsp; ".join(
@@ -3335,14 +3333,14 @@ if segment_cols_input.strip():
 
             seg_values = df[seg_col].dropna().unique()
             if len(seg_values) > 50:
-                st.warning(f" `{seg_col}` のユニーク値が{len(seg_values)}個あります。50個以下にしてください。")
+                st.warning(T('seg_too_many', col=seg_col, n=len(seg_values)))
                 continue
             elif len(seg_values) > 20:
-                st.info(f"`{seg_col}` のユニーク値が{len(seg_values)}個あります。計算に少し時間がかかります。")
+                st.info(T('seg_many_values', col=seg_col, n=len(seg_values)))
 
             # Pre-computeの結果を使用（計算は1回だけ）
             if seg_col not in all_seg_results:
-                st.caption("分析に十分なデータがありませんでした。")
+                st.caption(T('seg_insufficient_data'))
                 continue
 
             seg_results = all_seg_details[seg_col]
@@ -3513,7 +3511,7 @@ if segment_cols_input.strip():
             # ── 全セグメントの詳細分析（上位N件のみブラウザ表示）──
             seg_results_display = seg_results[:seg_display_limit]
             remaining = len(seg_results) - len(seg_results_display)
-            st.markdown(f"<div style='font-size:0.78rem; color:#888; margin:12px 0 4px 0;'>詳細表示 — 上位 {seg_display_limit} 件（全 {len(seg_results)} 件）</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='font-size:0.78rem; color:#888; margin:12px 0 4px 0;'>{T('seg_detail_limit', limit=seg_display_limit, total=len(seg_results))}</div>", unsafe_allow_html=True)
             if remaining > 0:
                 st.caption(f"エクスポートされる各ファイルには全項目出力されます。サイドバーの「ブラウザ表示件数」を増やすと追加表示できます。")
             for sr in seg_results_display:
@@ -3692,7 +3690,7 @@ if segment_cols_input.strip():
                             font=dict(color='#ccc', size=10),
                             legend=dict(orientation='h', y=1.08, x=0, font=dict(size=10), bgcolor='rgba(0,0,0,0)'),
                             xaxis=dict(title='継続期間', gridcolor='#1a3040', tickvals=tick_vals_s, ticktext=tick_text_s, tickfont=dict(color='#888')),
-                            yaxis=dict(title='金額', gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
+                            yaxis=dict(title=T('chart_amount'), gridcolor='#1a3040', tickfont=dict(color='#888'), tickformat=',', tickprefix=''),
                         )
                         st.plotly_chart(fig_hor_s, use_container_width=True)
 
@@ -3756,14 +3754,9 @@ if segment_cols_input.strip():
                         st.caption(f"グラフ生成エラー: {e_sv}")
 
 else:
-    st.markdown("<div class='section-title'>セグメント別 LTV 分析</div>", unsafe_allow_html=True)
-    st.info("サイドバーの「セグメント分析」にCSVの列名を入力してください。例：`plan, channel`")
-    st.markdown("""
-**使い方：**
-1. CSVにセグメント列を追加（例：`plan`列に「月額」「年額」など）
-2. サイドバーに列名を入力
-3. セグメント別LTV∞・優先獲得推奨が自動で出力されます
-    """)
+    st.markdown(f"<div class='section-title'>{T('section_segment')}</div>", unsafe_allow_html=True)
+    st.info(T('seg_hint_info'))
+    st.markdown(T('seg_hint_howto'))
 
 # ══════════════════════════════════════════════════════════════
 # Data preview
