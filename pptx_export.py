@@ -71,6 +71,14 @@ def _replace_image(sld, sh, buf):
     buf.seek(0); ip, rId = sld.part.get_or_add_image_part(buf); blip.set(qn('r:embed'), rId)
 
 def _write_table(tbl, hdr, rows, footer=None):
+    # ヘッダー行を上書き
+    if hdr and len(tbl.rows) > 0:
+        for ci, v in enumerate(hdr):
+            if ci >= len(tbl.rows[0].cells): break
+            tf = tbl.rows[0].cells[ci].text_frame
+            for p in tf.paragraphs:
+                for r in p.runs: r.text = ''
+            if tf.paragraphs and tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text = str(v)
     data = rows + ([footer] if footer else [])
     need = max(2, 1 + len(data))
     tr = copy.deepcopy(tbl.rows[1]._tr) if len(tbl.rows) > 1 else None
@@ -228,9 +236,9 @@ def _set_s4_guide(sh, g, cur='JPY'):
         (g['cac_recover_rev_str'], 'A8DADC', True), (' / GP: ', 'C8D0D8', False),
         (g['cac_recover_gp_str'], '56B4D3', True)], sz, ind)
     _empty()
-    _mpara([(T('chart_cac_cap') + ' guide', '56B4D3', True), (': ', 'C8D0D8', False),
-        (f'λ={g["lam_actual_round"]:,}{T("chart_days_suffix")} (~{g["lam_years"]:.1f}{T("chart_year_suffix")}) GP {fmt_c(g["lam_gp"], cur)}', 'A8DADC', True),
-        (f' → {T("chart_cac_cap")}', 'C8D0D8', False)], sz)
+    _mpara([(T('insight_title'), '56B4D3', True), (': ', 'C8D0D8', False),
+        (f'λ={g["lam_actual_round"]:,}{T("chart_days_suffix")} (~{g["lam_years"]:.1f}{T("chart_year_suffix")})', 'A8DADC', True),
+        (f' → GP {fmt_c(g["lam_gp"], cur)} → {T("chart_cac_cap")} = {fmt_c(g["lam_gp"]/3, cur)}', 'C8D0D8', False)], sz)
 
 # ── グラフ（S5: 日本語に戻す） ──
 def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x_max, cur='JPY'):
@@ -358,7 +366,12 @@ def generate_pptx(
                 for r in tf.paragraphs[1].runs: r.text=''
                 if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=i2
         elif sh.name=='グループ化 26':
-            kpi={'TextBox 6':f'{fmt_c(ltv_rev, cur)}','TextBox 10':f'{fmt_c(cac_upper, cur)}','TextBox 11':f'{T("chart_cac_cap")} ({cac_label})','TextBox 14':f'{k:.3f}','TextBox 18':f'{lam_actual:.0f}{T("chart_days_suffix")}','TextBox 22':f'{r2:.3f}'}
+            kpi={'TextBox 6':f'{fmt_c(ltv_rev, cur)}','TextBox 10':f'{fmt_c(cac_upper, cur)}','TextBox 11':f'{T("chart_cac_cap")} ({cac_label})','TextBox 14':f'{k:.3f}','TextBox 18':f'{lam_actual:.0f}{T("chart_days_suffix")}','TextBox 22':f'{r2:.3f}',
+                'TextBox 7':'LTV∞','TextBox 8':T('summary_rev_basis'),
+                'TextBox 12':T('summary_cac_gp_basis'),
+                'TextBox 16':T('summary_k_early') if k<1 else T('summary_k_late'),
+                'TextBox 20':T('summary_k_desc_long'),
+                'TextBox 24':T('summary_r2_note')}
             for g in sh.shapes:
                 if g.name in kpi: _set_text(g, kpi[g.name])
         elif sh.name=='テキスト ボックス 49' and sh.has_text_frame:
@@ -399,7 +412,7 @@ def generate_pptx(
     for sh in s4.shapes:
         if sh.shape_type==19:
             _tbl_shape = sh
-            _write_table_styled(sh.table,None,rows_s4,special_last_n=3,data_font_size=8)
+            _write_table_styled(sh.table,[T('tbl_horizon'),T('tbl_ltv_rev'),T('tbl_ltv_gp'),T('tbl_cac_cap'),T('tbl_pct_ltv')],rows_s4,special_last_n=3,data_font_size=8)
     for sh in s4.shapes:
         if sh.name=='テキスト ボックス 3' and sh.has_text_frame:
             if _tbl_shape:
@@ -407,7 +420,8 @@ def generate_pptx(
             if s4_guide_data: _set_s4_guide(sh, s4_guide_data, cur)
     buf_s5=_make_ltv_graph(t_range,rev_line,gp_line,cac_line,ltv_rev,lam_actual,x_max,cur)
     for sh in prs.slides[4].shapes:
-        if sh.name=='コンテンツ プレースホルダー 7':
+        if sh.name=='タイトル 5': _set_text(sh, T('chart_interim_ltv_title'))
+        elif sh.name=='コンテンツ プレースホルダー 7':
             sh.left=int(0.5*914400); sh.top=int(1.6*914400); sh.width=int(12.2*914400); sh.height=int(4.3*914400)
             _replace_image(prs.slides[4],sh,buf_s5)
     if not segment_cols_input.strip():
@@ -422,7 +436,8 @@ def generate_pptx(
     else:
         seg_cols=[c.strip() for c in segment_cols_input.split(',') if c.strip() and c.strip() in df.columns]
         for sh in prs.slides[5].shapes:
-            if sh.name=='TextBox 4': _set_text(sh,'  |  '.join(seg_cols))
+            if sh.name=='TextBox 3': _set_text(sh, T('section_segment'))
+            elif sh.name=='TextBox 4': _set_text(sh,'  |  '.join(seg_cols))
         for sc in seg_cols:
             # all_seg_resultsから参照（独自Weibullフィットしない）
             pp_rows=[]
@@ -460,15 +475,16 @@ def generate_pptx(
                         for r in tf.paragraphs[0].runs: r.text=''
                         if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=f'TOP PICK  {best["seg"]}'
                         for r in tf.paragraphs[1].runs: r.text=''
-                        if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=f'LTV∞ (Rev): {fmt_c(best["ltv_r"], cur)} (vs avg +{premium:.1f}%) | {T("chart_cac_cap")} {fmt_c(best["cac"], cur)}（全セグメント平均より{cac_diff_str}）'
+                        if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=f'LTV∞ (Rev): {fmt_c(best["ltv_r"], cur)} (vs avg +{premium:.1f}%) | {T("chart_cac_cap")} {fmt_c(best["cac"], cur)} ({cac_diff_str})'
                 elif sh.name=='コンテンツ プレースホルダー 8':
                     buf7=_make_bar_graph(pp_rows[:10],best,avg_ltv,cur); _replace_image(s7,sh,buf7)
             s8=_copy_slide(prs,7); top10=pp_rows[:10]
             dr8=[[r['seg'],f'{r["n"]:,}',f'{fmt_c(r["ltv_r"], cur)}',f'{fmt_c(r["ltv_g"], cur)}',f'{fmt_c(r["cac"], cur)}',f'{r["k"]:.3f}',f'{r["lam"]:.1f}',f'{r["r2"]:.3f}'] for r in top10]
             ft8=[T('seg_weighted_avg'),f'{n_total:,}',f'{fmt_c(avg_ltv, cur)}',f'{fmt_c(w_ltv_g, cur)}',f'{fmt_c(w_cac, cur)}','—','—','—']
+            _seg_hdr8=[T('seg_tbl_segment'),T('seg_tbl_n'),T('seg_tbl_ltv_rev'),T('seg_tbl_ltv_gp'),T('seg_tbl_cac_cap'),'k',T('seg_tbl_lam'),'R²']
             for sh in s8.shapes:
                 if sh.name=='タイトル 2': _set_text(sh,f'{sc}: {T("pdf_chapter_summary")}')
-                elif sh.shape_type==19: _write_table_styled(sh.table,None,dr8,ft8)
+                elif sh.shape_type==19: _write_table_styled(sh.table,_seg_hdr8,dr8,ft8)
                 elif sh.name=='テキスト ボックス 9' and sh.has_text_frame:
                     diff_pct=(avg_ltv-ltv_rev)/ltv_rev*100
                     note=T('pdf_note_summary_table', max=10, total=len(pp_rows)) + f' (Δ{diff_pct:+.1f}%)'
@@ -553,7 +569,7 @@ def generate_pptx(
                         if sh.text_frame.paragraphs[0].runs: sh.text_frame.paragraphs[0].runs[0].text=f'{T("chart_reliability_title")}  |  {T("chart_interim_ltv_title")}'
                     elif sh.name=='Picture 6' and buf_km: buf_km.seek(0); _replace_image(sx,sh,buf_km)
                     elif sh.name=='Picture 7' and buf_wb: buf_wb.seek(0); _replace_image(sx,sh,buf_wb)
-                    elif sh.shape_type==19: _write_table_styled(sh.table,None,rows_sx,special_last_n=3,data_font_size=8)
+                    elif sh.shape_type==19: _write_table_styled(sh.table,[T('tbl_horizon'),T('tbl_ltv_rev'),T('tbl_ltv_gp'),T('tbl_cac_cap'),T('tbl_pct_ltv')],rows_sx,special_last_n=3,data_font_size=8)
                     elif sh.name=='テキスト ボックス 17' and sh.has_text_frame:
                         _set_text(sh,'TOP PICK  ' if ri==0 else '')
                         bp=sh.text_frame._txBody.find(f'{{{A}}}bodyPr')
