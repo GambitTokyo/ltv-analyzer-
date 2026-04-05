@@ -1022,6 +1022,31 @@ with st.sidebar:
 
     st.markdown("")
     st.markdown(T('sidebar_report_info'))
+    # サンプル選択中は、言語切り替え時にデフォルト値を更新
+    _active_key = None
+    if st.session_state.get('sample_df') is not None and st.session_state.get('_prev_sample'):
+        for _lbl, (_k, _) in _sample_options.items():
+            if _lbl == st.session_state.get('_prev_sample'):
+                _active_key = _k
+                break
+        if _active_key is None:
+            # 言語切り替え後にラベルが変わった場合、キーで探す
+            _prev = st.session_state.get('_prev_sample', '')
+            for _lbl, (_k, _) in _sample_options.items():
+                if _k in ['elearn', 'cowork', 'skincare']:
+                    if st.session_state.get('_sample_biz') == BIZ_SPOT and _k == 'skincare':
+                        _active_key = _k; break
+                    elif st.session_state.get('_sample_prorate') == True and _k == 'cowork':
+                        _active_key = _k; break
+                    elif st.session_state.get('_sample_prorate') == False and st.session_state.get('_sample_biz') == BIZ_SUBSCRIPTION and _k == 'elearn':
+                        _active_key = _k; break
+    if _active_key:
+        _title_key = f'sample_{_active_key}_title'
+        _client_key = f'sample_{_active_key}_client'
+        _analyst_key = f'sample_{_active_key}_analyst'
+        st.session_state['_sample_report_title'] = T(_title_key)
+        st.session_state['_sample_client_name'] = T(_client_key)
+        st.session_state['_sample_analyst_name'] = T(_analyst_key)
     report_title = st.text_input(T('sidebar_report_title'), st.session_state.get('_sample_report_title', ''), placeholder=T('sidebar_report_title_ph'))
     client_name  = st.text_input(T('sidebar_client_name'), st.session_state.get('_sample_client_name', ''), placeholder=T('sidebar_client_name_ph'))
     analyst_name = st.text_input(T('sidebar_analyst_name'), st.session_state.get('_sample_analyst_name', ''), placeholder=T('sidebar_analyst_name_ph'))
@@ -1034,7 +1059,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v339</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v340</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2765,7 +2790,7 @@ if True:
         story.append(Spacer(1, 4 * cm))
         _cover_sub = report_title if report_title else 'Kaplan–Meier × Weibull Model'
         story.append(Paragraph(_cover_sub, s_title))
-        story.append(Paragraph('LTV Analysis Report', s_sub))
+        story.append(Paragraph(T('pdf_title'), s_sub))
         story.append(Spacer(1, 1.5 * cm))
         import datetime as _dt_pdf
         if client_name:
@@ -2815,8 +2840,8 @@ if True:
         else:
             _prorate_val = 'ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else 'OFF'
             _sum_data.append([T('excel_prorate'), _prorate_val])
-        _val_cw = CONTENT_W - 9 * cm
-        _sum_t = RLTable(_sum_data, colWidths=[9 * cm, _val_cw])
+        _col_w = CONTENT_W / 2
+        _sum_t = RLTable(_sum_data, colWidths=[_col_w, _col_w])
         _sum_style = _dark_tbl_style(has_title_col=True)
         # ヘッダー行を結合して中央配置、フォント大きめ太字
         _sum_style.add('SPAN', (0, 0), (1, 0))
@@ -2838,8 +2863,7 @@ if True:
         story.append(RLImage(buf1, width=CONTENT_W, height=CONTENT_W * 0.48))
         story.append(Spacer(1, 0.3 * cm))
         story.append(Paragraph(
-            f'Survival Curve: KM observed (solid) + Weibull fit (dashed). '
-            f'k={k:.3f}, λ={lam_display:.1f}{T("chart_days_suffix")}',
+            T('chart_survival_caption') + f' k={k:.3f}, λ={lam_display:.1f}{T("chart_days_suffix")}',
             s_small
         ))
         story.append(Spacer(1, 0.8 * cm))
@@ -2849,7 +2873,7 @@ if True:
         story.append(RLImage(buf2, width=CONTENT_W, height=CONTENT_W * 0.48))
         story.append(Spacer(1, 0.3 * cm))
         story.append(Paragraph(
-            f'Weibull linearization: R²={r2:.3f} (closer to 1.0 = better fit)',
+            T('chart_linearization_caption'),
             s_small
         ))
 
@@ -3054,14 +3078,13 @@ if True:
                     _total_segs = len(pdf_rows) - 1
                     if _total_segs > 10:
                         story.append(Paragraph(
-                            f'NOTE — Up to 10 segments by LTV∞ shown (of {_total_segs} total). '
-                            f'See segment detail pages for all items.',
+                            T('pdf_note_bar_chart', max=10, total=_total_segs),
                             s_small
                         ))
                     story.append(Spacer(1, 0.4 * cm))
 
                 # サマリーテーブル（上位10件 + 加重平均行）
-                story.append(Paragraph(f'{sc}: Summary', s_h3))
+                story.append(Paragraph(f'{sc}: {T("pdf_chapter_summary")}', s_h3))
                 pdf_rows_show = ([pdf_rows[0]] +
                                 sorted(pdf_rows[1:],
                                        key=lambda x: float(x[2].replace(cur_symbol(CUR), '').replace(',', '')),
@@ -3094,15 +3117,14 @@ if True:
                 # NOTE
                 _n_segs = len(pdf_rows) - 1
                 story.append(Paragraph(
-                    f'NOTE — Up to 10 shown. '
-                    f'Weighted avg covers all {_n_segs} segments, customer-count weighted.',
+                    T('pdf_note_summary_table', max=10, total=_n_segs),
                     s_small
                 ))
                 story.append(Spacer(1, 0.4 * cm))
 
                 # ── セグメント詳細 ──
                 story.append(PageBreak())
-                story.append(Paragraph(f'Segment Detail: {sc}', s_chap))
+                story.append(Paragraph(f'{T("pdf_chapter_segment")}: {sc}', s_chap))
                 story.append(Spacer(1, 0.6 * cm))
 
                 _seg_detail_count = 0

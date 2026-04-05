@@ -487,5 +487,9 @@ _DICT = {
     'seg_tbl_r2':               {'ja': 'R²', 'en': 'R²'},
     'seg_note':                 {'ja': '加重平均行は各セグメントを個別フィット後に顧客数で重み付け平均した値です。全体LTV∞（{ltv}）との差（{diff}）は統計的に正常な現象です。広告投資にはセグメント別、全体評価には全体LTV∞を参照してください。',
                                  'en': 'The weighted average row shows customer-count-weighted means after fitting each segment individually. The difference from overall LTV∞ ({ltv}) of {diff} is statistically normal. Use segment-level values for ad spend decisions and overall LTV∞ for general evaluation.'},
+    'pdf_note_bar_chart':       {'ja': 'NOTE — LTV∞上位{max}項目を表示（全{total}項目）。全項目の詳細はセグメント詳細ページに記載。',
+                                 'en': 'NOTE — Up to {max} segments by LTV∞ shown (of {total} total). See segment detail pages for all items.'},
+    'pdf_note_summary_table':   {'ja': 'NOTE — 上位{max}項目を表示。加重平均行は全{total}項目を顧客数で重み付けした値。',
+                                 'en': 'NOTE — Up to {max} shown. Weighted avg covers all {total} segments, customer-count weighted.'},
 
 }
