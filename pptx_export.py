@@ -205,32 +205,32 @@ def _set_s4_guide(sh, g, cur='JPY'):
             t = etree.SubElement(r, f'{{{A}}}t'); t.text = text
     def _empty(): etree.SubElement(txBody, f'{{{A}}}p')
     sz = 1000; ind = 228600
-    _para('このテーブルの読み方', '3A6A7A', True, sz)
+    _para(T('insight_title'), '3A6A7A', True, sz)
     _para(g['lam_desc'], 'C8D0D8', False, sz, ind)
     _para(g['k_desc'], 'C8D0D8', False, sz, ind)
-    _mpara([(f'LTV∞（{fmt_c(g["ltv_rev"], cur)}）は理論上の上限値で、実際にはこの金額に向かって時間をかけて積み上がります。', 'C8D0D8', False)], sz, ind)
+    _mpara([(T('insight_ltv_inf', ltv=fmt_c(g['ltv_rev'], cur)), 'C8D0D8', False)], sz, ind)
     p2 = etree.SubElement(txBody, f'{{{A}}}p')
     pPr2 = etree.SubElement(p2, f'{{{A}}}pPr'); pPr2.set('marL', str(ind)); pPr2.set('indent', '0')
     etree.SubElement(pPr2, f'{{{A}}}buNone')
     for text, color, bold in [
-        ('1年時点', '56B4D3', False), ('でLTV∞の', 'C8D0D8', False),
-        (f'{g["pct_1y"]:.1f}%', 'A8DADC', True), (f'（{fmt_c(g["ltv_1y"], cur)}）、 ', 'C8D0D8', False),
-        ('2年時点', '56B4D3', False), ('で', 'C8D0D8', False),
-        (f'{g["pct_2y"]:.1f}%', 'A8DADC', True), (f'（{fmt_c(g["ltv_2y"], cur)}）、 ', 'C8D0D8', False),
-        ('3年時点', '56B4D3', False), ('で', 'C8D0D8', False),
-        (f'{g["pct_3y"]:.1f}%', 'A8DADC', True), (f'（{fmt_c(g["ltv_3y"], cur)}）に到達します。', 'C8D0D8', False),
+        (T('insight_1y'), '56B4D3', False), (': ', 'C8D0D8', False),
+        (f'{g["pct_1y"]:.1f}%', 'A8DADC', True), (f' ({fmt_c(g["ltv_1y"], cur)}), ', 'C8D0D8', False),
+        (T('insight_2y'), '56B4D3', False), (': ', 'C8D0D8', False),
+        (f'{g["pct_2y"]:.1f}%', 'A8DADC', True), (f' ({fmt_c(g["ltv_2y"], cur)}), ', 'C8D0D8', False),
+        (T('insight_3y'), '56B4D3', False), (': ', 'C8D0D8', False),
+        (f'{g["pct_3y"]:.1f}%', 'A8DADC', True), (f' ({fmt_c(g["ltv_3y"], cur)})', 'C8D0D8', False),
     ]:
         r = etree.SubElement(p2, f'{{{A}}}r'); rPr = etree.SubElement(r, f'{{{A}}}rPr')
         rPr.set('lang', 'ja-JP'); rPr.set('b', '1' if bold else '0'); rPr.set('sz', str(sz))
         sf = etree.SubElement(rPr, f'{{{A}}}solidFill'); c = etree.SubElement(sf, f'{{{A}}}srgbClr'); c.set('val', color)
         t = etree.SubElement(r, f'{{{A}}}t'); t.text = text
-    _mpara([(f'CAC上限（{fmt_c(g["cac_upper"], cur)}）の回収期間：売上ベース 約 ', 'C8D0D8', False),
-        (g['cac_recover_rev_str'], 'A8DADC', True), (' / 粗利ベース 約 ', 'C8D0D8', False),
+    _mpara([(f'{T("chart_cac_cap")} ({fmt_c(g["cac_upper"], cur)}): ', 'C8D0D8', False),
+        (g['cac_recover_rev_str'], 'A8DADC', True), (' / GP: ', 'C8D0D8', False),
         (g['cac_recover_gp_str'], '56B4D3', True)], sz, ind)
     _empty()
-    _mpara([('CAC設計の目安', '56B4D3', True), ('：回収期間に迷ったら、', 'C8D0D8', False),
-        (f'λ={g["lam_actual_round"]:,}日（約{g["lam_years"]:.1f}年）時点の暫定LTV（粗利）{fmt_c(g["lam_gp"], cur)}', 'A8DADC', True),
-        (f' を用いてCAC上限を算出してください。λは{g["lam_meaning"]}をデータが示した答えです。', 'C8D0D8', False)], sz)
+    _mpara([(T('chart_cac_cap') + ' guide', '56B4D3', True), (': ', 'C8D0D8', False),
+        (f'λ={g["lam_actual_round"]:,}{T("chart_days_suffix")} (~{g["lam_years"]:.1f}{T("chart_year_suffix")}) GP {fmt_c(g["lam_gp"], cur)}', 'A8DADC', True),
+        (f' → {T("chart_cac_cap")}', 'C8D0D8', False)], sz)
 
 # ── グラフ（S5: 日本語に戻す） ──
 def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x_max, cur='JPY'):
@@ -251,22 +251,22 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
     ax.set_xlim(0, x_max+30); ax.set_ylim(0, ltv_rev*1.15)
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v,_:f'{int(v):,}'))
     ax.set_xticks([180,365,1095,1825])
-    ax.set_xticklabels(['180日','1年','3年','5年'], fontproperties=fp, color='#888', fontsize=8)
+    ax.set_xticklabels([f'180{T("chart_days_suffix")}',f'1{T("chart_year_suffix")}',f'3{T("chart_year_suffix")}',f'5{T("chart_year_suffix")}'], fontproperties=fp, color='#888', fontsize=8)
     ax.tick_params(colors='#888', labelsize=8, length=0)
     for l in ax.get_yticklabels(): l.set_color('#888')
     ax.grid(True, alpha=0.15, color='#1a3040')
     for s in ax.spines.values(): s.set_color('#1a3040')
-    ax.set_xlabel('継続期間', color='#888', fontsize=9, fontproperties=fp)
-    ax.set_ylabel('金額', color='#888', fontsize=9, fontproperties=fp)
+    ax.set_xlabel(T('chart_duration'), color='#888', fontsize=9, fontproperties=fp)
+    ax.set_ylabel(T('chart_amount'), color='#888', fontsize=9, fontproperties=fp)
     leg = ax.legend(
         [Line2D([0],[0],color='#56b4d3',lw=1.2,marker='o',ms=2),
          Line2D([0],[0],color='#a8dadc',lw=1.2,ls='--',marker='o',ms=2),
          Line2D([0],[0],color='#4a7a8a',lw=1.0,ls=':')],
-        ['LTV（売上）','LTV（粗利）','CAC上限'],
+        [T('chart_ltv_rev'),T('chart_ltv_gp'),T('chart_cac_cap')],
         loc='upper left', frameon=False, fontsize=8, labelcolor='white', ncol=3,
         bbox_to_anchor=(0.02, 0.98), borderaxespad=0)
     for t in leg.get_texts(): t.set_fontproperties(fp)
-    ax.annotate(f'λ={int(lam_actual)}日', xy=(lam_actual, ltv_rev*0.92), color='#a8dadc', fontsize=8, fontproperties=fp, ha='center', annotation_clip=False, bbox=dict(boxstyle='square,pad=0.15', facecolor=BG, edgecolor='none'))
+    ax.annotate(T('chart_lam_days', n=int(lam_actual)), xy=(lam_actual, ltv_rev*0.92), color='#a8dadc', fontsize=8, fontproperties=fp, ha='center', annotation_clip=False, bbox=dict(boxstyle='square,pad=0.15', facecolor=BG, edgecolor='none'))
     ax.annotate(f'LTV∞ {fmt_c(ltv_rev, cur)}', xy=(x_max+32, ltv_rev), color='#56b4d3', fontsize=8, fontproperties=fp, va='center', annotation_clip=False, clip_on=False)
     fig.subplots_adjust(left=0.08, right=0.88, top=0.95, bottom=0.14)
     buf = io.BytesIO(); fig.savefig(buf, format='png', dpi=120, facecolor=BG); buf.seek(0); plt.close(fig)
@@ -314,17 +314,17 @@ def generate_pptx(
     report_title=None,
     arpu_0_dorm=None,
     arpu_long=None,
-    outlier_label='除外なし',
+    outlier_label=T('excel_none'),
     all_seg_results=None,
     cur='JPY',
 ):
-    if k<0.7: ki=f"k={k:.3f}（強い初期集中型）: 利用開始直後の体験品質が生死を分ける構造。30日以内の離脱防止施策が最重要。"
-    elif k<1.0: ki=f"k={k:.3f}（緩やかな初期集中型）: 離脱率は一定に近いが初期にやや多め。オンボーディング改善とリテンション施策を並行実施。"
-    elif k<1.5: ki=f"k={k:.3f}（逓増型・中程度）: 継続期間が長いほど離脱リスクが増す。1年超の顧客へのエンゲージメント強化が鍵。"
-    else: ki=f"k={k:.3f}（強い逓増型）: 長期顧客ほど急速に離脱。VIP施策・継続特典による長期繋ぎ止めが急務。"
-    if r2>=0.95: rc=f"R²={r2:.3f}: 非常に高精度。LTV∞推定値の信頼性は高い。"
-    elif r2>=0.85: rc=f"R²={r2:.3f}: 許容範囲内。推定値に±15%程度の幅を見込んで意思決定を。"
-    else: rc=f"R²={r2:.3f}: やや低め。データ件数不足または複数の離脱パターンが混在している可能性あり。"
+    if k<0.7: ki=T("insight_k_early_strong", k=k, acq=T("common_acquisition"))
+    elif k<1.0: ki=T("insight_k_early_mild", k=k, acq=T("common_acquisition"))
+    elif k<1.5: ki=T("insight_k_late_mild", k=k, acq=T("common_acquisition"))
+    else: ki=T("insight_k_late_strong", k=k, acq=T("common_acquisition"))
+    if r2>=0.95: rc=T("insight_r2_high", r2=r2)
+    elif r2>=0.85: rc=T("insight_r2_mid", r2=r2)
+    else: rc=T("insight_r2_low", r2=r2)
     prs = Presentation(tmpl_path)
     pd_mod = __import__('pandas')
     _dc = [df['start_date']]
@@ -334,22 +334,23 @@ def generate_pptx(
     for sh in prs.slides[0].shapes:
         if sh.name=='TextBox 4': _set_text(sh, report_title or 'Kaplan–Meier × Weibull Model')
         elif sh.name=='TextBox 5': _set_text(sh, client_name or '')
-        elif sh.name=='TextBox 6': _set_text(sh, date.today().strftime('%Y年%m月%d日'))
+        elif sh.name=='TextBox 6': _set_text(sh, date.today().strftime(T('pdf_date_format')))
         elif sh.name=='TextBox 7': _set_text(sh, analyst_name or '')
     s2=prs.slides[1]
     for sh in s2.shapes:
+        if sh.name=='タイトル 5': _set_text(sh, T('main_summary_title'))
         if sh.name=='テキスト プレースホルダー 6' and sh.has_text_frame:
             tf=sh.text_frame
             # 1行目：データ期間 | 顧客数 | 解約済み | 継続中 | 異常値の処理
-            i1=f"データ期間: {_ds} – {_de}　|　顧客数: {len(df):,}件　|　解約済み: {df['event'].sum():,}件　|　継続中: {(df['event']==0).sum():,}件　|　異常値の処理：{outlier_label}"
+            i1=f"{T("pdf_data_period")}: {_ds} – {_de} | {T("excel_customers")}: {len(df):,} | Churned: {df['event'].sum():,} | Active: {(df['event']==0).sum():,} | Outlier: {outlier_label}"
             # 2行目：ビジネスタイプ | 請求サイクル/休眠判定 | 日割り(サブスクのみ) | Daily ARPU | GPM
             if business_type == BIZ_SPOT:
                 _biz_disp = T('biz_spot')
-                _dorm_disp = f'{dormancy_days}日' if dormancy_days else '180日'
-                i2=f"{_biz_disp}　|　休眠判定: {_dorm_disp}　|　Daily ARPU: {fmt_c(arpu_daily, cur, 2)}　|　GPM: {gpm:.0%}"
+                _dorm_disp = T('common_days_unit', n=dormancy_days) if dormancy_days else T('common_days_unit', n=180)
+                i2=f"{_biz_disp} | {T("excel_dormancy")}: {_dorm_disp} | Daily ARPU: {fmt_c(arpu_daily, cur, 2)} | GPM: {gpm:.0%}"
             else:
                 _biz_disp = T('biz_subscription')
-                i2=f"{_biz_disp}　|　{billing_cycle_display}　|　解約時の日割り計算：{'ON' if ltv_offset_days==0 else 'OFF'}　|　Daily ARPU: {fmt_c(arpu_daily, cur, 2)}　|　GPM: {gpm:.0%}"
+                i2=f"{_biz_disp} | {billing_cycle_display} | {T('excel_prorate')}: {'ON' if ltv_offset_days==0 else 'OFF'} | Daily ARPU: {fmt_c(arpu_daily, cur, 2)} | GPM: {gpm:.0%}"
             if len(tf.paragraphs)>=1:
                 for r in tf.paragraphs[0].runs: r.text=''
                 if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=i1
@@ -357,23 +358,30 @@ def generate_pptx(
                 for r in tf.paragraphs[1].runs: r.text=''
                 if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=i2
         elif sh.name=='グループ化 26':
-            kpi={'TextBox 6':f'{fmt_c(ltv_rev, cur)}','TextBox 10':f'{fmt_c(cac_upper, cur)}','TextBox 11':f'CAC上限（{cac_label}）','TextBox 14':f'{k:.3f}','TextBox 18':f'{lam_actual:.0f}日','TextBox 22':f'{r2:.3f}'}
+            kpi={'TextBox 6':f'{fmt_c(ltv_rev, cur)}','TextBox 10':f'{fmt_c(cac_upper, cur)}','TextBox 11':f'{T("chart_cac_cap")} ({cac_label})','TextBox 14':f'{k:.3f}','TextBox 18':f'{lam_actual:.0f}{T("chart_days_suffix")}','TextBox 22':f'{r2:.3f}'}
             for g in sh.shapes:
                 if g.name in kpi: _set_text(g, kpi[g.name])
         elif sh.name=='テキスト ボックス 49' and sh.has_text_frame:
             tf=sh.text_frame
             if len(tf.paragraphs)>=2:
                 for r in tf.paragraphs[0].runs: r.text=''
-                if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text='結論'
+                if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=T('summary_conclusion')
                 for r in tf.paragraphs[1].runs: r.text=''
                 if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=k_summary+r2_summary
     s3=prs.slides[2]; ld=lam+ltv_offset_days if business_type==BIZ_SPOT else lam
     for sh in s3.shapes:
+        if sh.name=='タイトル 31': _set_text(sh, T('chart_reliability_title'))
+        elif sh.name=='テキスト プレースホルダー 44' and sh.has_text_frame:
+            for r in sh.text_frame.paragraphs[0].runs: r.text=''
+            if sh.text_frame.paragraphs[0].runs: sh.text_frame.paragraphs[0].runs[0].text='Weibull k & λ'
+    for sh in s3.shapes:
         if sh.name=='Picture 3': buf1.seek(0); _replace_image(s3,sh,buf1)
         elif sh.name=='Picture 4': buf2.seek(0); _replace_image(s3,sh,buf2)
-        elif sh.name=='TextBox 7': _set_text(sh, f"k（形状パラメータ） = {k:.3f}\n→ 左グラフ（Survival Curve）の曲線の急峻さを決める値。k=1で指数分布（一定離脱率）\n→ {ki}")
-        elif sh.name=='TextBox 8': _set_text(sh, f"λ（尺度パラメータ） = {ld:.1f}日（約{ld/365:.1f}年）\n→ 大きいほどLTV∞到達が長期化する。λ日時点での暫定LTV到達率はk値により異なる（k=1のとき63.2%）\n→ {rc}")
-    s4=prs.slides[3]; rows_s4=[]
+        elif sh.name=='TextBox 7': _set_text(sh, f"k (shape) = {k:.3f}\n→ {ki}")
+        elif sh.name=='TextBox 8': _set_text(sh, f"λ (scale) = {ld:.1f}{T('chart_days_suffix')} (~{ld/365:.1f}{T('chart_year_suffix')})\n→ {T('summary_k_desc_long')}\n→ {rc}")
+    s4=prs.slides[3]
+    for sh in s4.shapes:
+        if sh.name=='タイトル 6': _set_text(sh, T('chart_interim_ltv_title')); rows_s4=[]
     for h in horizons:
         if business_type==BIZ_SPOT:
             dp=dormancy_days or 180
@@ -382,10 +390,10 @@ def generate_pptx(
             lr=ltv_horizon_spot(k,lam,_a0,_al,h,dp); lg=ltv_horizon_spot(k,lam,_a0*gpm,_al*gpm,h,dp)
         else:
             lr=ltv_horizon_offset(k,lam,arpu_daily,h,ltv_offset_days); lg=ltv_horizon_offset(k,lam,gp_daily,h,ltv_offset_days)
-        label=f'{h}日' if h<365 else f'{h//365}年（{h:,}日）'
+        label=f'{h}{T("chart_days_suffix")}' if h<365 else T('chart_year_days', y=h//365, d=f'{h:,}')
         rows_s4.append([label,f'{fmt_c(lr, cur)}',f'{fmt_c(lg, cur)}',f'{fmt_c(lg/cac_n, cur)}',f'{lr/ltv_rev*100:.1f}%'])
-    rows_s4.append([f'λ {round(lam_actual):,}日',f'{fmt_c(lam_rev, cur)}',f'{fmt_c(lam_gp, cur)}',f'{fmt_c(lam_gp/cac_n, cur)}',f'{lam_rev/ltv_rev*100:.1f}%'])
-    rows_s4.append([f'LTV∞到達率: 99%（{int(days_99):,}日）',f'{fmt_c(rev_99, cur)}',f'{fmt_c(gp_99, cur)}',f'{fmt_c(gp_99/cac_n, cur)}','99.0%'])
+    rows_s4.append([T('tbl_lam_row', n=f'{round(lam_actual):,}'),f'{fmt_c(lam_rev, cur)}',f'{fmt_c(lam_gp, cur)}',f'{fmt_c(lam_gp/cac_n, cur)}',f'{lam_rev/ltv_rev*100:.1f}%'])
+    rows_s4.append([T('tbl_99pct_row', n=f'{int(days_99):,}'),f'{fmt_c(rev_99, cur)}',f'{fmt_c(gp_99, cur)}',f'{fmt_c(gp_99/cac_n, cur)}','99.0%'])
     rows_s4.append([f'LTV∞',f'{fmt_c(ltv_rev, cur)}',f'{fmt_c(cac_upper*cac_n, cur)}',f'{fmt_c(cac_upper, cur)}','100%'])
     _tbl_shape = None
     for sh in s4.shapes:
@@ -442,7 +450,7 @@ def generate_pptx(
             avg_cac=sum(r['cac']*r['n'] for r in pp_rows)/n_total
             premium=(best['ltv_r']-avg_ltv)/avg_ltv*100
             cac_diff=best['cac']-avg_cac
-            cac_diff_str=f"+{fmt_c(cac_diff, cur)}高く設定可能" if cac_diff>=0 else f"{fmt_c(abs(cac_diff), cur)}低め"
+            cac_diff_str=f"+{fmt_c(cac_diff, cur)} higher" if cac_diff>=0 else f"{fmt_c(abs(cac_diff), cur)} lower"
             s7=_copy_slide(prs,6)
             for sh in s7.shapes:
                 if sh.name=='タイトル 4': _set_text(sh,f'{sc}: LTV∞')
@@ -450,20 +458,20 @@ def generate_pptx(
                     tf=sh.text_frame
                     if len(tf.paragraphs)>=2:
                         for r in tf.paragraphs[0].runs: r.text=''
-                        if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=f'TOP PICK　{best["seg"]}'
+                        if tf.paragraphs[0].runs: tf.paragraphs[0].runs[0].text=f'TOP PICK  {best["seg"]}'
                         for r in tf.paragraphs[1].runs: r.text=''
-                        if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=f'LTV∞(売上): {fmt_c(best["ltv_r"], cur)}（全セグメント平均比 +{premium:.1f}%）　|　許容CAC上限 {fmt_c(best["cac"], cur)}（全セグメント平均より{cac_diff_str}）'
+                        if tf.paragraphs[1].runs: tf.paragraphs[1].runs[0].text=f'LTV∞ (Rev): {fmt_c(best["ltv_r"], cur)} (vs avg +{premium:.1f}%) | {T("chart_cac_cap")} {fmt_c(best["cac"], cur)}（全セグメント平均より{cac_diff_str}）'
                 elif sh.name=='コンテンツ プレースホルダー 8':
                     buf7=_make_bar_graph(pp_rows[:10],best,avg_ltv,cur); _replace_image(s7,sh,buf7)
             s8=_copy_slide(prs,7); top10=pp_rows[:10]
             dr8=[[r['seg'],f'{r["n"]:,}',f'{fmt_c(r["ltv_r"], cur)}',f'{fmt_c(r["ltv_g"], cur)}',f'{fmt_c(r["cac"], cur)}',f'{r["k"]:.3f}',f'{r["lam"]:.1f}',f'{r["r2"]:.3f}'] for r in top10]
-            ft8=['加重平均',f'{n_total:,}',f'{fmt_c(avg_ltv, cur)}',f'{fmt_c(w_ltv_g, cur)}',f'{fmt_c(w_cac, cur)}','—','—','—']
+            ft8=[T('seg_weighted_avg'),f'{n_total:,}',f'{fmt_c(avg_ltv, cur)}',f'{fmt_c(w_ltv_g, cur)}',f'{fmt_c(w_cac, cur)}','—','—','—']
             for sh in s8.shapes:
-                if sh.name=='タイトル 2': _set_text(sh,f'{sc}: 分析結果のサマリー')
+                if sh.name=='タイトル 2': _set_text(sh,f'{sc}: {T("pdf_chapter_summary")}')
                 elif sh.shape_type==19: _write_table_styled(sh.table,None,dr8,ft8)
                 elif sh.name=='テキスト ボックス 9' and sh.has_text_frame:
                     diff_pct=(avg_ltv-ltv_rev)/ltv_rev*100
-                    note=f'NOTE — テーブルは最大上位10項目を表示。加重平均行は全{len(pp_rows)}項目を顧客数で重み付けした値です。全体LTV∞との差（{diff_pct:+.1f}%）は統計的に正常な現象です。次項以降に全項目の詳細が記載されています。'
+                    note=T('pdf_note_summary_table', max=10, total=len(pp_rows)) + f' (Δ{diff_pct:+.1f}%)'
                     _set_note_text(sh,note)
             for ri,row in enumerate(pp_rows):
                 tmpl_idx=8 if ri==0 else 9
@@ -520,7 +528,7 @@ def generate_pptx(
                 else:
                     lam_r_s=ltv_horizon_offset(row['k'],row['lam'],_arpu_s,_lam_actual_s,ltv_offset_days)
                     lam_g_s=lam_r_s*gpm
-                rows_sx.append([f'λ {round(row["lam"]):,}日',f'{fmt_c(lam_r_s, cur)}',f'{fmt_c(lam_g_s, cur)}',f'{fmt_c(lam_g_s/cac_n, cur)}',f'{lam_r_s/row["ltv_r"]*100:.1f}%'])
+                rows_sx.append([T('tbl_lam_row', n=f'{round(row["lam"]):,}'),f'{fmt_c(lam_r_s, cur)}',f'{fmt_c(lam_g_s, cur)}',f'{fmt_c(lam_g_s/cac_n, cur)}',f'{lam_r_s/row["ltv_r"]*100:.1f}%'])
                 try:
                     from scipy.optimize import brentq as _bq
                     if business_type==BIZ_SPOT:
@@ -531,20 +539,23 @@ def generate_pptx(
                         d99s=_bq(lambda h:ltv_horizon_offset(row['k'],row['lam'],_arpu_s,h,ltv_offset_days)/row['ltv_r']-0.99,1,500000)
                         r99s=ltv_horizon_offset(row['k'],row['lam'],_arpu_s,d99s,ltv_offset_days)
                         g99s=r99s*gpm
-                    rows_sx.append([f'LTV∞到達率: 99%（{int(d99s):,}日）',f'{fmt_c(r99s, cur)}',f'{fmt_c(g99s, cur)}',f'{fmt_c(g99s/cac_n, cur)}','99.0%'])
+                    rows_sx.append([T('tbl_99pct_row', n=f'{int(d99s):,}'),f'{fmt_c(r99s, cur)}',f'{fmt_c(g99s, cur)}',f'{fmt_c(g99s/cac_n, cur)}','99.0%'])
                 except:
                     r99_approx = row['ltv_r'] * 0.99
                     g99_approx = row['ltv_g']* 0.99
-                    rows_sx.append([f'LTV∞到達率: 99%',f'{fmt_c(r99_approx, cur)}',f'{fmt_c(g99_approx, cur)}',f'{fmt_c(g99_approx/cac_n, cur)}','99.0%'])
+                    rows_sx.append([T('tbl_99pct_row', n='~'),f'{fmt_c(r99_approx, cur)}',f'{fmt_c(g99_approx, cur)}',f'{fmt_c(g99_approx/cac_n, cur)}','99.0%'])
                 # LTV∞行
                 rows_sx.append([f'LTV∞',f'{fmt_c(row["ltv_r"], cur)}',f'{fmt_c(row["ltv_g"], cur)}',f'{fmt_c(row["ltv_g"]/cac_n, cur)}','100%'])
                 for sh in sx.shapes:
                     if sh.name=='タイトル 8': _set_text(sh,f'{sc}: {row["seg"]}')
+                    elif sh.name=='テキスト プレースホルダー 9' and sh.has_text_frame:
+                        for _r9 in sh.text_frame.paragraphs[0].runs: _r9.text=''
+                        if sh.text_frame.paragraphs[0].runs: sh.text_frame.paragraphs[0].runs[0].text=f'{T("chart_reliability_title")}  |  {T("chart_interim_ltv_title")}'
                     elif sh.name=='Picture 6' and buf_km: buf_km.seek(0); _replace_image(sx,sh,buf_km)
                     elif sh.name=='Picture 7' and buf_wb: buf_wb.seek(0); _replace_image(sx,sh,buf_wb)
                     elif sh.shape_type==19: _write_table_styled(sh.table,None,rows_sx,special_last_n=3,data_font_size=8)
                     elif sh.name=='テキスト ボックス 17' and sh.has_text_frame:
-                        _set_text(sh,'TOP PICK　' if ri==0 else '')
+                        _set_text(sh,'TOP PICK  ' if ri==0 else '')
                         bp=sh.text_frame._txBody.find(f'{{{A}}}bodyPr')
                         if bp is None: bp=etree.SubElement(sh.text_frame._txBody,f'{{{A}}}bodyPr')
                         bp.set('anchor','ctr')
