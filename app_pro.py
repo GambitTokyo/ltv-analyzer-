@@ -1034,7 +1034,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v336</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v338</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2796,33 +2796,31 @@ if True:
         _outlier_label_pdf = (", " if get_lang()=="en" else "、").join(_outlier_parts_pdf) if _outlier_parts_pdf else T("excel_none")
 
         _sum_data = [
-            [T('excel_metric'), T('excel_value'), T('excel_note')],
-            [T('excel_ltv_rev'), f'{fmt_c(ltv_rev, CUR)}', ''],
-            [T('excel_ltv_gp'), f'{fmt_c(ltv_val, CUR)}', ''],
-            [T('excel_cac_cap'), f'{fmt_c(cac_upper, CUR)}', cac_label],
-            [T('excel_weibull_k'), f'{k:.4f}', _k_desc_pdf],
-            [T('excel_weibull_lam'), f'{lam_display:.1f}{T("chart_days_suffix")}', f'~{lam_display/365:.1f}{T("chart_year_suffix")}'],
-            [T('excel_r2'), f'{r2:.4f}', T("excel_r2_good") if r2 >= 0.9 else "△"],
-            [T('excel_customers'), f'{len(df):,}', ''],
-            [T('excel_outlier'), f'{n_outlier:,}', _outlier_label_pdf],
-            [T('excel_churned_active'), f'{int(df["event"].sum()):,} / {int((df["event"]==0).sum()):,}', ''],
-            [T('excel_daily_arpu'), f'{fmt_c(arpu_daily, CUR, 2)}', ''],
-            [T('excel_gpm'), f'{gpm:.1%}', ''],
-            [T('excel_biz_type'), T('biz_spot') if business_type == BIZ_SPOT else T('biz_subscription'), ''],
+            [T('excel_metric'), ''],
+            [T('excel_ltv_rev'), f'{fmt_c(ltv_rev, CUR)}'],
+            [T('excel_ltv_gp'), f'{fmt_c(ltv_val, CUR)}'],
+            [f'{T("excel_cac_cap")} ({cac_label})', f'{fmt_c(cac_upper, CUR)}'],
+            [T('excel_weibull_k'), f'{k:.4f}  →  {_k_desc_pdf}'],
+            [T('excel_weibull_lam'), f'{lam_display:.1f}{T("chart_days_suffix")} (~{lam_display/365:.1f}{T("chart_year_suffix")})'],
+            [T('excel_r2'), f'{r2:.4f}  →  {T("excel_r2_good") if r2 >= 0.9 else "△"}'],
+            [T('excel_customers'), f'{len(df):,}'],
+            [T('excel_outlier'), f'{n_outlier:,} ({_outlier_label_pdf})'],
+            [T('excel_churned_active'), f'{int(df["event"].sum()):,} / {int((df["event"]==0).sum()):,}'],
+            [T('excel_daily_arpu'), f'{fmt_c(arpu_daily, CUR, 2)}'],
+            [T('excel_gpm'), f'{gpm:.1%}'],
+            [T('excel_biz_type'), T('biz_spot') if business_type == BIZ_SPOT else T('biz_subscription')],
         ]
         if business_type == BIZ_SPOT:
-            _sum_data.append([T('excel_dormancy'), dormancy_label, ''])
+            _sum_data.append([T('excel_dormancy'), dormancy_label])
         else:
             _prorate_val = 'ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else 'OFF'
-            _sum_data.append([T('excel_prorate'), _prorate_val, ''])
-        _col1_w = 7 * cm
-        _col2_w = 4.5 * cm
-        _col3_w = CONTENT_W - _col1_w - _col2_w
-        _sum_t = RLTable(_sum_data, colWidths=[_col1_w, _col2_w, _col3_w])
+            _sum_data.append([T('excel_prorate'), _prorate_val])
+        _val_cw = CONTENT_W - 9 * cm
+        _sum_t = RLTable(_sum_data, colWidths=[9 * cm, _val_cw])
         _sum_style = _dark_tbl_style(has_title_col=True)
-        # Value列（col 1）は右寄せ、Note列（col 2）は左寄せ
-        _sum_style.add('ALIGN', (1, 1), (1, -1), 'RIGHT')
-        _sum_style.add('ALIGN', (2, 1), (2, -1), 'LEFT')
+        # ヘッダー行を結合して中央配置
+        _sum_style.add('SPAN', (0, 0), (1, 0))
+        _sum_style.add('ALIGN', (0, 0), (1, 0), 'CENTER')
         _sum_t.setStyle(_sum_style)
         story.append(_sum_t)
 
@@ -3076,11 +3074,12 @@ if True:
                                          f'{fmt_c(_wavg_r, CUR)}', f'{fmt_c(_wavg_g, CUR)}',
                                          f'{fmt_c(_wavg_c, CUR)}', '—', '—', '—'])
 
-                _seg_title_cw = 4.5 * cm
+                _seg_title_cw = 3.8 * cm
                 _seg_data_cw = (CONTENT_W - _seg_title_cw) / 7
                 t_seg = RLTable(pdf_rows_show,
                                colWidths=[_seg_title_cw] + [_seg_data_cw] * 7)
                 _seg_style = _dark_tbl_style(has_title_col=True)
+                _seg_style.add('FONTSIZE', (0, 0), (-1, -1), 7)
                 # 加重平均行をハイライト
                 if _seg_results:
                     _last_row = len(pdf_rows_show) - 1
