@@ -420,7 +420,7 @@ def generate_pptx(
             pp_rows=[]
             if all_seg_results and sc in all_seg_results:
                 for _, _r in all_seg_results[sc].iterrows():
-                    pp_rows.append({'seg':str(_r['セグメント']),'n':int(_r['顧客数']),'ltv_r':_r['LTV∞（売上）'],'ltv_g':_r['LTV∞（粗利）'],'cac':_r['CAC上限（粗利）'],'k':_r['k'],'lam':_r['λ_raw'],'r2':_r['R²'],'arpu_s':_r['arpu_s'],'arpu_long_s':_r['arpu_long_s'],'arpu_0_dorm_s':_r['arpu_0_dorm_s']})
+                    pp_rows.append({'seg':str(_r['segment']),'n':int(_r['n_customers']),'ltv_r':_r['ltv_rev'],'ltv_g':_r['ltv_gp'],'cac':_r['cac_cap'],'k':_r['k'],'lam':_r['λ_raw'],'r2':_r['R²'],'arpu_s':_r['arpu_s'],'arpu_long_s':_r['arpu_long_s'],'arpu_0_dorm_s':_r['arpu_0_dorm_s']})
             else:
                 for sv in sorted(df[sc].dropna().unique()):
                     df_s=df[df[sc]==sv]
