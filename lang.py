@@ -137,12 +137,12 @@ _DICT = {
     'sidebar_upload_csv':       {'ja': 'CSVをアップロード', 'en': 'Upload CSV'},
 
     # ── サイドバー: サンプルデータ名 ──────────────────────────
-    'sample_elearn':   {'ja': 'サブスク型：動画学習（日割りOFF）', 'en': 'Subscription: e-Learning (no prorate)'},
+    'sample_elearn':   {'ja': 'サブスク型：動画学習（日割りOFF）', 'en': 'Subscription: Online Learning (no prorate)'},
     'sample_cowork':   {'ja': 'サブスク型：コワーキング（日割りON）', 'en': 'Subscription: Coworking Space (prorate ON)'},
     'sample_skincare': {'ja': '都度購入型：コスメ系EC', 'en': 'Spot Purchase: Cosmetics EC'},
 
     # ── サイドバー: サンプルデータのレポート情報 ───────────────
-    'sample_elearn_title':    {'ja': '動画学習プラットフォーム 顧客LTV分析', 'en': 'e-Learning Platform Customer LTV Analysis'},
+    'sample_elearn_title':    {'ja': '動画学習プラットフォーム 顧客LTV分析', 'en': 'Online Learning Platform Customer LTV Analysis'},
     'sample_elearn_client':   {'ja': 'LearnPlus株式会社', 'en': 'LearnPlus Inc.'},
     'sample_elearn_analyst':  {'ja': 'マーケティング部', 'en': 'Marketing Dept.'},
     'sample_cowork_title':    {'ja': 'コワーキングスペース 会員LTV分析', 'en': 'Coworking Space Member LTV Analysis'},
