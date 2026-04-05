@@ -435,7 +435,7 @@ _DICT = {
     'excel_sheet_summary':      {'ja': 'LTV分析 サマリー', 'en': 'LTV Analysis Summary'},
     'excel_report_title':       {'ja': 'レポートタイトル', 'en': 'Report Title'},
     'excel_date':               {'ja': '作成日', 'en': 'Date'},
-    'excel_metric':             {'ja': '指標', 'en': 'Metric'},
+    'excel_metric':             {'ja': '分析結果の概要', 'en': 'Analysis Overview'},
     'excel_value':              {'ja': '値', 'en': 'Value'},
     'excel_note':               {'ja': '備考', 'en': 'Note'},
     'excel_ltv_rev':            {'ja': 'LTV∞（売上ベース）', 'en': 'LTV∞ (Revenue)'},

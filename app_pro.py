@@ -1034,7 +1034,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v338</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v339</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2818,9 +2818,11 @@ if True:
         _val_cw = CONTENT_W - 9 * cm
         _sum_t = RLTable(_sum_data, colWidths=[9 * cm, _val_cw])
         _sum_style = _dark_tbl_style(has_title_col=True)
-        # ヘッダー行を結合して中央配置
+        # ヘッダー行を結合して中央配置、フォント大きめ太字
         _sum_style.add('SPAN', (0, 0), (1, 0))
         _sum_style.add('ALIGN', (0, 0), (1, 0), 'CENTER')
+        _sum_style.add('FONTSIZE', (0, 0), (1, 0), 12)
+        _sum_style.add('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold')
         _sum_t.setStyle(_sum_style)
         story.append(_sum_t)
 
