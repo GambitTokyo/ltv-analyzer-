@@ -465,7 +465,7 @@ _DICT = {
     'pdf_title':                {'ja': 'LTV Analysis Report', 'en': 'LTV Analysis Report'},
     'pdf_chapter_summary':      {'ja': 'エグゼクティブサマリー', 'en': 'Executive Summary'},
     'pdf_chapter_reliability':  {'ja': 'モデル信頼性', 'en': 'Model Reliability'},
-    'pdf_chapter_interim':      {'ja': '暫定LTV推移', 'en': 'Interim LTV'},
+    'pdf_chapter_interim':      {'ja': '暫定 LTV — 観測期間別', 'en': 'Interim LTV by Observation Period'},
     'pdf_chapter_segment':      {'ja': 'セグメント分析', 'en': 'Segment Analysis'},
     'pdf_conclusion':           {'ja': '結論', 'en': 'Conclusion'},
     'pdf_date_format':          {'ja': '%Y年%m月%d日', 'en': '%B %d, %Y'},

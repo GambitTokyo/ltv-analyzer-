@@ -1059,7 +1059,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v340</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v341</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2843,11 +2843,11 @@ if True:
         _col_w = CONTENT_W / 2
         _sum_t = RLTable(_sum_data, colWidths=[_col_w, _col_w])
         _sum_style = _dark_tbl_style(has_title_col=True)
-        # ヘッダー行を結合して中央配置、フォント大きめ太字
+        # ヘッダー行を結合して中央配置、結論と同じフォントサイズ
         _sum_style.add('SPAN', (0, 0), (1, 0))
         _sum_style.add('ALIGN', (0, 0), (1, 0), 'CENTER')
-        _sum_style.add('FONTSIZE', (0, 0), (1, 0), 12)
-        _sum_style.add('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold')
+        _sum_style.add('FONTSIZE', (0, 0), (1, 0), 10)
+        _sum_style.add('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
         _sum_t.setStyle(_sum_style)
         story.append(_sum_t)
 
@@ -2951,8 +2951,7 @@ if True:
         story.append(RLImage(buf_ltv_pdf, width=CONTENT_W, height=CONTENT_W * 0.42))
         story.append(Spacer(1, 0.6 * cm))
 
-        # 暫定LTVテーブル
-        story.append(Paragraph(T('pdf_chapter_interim'), s_h3))
+        # 暫定LTVテーブル（チャプタータイトルと重複するためh3は省略）
         _ltv_hdr = [T('tbl_horizon'), T('tbl_ltv_rev'), T('tbl_ltv_gp'), T('tbl_cac_cap'), T('tbl_pct_ltv')]
         _ltv_tdata = [_ltv_hdr]
         for row in tbl_rows:
