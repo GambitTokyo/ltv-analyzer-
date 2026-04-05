@@ -1034,7 +1034,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v334</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v336</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1678,7 +1678,7 @@ else:
 _lam_unit = T('common_days')
 metrics = [
     (f"{fmt_c(ltv_rev, CUR)}", "LTV∞",       T('summary_rev_basis')),
-    (f"{fmt_c(cac_upper, CUR)}", "CAC Cap" if get_lang() == 'en' else "CAC上限",  f"{cac_label} {T('summary_cac_gp_basis')}"),
+    (f"{fmt_c(cac_upper, CUR)}", "CAC Ceiling" if get_lang() == 'en' else "CAC上限",  f"{cac_label} {T('summary_cac_gp_basis')}"),
     (f"{k:.3f}",           "Weibull k", f"{k_desc}"),
     (f"{lam + ltv_offset_days:.1f}{_lam_unit}", "Weibull λ", T('summary_k_desc_long')),
     (f"{r2:.3f}",          "R²",        T('summary_r2_note')),
@@ -2796,28 +2796,34 @@ if True:
         _outlier_label_pdf = (", " if get_lang()=="en" else "、").join(_outlier_parts_pdf) if _outlier_parts_pdf else T("excel_none")
 
         _sum_data = [
-            [T('excel_metric'), T('excel_value')],
-            [T('excel_ltv_rev'), f'{fmt_c(ltv_rev, CUR)}'],
-            [T('excel_ltv_gp'), f'{fmt_c(ltv_val, CUR)}'],
-            [f'{T("excel_cac_cap")} ({cac_label})', f'{fmt_c(cac_upper, CUR)}'],
-            [T('excel_weibull_k'), f'{k:.4f}  →  {_k_desc_pdf}'],
-            [T('excel_weibull_lam'), f'{lam_display:.1f}{T("chart_days_suffix")} (~{lam_display/365:.1f}{T("chart_year_suffix")})'],
-            [T('excel_r2'), f'{r2:.4f}  →  {T("excel_r2_good") if r2 >= 0.9 else "△"}'],
-            [T('excel_customers'), f'{len(df):,}'],
-            [T('excel_outlier'), f'{n_outlier:,} ({_outlier_label_pdf})'],
-            [T('excel_churned_active'), f'{int(df["event"].sum()):,} / {int((df["event"]==0).sum()):,}'],
-            [T('excel_daily_arpu'), f'{fmt_c(arpu_daily, CUR, 2)}'],
-            [T('excel_gpm'), f'{gpm:.1%}'],
-            [T('excel_biz_type'), T('biz_spot') if business_type == BIZ_SPOT else T('biz_subscription')],
+            [T('excel_metric'), T('excel_value'), T('excel_note')],
+            [T('excel_ltv_rev'), f'{fmt_c(ltv_rev, CUR)}', ''],
+            [T('excel_ltv_gp'), f'{fmt_c(ltv_val, CUR)}', ''],
+            [T('excel_cac_cap'), f'{fmt_c(cac_upper, CUR)}', cac_label],
+            [T('excel_weibull_k'), f'{k:.4f}', _k_desc_pdf],
+            [T('excel_weibull_lam'), f'{lam_display:.1f}{T("chart_days_suffix")}', f'~{lam_display/365:.1f}{T("chart_year_suffix")}'],
+            [T('excel_r2'), f'{r2:.4f}', T("excel_r2_good") if r2 >= 0.9 else "△"],
+            [T('excel_customers'), f'{len(df):,}', ''],
+            [T('excel_outlier'), f'{n_outlier:,}', _outlier_label_pdf],
+            [T('excel_churned_active'), f'{int(df["event"].sum()):,} / {int((df["event"]==0).sum()):,}', ''],
+            [T('excel_daily_arpu'), f'{fmt_c(arpu_daily, CUR, 2)}', ''],
+            [T('excel_gpm'), f'{gpm:.1%}', ''],
+            [T('excel_biz_type'), T('biz_spot') if business_type == BIZ_SPOT else T('biz_subscription'), ''],
         ]
         if business_type == BIZ_SPOT:
-            _sum_data.append([T('excel_dormancy'), dormancy_label])
+            _sum_data.append([T('excel_dormancy'), dormancy_label, ''])
         else:
             _prorate_val = 'ON' if (prorate_cancel if 'prorate_cancel' in dir() else False) else 'OFF'
-            _sum_data.append([T('excel_prorate'), _prorate_val])
-        _val_cw = CONTENT_W - 9 * cm
-        _sum_t = RLTable(_sum_data, colWidths=[9 * cm, _val_cw])
-        _sum_t.setStyle(_dark_tbl_style(has_title_col=True))
+            _sum_data.append([T('excel_prorate'), _prorate_val, ''])
+        _col1_w = 7 * cm
+        _col2_w = 4.5 * cm
+        _col3_w = CONTENT_W - _col1_w - _col2_w
+        _sum_t = RLTable(_sum_data, colWidths=[_col1_w, _col2_w, _col3_w])
+        _sum_style = _dark_tbl_style(has_title_col=True)
+        # Value列（col 1）は右寄せ、Note列（col 2）は左寄せ
+        _sum_style.add('ALIGN', (1, 1), (1, -1), 'RIGHT')
+        _sum_style.add('ALIGN', (2, 1), (2, -1), 'LEFT')
+        _sum_t.setStyle(_sum_style)
         story.append(_sum_t)
 
         # ═══════════════════════════════════════════════════════════
@@ -2993,7 +2999,7 @@ if True:
                     ))
                     story.append(Paragraph(
                         f"LTV∞ (Rev): {fmt_c(best_pdf['ltv_r'], CUR)} (vs avg +{prem:.1f}%)"
-                        f" | CAC Cap {fmt_c(best_pdf['cac'], CUR)}",
+                        f" | CAC Ceiling {fmt_c(best_pdf['cac'], CUR)}",
                         s_small
                     ))
                     story.append(Spacer(1, 0.4 * cm))
@@ -3048,8 +3054,8 @@ if True:
                     _total_segs = len(pdf_rows) - 1
                     if _total_segs > 10:
                         story.append(Paragraph(
-                            f'NOTE — Top 10 segments by LTV∞ shown (of {_total_segs}項目）。'
-                            f'全項目の詳細はセグメント詳細ページに記載されています。',
+                            f'NOTE — Up to 10 segments by LTV∞ shown (of {_total_segs} total). '
+                            f'See segment detail pages for all items.',
                             s_small
                         ))
                     story.append(Spacer(1, 0.4 * cm))
@@ -3087,7 +3093,7 @@ if True:
                 # NOTE
                 _n_segs = len(pdf_rows) - 1
                 story.append(Paragraph(
-                    f'NOTE — Top 10 shown. '
+                    f'NOTE — Up to 10 shown. '
                     f'Weighted avg covers all {_n_segs} segments, customer-count weighted.',
                     s_small
                 ))
@@ -3409,7 +3415,7 @@ if segment_cols_input.strip():
                 cac_best    = best_seg['cac_cap']
                 cac_avg_seg = (seg_df['cac_cap'] * seg_df['n_customers']).sum() / seg_df['n_customers'].sum()
                 cac_diff    = cac_best - cac_avg_seg
-                cac_str     = f"CAC Cap {fmt_c(cac_best, CUR)} (vs segment avg: {fmt_c(abs(cac_diff), CUR)}{'higher' if cac_diff >= 0 else 'lower'})"
+                cac_str     = f"CAC Ceiling {fmt_c(cac_best, CUR)} (vs segment avg: {fmt_c(abs(cac_diff), CUR)}{'higher' if cac_diff >= 0 else 'lower'})"
                 st.markdown(f"""
 <div style='background:#0d1f2d; border:1px solid #1a3a4a; border-left:3px solid #56b4d3; border-radius:8px; padding:10px 16px; margin-bottom:8px; font-size:0.82rem; color:#ccc;'>
   <span style='font-size:0.65rem; font-weight:600; text-transform:uppercase; letter-spacing:0.12em; color:#7ab4c4;'>Top Pick</span>　<b style='color:#a8dadc;'>{best_seg['segment']}</b>　
@@ -3614,7 +3620,7 @@ if segment_cols_input.strip():
                         km_sv = _compute_km_df(df_sv)  # 表示用（オフセットなし）
 
                         # ── グラフ2枚（全体と同じ）──
-                        st.markdown("<div style='font-size:0.75rem; color:#7ab4c4; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;'>分析モデルの信頼性</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size:0.75rem; color:#7ab4c4; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;'>{T('chart_reliability_title')}</div>", unsafe_allow_html=True)
                         col_g1, col_g2 = st.columns(2)
 
                         with col_g1:
@@ -3692,7 +3698,7 @@ if segment_cols_input.strip():
                             st.caption(f"Weibull linearization: R²={r2_s:.3f} (closer to 1.0 = better fit)")
 
                         # ── 暫定LTVテーブル（全体と同仕様）──
-                        st.markdown("<div style='font-size:0.75rem; color:#7ab4c4; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin-top:16px; margin-bottom:6px;'>暫定 LTV — 観測期間別</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size:0.75rem; color:#7ab4c4; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin-top:16px; margin-bottom:6px;'>{T('chart_interim_ltv_title')}</div>", unsafe_allow_html=True)
 
                         # グラフ
                         lam_s_actual = lam_s_disp  # 表示用λ（オフセット込み済み）

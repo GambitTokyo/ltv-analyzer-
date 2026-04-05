@@ -2,6 +2,7 @@
 # lang.py — LTV Analyzer 言語/通貨/テキスト辞書
 # ═══════════════════════════════════════════════════════════════
 # v329: T() 関数 + フラットキー辞書 追加
+# TABLE RULE: 数値は右寄せ(RIGHT)、文字は左寄せ(LEFT) — 全テーブル共通
 
 # ── 通貨定義 ──────────────────────────────────────────────────
 
@@ -198,7 +199,7 @@ _DICT = {
                                  'en': 'LTV∞ is shown on a revenue basis. CAC cap is calculated on a gross profit basis (revenue × {gpm}).'},
 
     # ── サイドバー: CAC上限 ───────────────────────────────────
-    'sidebar_cac':              {'ja': '### CAC 上限', 'en': '### CAC Cap'},
+    'sidebar_cac':              {'ja': '### CAC 上限', 'en': '### CAC Ceiling'},
     'sidebar_cac_slider':       {'ja': 'N（LTV:CAC = N:1）', 'en': 'N (LTV:CAC = N:1)'},
     'sidebar_cac_caption':      {'ja': '例：LTV:CAC = 3:1 の場合、CAC上限 = LTV（粗利）÷ 3',
                                  'en': 'e.g., If LTV:CAC = 3:1, CAC cap = LTV (gross profit) ÷ 3'},
@@ -236,7 +237,7 @@ _DICT = {
     'main_step2_desc':          {'ja': '連続曲線にフィッティング', 'en': 'Fit to a continuous curve'},
     'main_step3_title':         {'ja': '③ LTV∞', 'en': '③ LTV∞'},
     'main_step3_desc':          {'ja': '生存積分 × ARPU で算出', 'en': 'Survival integral × ARPU'},
-    'main_step4_title':         {'ja': '④ CAC上限', 'en': '④ CAC Cap'},
+    'main_step4_title':         {'ja': '④ CAC上限', 'en': '④ CAC Ceiling'},
     'main_step4_desc':          {'ja': 'LTV比率で逆算', 'en': 'Reverse-calculate from LTV ratio'},
 
     # ── メイン: CSVテーブル列ヘッダー説明 ─────────────────────
@@ -380,7 +381,7 @@ _DICT = {
     # ── LTVチャート凡例・注釈 ─────────────────────────────────
     'chart_ltv_rev':            {'ja': 'LTV（売上）', 'en': 'LTV (Revenue)'},
     'chart_ltv_gp':             {'ja': 'LTV（粗利）', 'en': 'LTV (Gross Profit)'},
-    'chart_cac_cap':            {'ja': 'CAC上限', 'en': 'CAC Cap'},
+    'chart_cac_cap':            {'ja': 'CAC上限', 'en': 'CAC Ceiling'},
     'chart_duration':           {'ja': '継続期間', 'en': 'Duration'},
     'chart_lam_days':           {'ja': 'λ＝{n}日', 'en': 'λ={n}d'},
     'chart_days_suffix':        {'ja': '日', 'en': 'd'},
@@ -391,7 +392,7 @@ _DICT = {
     'tbl_horizon':              {'ja': 'ホライズン', 'en': 'Horizon'},
     'tbl_ltv_rev':              {'ja': 'LTV(売上)', 'en': 'LTV (Revenue)'},
     'tbl_ltv_gp':               {'ja': 'LTV(粗利)', 'en': 'LTV (GP)'},
-    'tbl_cac_cap':              {'ja': 'CAC上限', 'en': 'CAC Cap'},
+    'tbl_cac_cap':              {'ja': 'CAC上限', 'en': 'CAC Ceiling'},
     'tbl_pct_ltv':              {'ja': 'LTV∞到達率', 'en': 'LTV∞ %'},
     'tbl_lam_row':              {'ja': 'λ {n}日', 'en': 'λ {n}d'},
     'tbl_99pct_row':            {'ja': 'LTV∞到達率: 99%（{n}日）', 'en': 'LTV∞ 99% ({n}d)'},
@@ -436,9 +437,10 @@ _DICT = {
     'excel_date':               {'ja': '作成日', 'en': 'Date'},
     'excel_metric':             {'ja': '指標', 'en': 'Metric'},
     'excel_value':              {'ja': '値', 'en': 'Value'},
+    'excel_note':               {'ja': '備考', 'en': 'Note'},
     'excel_ltv_rev':            {'ja': 'LTV∞（売上ベース）', 'en': 'LTV∞ (Revenue)'},
     'excel_ltv_gp':             {'ja': 'LTV∞（粗利ベース・CAC算出用）', 'en': 'LTV∞ (Gross Profit)'},
-    'excel_cac_cap':            {'ja': 'CAC上限（粗利ベース）', 'en': 'CAC Cap (GP basis)'},
+    'excel_cac_cap':            {'ja': 'CAC上限（粗利ベース）', 'en': 'CAC Ceiling (GP basis)'},
     'excel_weibull_k':          {'ja': 'Weibull k（形状パラメータ）', 'en': 'Weibull k (shape)'},
     'excel_weibull_lam':        {'ja': 'Weibull λ（尺度パラメータ）', 'en': 'Weibull λ (scale)'},
     'excel_r2':                 {'ja': 'R²（フィット精度）', 'en': 'R² (fit quality)'},
@@ -478,7 +480,7 @@ _DICT = {
     'seg_tbl_n':                {'ja': '顧客数', 'en': 'N'},
     'seg_tbl_ltv_rev':          {'ja': 'LTV∞(売上)', 'en': 'LTV∞ (Rev)'},
     'seg_tbl_ltv_gp':           {'ja': 'LTV∞(粗利)', 'en': 'LTV∞ (GP)'},
-    'seg_tbl_cac_cap':          {'ja': 'CAC上限', 'en': 'CAC Cap'},
+    'seg_tbl_cac_cap':          {'ja': 'CAC上限', 'en': 'CAC Ceiling'},
     'seg_tbl_potential':        {'ja': '総ポテンシャル', 'en': 'Total Potential'},
     'seg_tbl_k':                {'ja': 'k', 'en': 'k'},
     'seg_tbl_lam':              {'ja': 'λ（日）', 'en': 'λ (d)'},
