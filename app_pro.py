@@ -630,8 +630,8 @@ with st.sidebar:
     else:
         _s1_ch_vals  = ['検索広告', 'SNS広告', '口コミ', '自然検索', 'その他']
     _s1_ch_prob  = [0.28, 0.30, 0.18, 0.19, 0.05]
-    _s1_ch_k     = dict(zip(_s1_ch_vals, [0.83, 0.80, 0.88, 0.90, 0.82]))
-    _s1_ch_lam   = dict(zip(_s1_ch_vals, [230, 200, 260, 280, 220]))
+    _s1_ch_k     = dict(zip(_s1_ch_vals, [0.93, 0.90, 0.98, 1.00, 0.92]))
+    _s1_ch_lam   = dict(zip(_s1_ch_vals, [280, 250, 310, 330, 270]))
     s1_channel   = np.random.choice(_s1_ch_vals, n_sample, p=_s1_ch_prob)
 
     if get_lang() == 'en':
@@ -639,8 +639,8 @@ with st.sidebar:
     else:
         _s1_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
     _s1_age_prob = [0.15, 0.35, 0.28, 0.17, 0.05]
-    _s1_age_k    = dict(zip(_s1_age_vals, [0.82, 0.85, 0.86, 0.84, 0.85]))
-    _s1_age_lam  = dict(zip(_s1_age_vals, [200, 250, 270, 230, 140]))
+    _s1_age_k    = dict(zip(_s1_age_vals, [0.92, 0.95, 0.96, 0.94, 0.95]))
+    _s1_age_lam  = dict(zip(_s1_age_vals, [250, 300, 320, 280, 190]))
     s1_age       = np.random.choice(_s1_age_vals, n_sample, p=_s1_age_prob)
 
     if get_lang() == 'en':
@@ -774,8 +774,8 @@ with st.sidebar:
     else:
         _s3_ch_vals  = ['検索広告', 'Instagram広告', 'インフルエンサーマーケ', '自然検索', 'その他']
     _s3_ch_prob  = [0.25, 0.30, 0.15, 0.25, 0.05]
-    _s3_ch_k     = dict(zip(_s3_ch_vals, [0.77, 0.73, 0.65, 0.85, 0.74]))
-    _s3_ch_lam   = dict(zip(_s3_ch_vals, [210, 190, 130, 280, 195]))
+    _s3_ch_k     = dict(zip(_s3_ch_vals, [0.87, 0.83, 0.78, 0.95, 0.84]))
+    _s3_ch_lam   = dict(zip(_s3_ch_vals, [260, 240, 180, 330, 245]))
     # チャネル別の単発率（インフルエンサー経由は単発が多い）
     _s3_ch_single = dict(zip(_s3_ch_vals, [0.50, 0.55, 0.70, 0.40, 0.55]))
     s3_channel   = np.random.choice(_s3_ch_vals, n_sample, p=_s3_ch_prob)
@@ -785,8 +785,8 @@ with st.sidebar:
     else:
         _s3_age_vals = ['18-24', '25-34', '35-44', '45-54', '55+', '不明']
     _s3_age_prob = [0.10, 0.30, 0.28, 0.18, 0.09, 0.05]
-    _s3_age_k    = dict(zip(_s3_age_vals, [0.72, 0.79, 0.82, 0.76, 0.73, 0.68]))
-    _s3_age_lam  = dict(zip(_s3_age_vals, [160, 230, 250, 200, 175, 140]))
+    _s3_age_k    = dict(zip(_s3_age_vals, [0.82, 0.89, 0.92, 0.86, 0.83, 0.78]))
+    _s3_age_lam  = dict(zip(_s3_age_vals, [210, 280, 300, 250, 220, 190]))
     s3_age       = np.random.choice(_s3_age_vals, n_sample, p=_s3_age_prob)
 
     if get_lang() == 'en':
@@ -794,8 +794,8 @@ with st.sidebar:
     else:
         _s3_gen_vals = ['女性', '男性', '未回答']
     _s3_gen_prob = [0.58, 0.37, 0.05]
-    _s3_gen_k    = dict(zip(_s3_gen_vals, [0.80, 0.70, 0.75]))
-    _s3_gen_lam  = dict(zip(_s3_gen_vals, [240, 160, 200]))
+    _s3_gen_k    = dict(zip(_s3_gen_vals, [0.90, 0.82, 0.85]))
+    _s3_gen_lam  = dict(zip(_s3_gen_vals, [290, 210, 250]))
     s3_gender    = np.random.choice(_s3_gen_vals, n_sample, p=_s3_gen_prob)
 
     # リピートのうちアクティブ18%
@@ -905,7 +905,7 @@ with st.sidebar:
     _dl_map = {
         'elearn':   ('sample_elearn.csv',   elearn_csv),
         'cowork':   ('sample_cowork.csv',   cowork_csv),
-        'skincare': ('sample_skincare.csv', skincare_csv),
+        'skincare': ('sample_cosmetics.csv', skincare_csv),
     }
     _active_sample = _selected_sample if _selected_sample != T('sidebar_sample_placeholder') else st.session_state.get('_prev_sample', None)
     if _active_sample and _active_sample in _sample_options:
@@ -1089,7 +1089,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v350</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v352</div>
 </div>
 """, unsafe_allow_html=True)
 
