@@ -20,11 +20,40 @@ warnings.filterwarnings('ignore')
 
 # ── Page config ──────────────────────────────────────────────
 st.set_page_config(
-    page_title="LTV Analyzer Advanced",
+    page_title="LTV Analyzer Demo" if st.secrets.get("MODE", "demo").lower() == "demo" else "LTV Analyzer Advanced" if st.secrets.get("MODE", "demo").lower() == "advanced" else "LTV Analyzer Standard",
     page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# ── Mode & Authentication ─────────────────────────────────────
+# st.secrets に MODE ("demo"/"standard"/"advanced") と PASSWORD を設定
+# demo: パスワード不要、サンプルデータのみ
+# standard/advanced: パスワード必要、CSVアップロード可
+APP_MODE = st.secrets.get("MODE", "demo").lower()
+
+if APP_MODE in ("standard", "advanced") and "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if APP_MODE in ("standard", "advanced") and not st.session_state.authenticated:
+    st.set_page_config is None  # already called above
+    _auth_col1, _auth_col2, _auth_col3 = st.columns([1, 1.5, 1])
+    with _auth_col2:
+        st.markdown("<div style='padding-top: 120px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align: center; margin-bottom: 24px;'>
+            <div style='font-size: 1.4rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.02em;'>LTV Analyzer</div>
+            <div style='font-size: 0.75rem; color: #3a6a7a; margin-top: 4px;'>Enter your password to continue</div>
+        </div>
+        """, unsafe_allow_html=True)
+        _pw = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Password")
+        if st.button("Enter", use_container_width=True):
+            if _pw == st.secrets.get("PASSWORD", ""):
+                st.session_state.authenticated = True
+                st.rerun()
+            else:
+                st.error("Incorrect password")
+    st.stop()
 
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
@@ -600,7 +629,11 @@ with st.sidebar:
     _cur_default = LANG_DEFAULTS.get(LANG, 'JPY')
     _cur_options = list(CURRENCIES.keys())
     _cur_idx = _cur_options.index(_cur_default) if _cur_default in _cur_options else 0
-    CUR = st.selectbox(T('sidebar_cur_label'), _cur_options, index=_cur_idx)
+    if APP_MODE == 'demo':
+        CUR = _cur_default  # Demo: 言語連動で固定
+        st.selectbox(T('sidebar_cur_label'), [_cur_default], index=0, disabled=True)
+    else:
+        CUR = st.selectbox(T('sidebar_cur_label'), _cur_options, index=_cur_idx)
 
     st.markdown(T('sidebar_data_input'))
 
@@ -852,7 +885,8 @@ with st.sidebar:
     cowork_csv   = sample_cowork.to_csv(index=False).encode('utf-8-sig')
     skincare_csv = sample_skincare.to_csv(index=False).encode('utf-8-sig')
 
-    st.markdown(f"<span style='color:#c8d0d8; font-size:0.78rem;'>{T('sidebar_sample_hint')}</span>", unsafe_allow_html=True)
+    if APP_MODE == 'demo':
+        st.markdown(f"<span style='color:#c8d0d8; font-size:0.78rem;'>{T('sidebar_sample_hint')}</span>", unsafe_allow_html=True)
 
     # サンプルデータをセッションステートで管理
     if 'sample_df' not in st.session_state:
@@ -865,61 +899,69 @@ with st.sidebar:
         T('sample_cowork'):   ('cowork', sample_cowork),
         T('sample_skincare'): ('skincare', sample_skincare),
     }
-    _btn_s = "display:block; width:100%; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5; box-sizing:border-box;"
-    _selected_sample = st.selectbox(
-        T('sidebar_sample_select'),
-        [T('sidebar_sample_placeholder')] + list(_sample_options.keys()),
-        key='sample_select',
-        label_visibility='collapsed'
-    )
-    if _selected_sample != T('sidebar_sample_placeholder') and st.session_state.get('_prev_sample') != _selected_sample:
-        st.session_state._prev_sample = _selected_sample
-        _key, _df = _sample_options[_selected_sample]
-        st.session_state.sample_df = _df
-        st.session_state.sample_label = _selected_sample
-        # サンプルに応じてデフォルト設定をセッションに保存
-        if _key == 'elearn':
-            st.session_state['_sample_biz']     = BIZ_SUBSCRIPTION
-            st.session_state['_sample_prorate'] = False
-            st.session_state['_sample_seg']     = 'channel, age_group, device'
-            st.session_state['_sample_report_title']  = T('sample_elearn_title')
-            st.session_state['_sample_client_name']   = T('sample_elearn_client')
-            st.session_state['_sample_analyst_name']  = T('sample_elearn_analyst')
-        elif _key == 'cowork':
-            st.session_state['_sample_biz']     = BIZ_SUBSCRIPTION
-            st.session_state['_sample_prorate'] = True
-            st.session_state['_sample_seg']     = 'channel, age_group, occupation'
-            st.session_state['_sample_report_title']  = T('sample_cowork_title')
-            st.session_state['_sample_client_name']   = T('sample_cowork_client')
-            st.session_state['_sample_analyst_name']  = T('sample_cowork_analyst')
-        else:  # skincare
-            st.session_state['_sample_biz']     = BIZ_SPOT
-            st.session_state['_sample_prorate'] = False
-            st.session_state['_sample_seg']     = 'channel, age_group, gender'
-            st.session_state['_sample_report_title']  = T('sample_skincare_title')
-            st.session_state['_sample_client_name']   = T('sample_skincare_client')
-            st.session_state['_sample_analyst_name']  = T('sample_skincare_analyst')
-        st.rerun()
 
-    # サンプルデータCSVダウンロード
-    _dl_map = {
-        'elearn':   ('sample_elearn.csv',   elearn_csv),
-        'cowork':   ('sample_cowork.csv',   cowork_csv),
-        'skincare': ('sample_cosmetics.csv', skincare_csv),
-    }
-    _active_sample = _selected_sample if _selected_sample != T('sidebar_sample_placeholder') else st.session_state.get('_prev_sample', None)
-    if _active_sample and _active_sample in _sample_options:
-        _dl_key = _sample_options[_active_sample][0]
-        _dl_fn, _dl_data = _dl_map[_dl_key]
-        st.download_button(
-            label=T('sidebar_sample_dl'),
-            data=_dl_data,
-            file_name=_dl_fn,
-            mime='text/csv',
-            key='sample_csv_dl'
+    if APP_MODE == 'demo':
+        _btn_s = "display:block; width:100%; text-align:center; text-decoration:none; background:#0d1a28; color:#a8c8d8; border:1px solid #1c3a4a; border-radius:8px; padding:8px 6px; font-size:0.75rem; line-height:1.5; box-sizing:border-box;"
+        _selected_sample = st.selectbox(
+            T('sidebar_sample_select'),
+            [T('sidebar_sample_placeholder')] + list(_sample_options.keys()),
+            key='sample_select',
+            label_visibility='collapsed'
         )
+    if APP_MODE == 'demo':
+        if _selected_sample != T('sidebar_sample_placeholder') and st.session_state.get('_prev_sample') != _selected_sample:
+            st.session_state._prev_sample = _selected_sample
+            _key, _df = _sample_options[_selected_sample]
+            st.session_state.sample_df = _df
+            st.session_state.sample_label = _selected_sample
+            # サンプルに応じてデフォルト設定をセッションに保存
+            if _key == 'elearn':
+                st.session_state['_sample_biz']     = BIZ_SUBSCRIPTION
+                st.session_state['_sample_prorate'] = False
+                st.session_state['_sample_seg']     = 'channel, age_group, device'
+                st.session_state['_sample_report_title']  = T('sample_elearn_title')
+                st.session_state['_sample_client_name']   = T('sample_elearn_client')
+                st.session_state['_sample_analyst_name']  = T('sample_elearn_analyst')
+            elif _key == 'cowork':
+                st.session_state['_sample_biz']     = BIZ_SUBSCRIPTION
+                st.session_state['_sample_prorate'] = True
+                st.session_state['_sample_seg']     = 'channel, age_group, occupation'
+                st.session_state['_sample_report_title']  = T('sample_cowork_title')
+                st.session_state['_sample_client_name']   = T('sample_cowork_client')
+                st.session_state['_sample_analyst_name']  = T('sample_cowork_analyst')
+            else:  # skincare
+                st.session_state['_sample_biz']     = BIZ_SPOT
+                st.session_state['_sample_prorate'] = False
+                st.session_state['_sample_seg']     = 'channel, age_group, gender'
+                st.session_state['_sample_report_title']  = T('sample_skincare_title')
+                st.session_state['_sample_client_name']   = T('sample_skincare_client')
+                st.session_state['_sample_analyst_name']  = T('sample_skincare_analyst')
+            st.rerun()
 
-    uploaded = st.file_uploader(T('sidebar_upload_csv'), type=['csv'])
+        # サンプルデータCSVダウンロード
+        _dl_map = {
+            'elearn':   ('sample_elearn.csv',   elearn_csv),
+            'cowork':   ('sample_cowork.csv',   cowork_csv),
+            'skincare': ('sample_cosmetics.csv', skincare_csv),
+        }
+        _active_sample = _selected_sample if _selected_sample != T('sidebar_sample_placeholder') else st.session_state.get('_prev_sample', None)
+        if _active_sample and _active_sample in _sample_options:
+            _dl_key = _sample_options[_active_sample][0]
+            _dl_fn, _dl_data = _dl_map[_dl_key]
+            st.download_button(
+                label=T('sidebar_sample_dl'),
+                data=_dl_data,
+                file_name=_dl_fn,
+                mime='text/csv',
+                key='sample_csv_dl'
+            )
+    else:
+        _selected_sample = T('sidebar_sample_placeholder')
+
+    if APP_MODE != 'demo':
+        uploaded = st.file_uploader(T('sidebar_upload_csv'), type=['csv'])
+    else:
+        uploaded = None
 
     # サンプルボタン or アップロードでデータを確定
     if uploaded is not None:
@@ -1033,19 +1075,25 @@ with st.sidebar:
     cac_recover_days = None
     st.caption(T('sidebar_cac_caption'))
 
-    st.markdown(T('sidebar_segment'))
-    segment_cols_input = st.text_input(
-        T('sidebar_seg_input_label'),
-        value=st.session_state.get('_sample_seg', ''),
-        placeholder=T('sidebar_seg_placeholder'),
-    )
-    st.caption(T('sidebar_seg_caption'))
-    st.markdown(T('sidebar_display_limit'))
-    seg_display_limit = st.slider(
-        T('sidebar_display_slider'),
-        min_value=1, max_value=10, value=5,
-    )
-    st.caption(T('sidebar_display_caption'))
+    if APP_MODE != 'standard':
+        st.markdown(T('sidebar_segment'))
+        _seg_disabled = (APP_MODE == 'demo')
+        segment_cols_input = st.text_input(
+            T('sidebar_seg_input_label'),
+            value=st.session_state.get('_sample_seg', ''),
+            placeholder=T('sidebar_seg_placeholder'),
+            disabled=_seg_disabled,
+        )
+        st.caption(T('sidebar_seg_caption'))
+        st.markdown(T('sidebar_display_limit'))
+        seg_display_limit = st.slider(
+            T('sidebar_display_slider'),
+            min_value=1, max_value=10, value=5,
+        )
+        st.caption(T('sidebar_display_caption'))
+    else:
+        segment_cols_input = ''
+        seg_display_limit = 5
 
     cac_input = 0
     cac_known = False
@@ -1088,8 +1136,8 @@ with st.sidebar:
 st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
-  <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v352</div>
+  <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v354</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -2274,7 +2322,24 @@ st.markdown(insight_html, unsafe_allow_html=True)
 # AI Prompt Generator
 # ══════════════════════════════════════════════════════════════
 
+_UPGRADE_TITLE = 'Advanced 機能' if get_lang() == 'ja' else 'Advanced Feature'
+_UPGRADE_DESC = 'セグメント別LTV∞分析を利用するにはAdvancedへのアップグレードが必要です。' if get_lang() == 'ja' else 'Upgrade to Advanced to unlock Segment-level LTV∞ Analysis.'
+_UPGRADE_BTN = 'Advanced にアップグレード' if get_lang() == 'ja' else 'Upgrade to Advanced'
+_UPGRADE_HTML = f"""
+<div style='background: linear-gradient(135deg, #0d1f2d 0%, #142838 100%); border: 1px solid #1a4a5a;
+    border-radius: 12px; padding: 28px 32px; margin: 16px 0 24px 0; text-align: center;'>
+  <div style='font-size: 1.1rem; color: #56b4d3; font-weight: 600; margin-bottom: 8px;'>{_UPGRADE_TITLE}</div>
+  <div style='font-size: 0.85rem; color: #8aa; line-height: 1.6; margin-bottom: 16px;'>
+    {_UPGRADE_DESC}
+  </div>
+  <a href='https://ltv-analyzer.com' target='_blank'
+     style='display: inline-block; background: #56b4d3; color: #0a1020; padding: 10px 32px;
+     border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-decoration: none;'>{_UPGRADE_BTN}</a>
+</div>
+"""
+
 st.markdown(f"<div class='section-title'>{T('section_ai_prompt')}</div>", unsafe_allow_html=True)
+
 st.markdown(f"<div class='help-box'>{T('prompt_help_box')}</div>", unsafe_allow_html=True)
 
 tab1, tab2, tab3 = st.tabs([T('prompt_tab1'), T('prompt_tab2'), T('prompt_tab3')])
@@ -3418,7 +3483,10 @@ a.dl-btn:focus, a.dl-btn:focus-visible, a.dl-btn:active {{
 # Segment Analysis (Advanced)
 # ══════════════════════════════════════════════════════════════
 
-if segment_cols_input.strip():
+if APP_MODE == 'standard':
+    st.markdown(f"<div class='section-title'>{T('section_segment')}</div>", unsafe_allow_html=True)
+    st.markdown(_UPGRADE_HTML, unsafe_allow_html=True)
+elif segment_cols_input.strip():
     seg_cols = [c.strip() for c in segment_cols_input.split(',') if c.strip()]
     valid_seg_cols = [c for c in seg_cols if c in df.columns]
     invalid_seg_cols = [c for c in seg_cols if c not in df.columns]
