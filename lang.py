@@ -464,6 +464,11 @@ _DICT = {
     # ── PDF エクスポート追加 ───────────────────────────────────
     'pdf_title':                {'ja': 'LTV Analysis Report', 'en': 'LTV Analysis Report'},
     'pdf_chapter_summary':      {'ja': 'エグゼクティブサマリー', 'en': 'Executive Summary'},
+    'pptx_summary':             {'ja': '分析結果のサマリー', 'en': 'Analysis Summary'},
+    'pptx_weibull_subtitle':    {'ja': 'Weibullパラメータの読み方と示唆', 'en': 'How to Read Weibull Parameters & Implications'},
+    'pptx_cac_design':          {'ja': 'CAC設計の目安', 'en': 'CAC Design Guide'},
+    'pptx_cac_design_body':     {'ja': '回収期間に迷ったら、λ={lam}（約{y}）時点の暫定LTV（粗利）{gp}を用いてCAC上限を算出してください。λは多くの顧客が離脱するまでの期間の目安をデータが示した答えです。',
+                                 'en': 'If unsure about payback, use interim LTV (GP) at λ={lam} (~{y}) = {gp} as CAC ceiling basis. λ is the data-driven estimate of when most customers churn.'},
     'pdf_chapter_reliability':  {'ja': 'モデル信頼性', 'en': 'Model Reliability'},
     'pdf_chapter_interim':      {'ja': '暫定 LTV — 観測期間別', 'en': 'Interim LTV by Observation Period'},
     'pdf_chapter_segment':      {'ja': 'セグメント分析', 'en': 'Segment Analysis'},

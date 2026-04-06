@@ -13,7 +13,7 @@ from pptx.oxml.ns import qn
 from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 from lxml import etree
 from datetime import date
-from lang import fmt_c, cur_symbol, T, BIZ_SUBSCRIPTION, BIZ_SPOT
+from lang import fmt_c, cur_symbol, T, get_lang, BIZ_SUBSCRIPTION, BIZ_SPOT
 
 _JP_FP = None
 def _init():
@@ -236,9 +236,10 @@ def _set_s4_guide(sh, g, cur='JPY'):
         (g['cac_recover_rev_str'], 'A8DADC', True), (' / GP: ', 'C8D0D8', False),
         (g['cac_recover_gp_str'], '56B4D3', True)], sz, ind)
     _empty()
-    _mpara([(T('insight_title'), '56B4D3', True), (': ', 'C8D0D8', False),
-        (f'λ={g["lam_actual_round"]:,}{T("chart_days_suffix")} (~{g["lam_years"]:.1f}{T("chart_year_suffix")})', 'A8DADC', True),
-        (f' → GP {fmt_c(g["lam_gp"], cur)} → {T("chart_cac_cap")} = {fmt_c(g["lam_gp"]/3, cur)}', 'C8D0D8', False)], sz)
+    _lam_str = f'{g["lam_actual_round"]:,}{T("chart_days_suffix")}'
+    _y_str = f'{g["lam_years"]:.1f}{T("chart_year_suffix")}'
+    _mpara([(T('pptx_cac_design'), '56B4D3', True), ('：' if get_lang()=='ja' else ': ', 'C8D0D8', False),
+        (T('pptx_cac_design_body', lam=_lam_str, y=_y_str, gp=fmt_c(g["lam_gp"], cur)), 'C8D0D8', False)], sz)
 
 # ── グラフ（S5: 日本語に戻す） ──
 def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x_max, cur='JPY'):
@@ -386,7 +387,7 @@ def generate_pptx(
         if sh.name=='タイトル 31': _set_text(sh, T('chart_reliability_title'))
         elif sh.name=='テキスト プレースホルダー 44' and sh.has_text_frame:
             for r in sh.text_frame.paragraphs[0].runs: r.text=''
-            if sh.text_frame.paragraphs[0].runs: sh.text_frame.paragraphs[0].runs[0].text='Weibull k & λ'
+            if sh.text_frame.paragraphs[0].runs: sh.text_frame.paragraphs[0].runs[0].text=T('pptx_weibull_subtitle')
     for sh in s3.shapes:
         if sh.name=='Picture 3': buf1.seek(0); _replace_image(s3,sh,buf1)
         elif sh.name=='Picture 4': buf2.seek(0); _replace_image(s3,sh,buf2)
@@ -483,7 +484,7 @@ def generate_pptx(
             ft8=[T('seg_weighted_avg'),f'{n_total:,}',f'{fmt_c(avg_ltv, cur)}',f'{fmt_c(w_ltv_g, cur)}',f'{fmt_c(w_cac, cur)}','—','—','—']
             _seg_hdr8=[T('seg_tbl_segment'),T('seg_tbl_n'),T('seg_tbl_ltv_rev'),T('seg_tbl_ltv_gp'),T('seg_tbl_cac_cap'),'k',T('seg_tbl_lam'),'R²']
             for sh in s8.shapes:
-                if sh.name=='タイトル 2': _set_text(sh,f'{sc}: {T("pdf_chapter_summary")}')
+                if sh.name=='タイトル 2': _set_text(sh,f'{sc}: {T("pptx_summary")}')
                 elif sh.shape_type==19: _write_table_styled(sh.table,_seg_hdr8,dr8,ft8)
                 elif sh.name=='テキスト ボックス 9' and sh.has_text_frame:
                     diff_pct=(avg_ltv-ltv_rev)/ltv_rev*100
