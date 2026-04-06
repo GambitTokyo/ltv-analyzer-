@@ -622,22 +622,31 @@ with st.sidebar:
     _s1_dates = list(pd.date_range(SUB1_START, BASE_DATE, periods=n_sample))
     np.random.shuffle(_s1_dates)
     s1_starts = _s1_dates[:n_sample]
-    MONTHLY_1 = 9800
+    MONTHLY_1 = 49 if CUR != 'JPY' else 9800
 
     # セグメント割り当て（チャネルごとにWeibullパラメータを変える）
-    _s1_ch_vals  = ['検索広告', 'SNS広告', '口コミ', '自然検索', 'その他']
+    if get_lang() == 'en':
+        _s1_ch_vals  = ['Paid Search', 'Social Ads', 'Word of Mouth', 'Organic Search', 'Other']
+    else:
+        _s1_ch_vals  = ['検索広告', 'SNS広告', '口コミ', '自然検索', 'その他']
     _s1_ch_prob  = [0.28, 0.30, 0.18, 0.19, 0.05]
-    _s1_ch_k     = {'検索広告': 0.83, 'SNS広告': 0.80, '口コミ': 0.88, '自然検索': 0.90, 'その他': 0.82}
-    _s1_ch_lam   = {'検索広告': 230,  'SNS広告': 200,  '口コミ': 260,  '自然検索': 280,  'その他': 220}
+    _s1_ch_k     = dict(zip(_s1_ch_vals, [0.83, 0.80, 0.88, 0.90, 0.82]))
+    _s1_ch_lam   = dict(zip(_s1_ch_vals, [230, 200, 260, 280, 220]))
     s1_channel   = np.random.choice(_s1_ch_vals, n_sample, p=_s1_ch_prob)
 
-    _s1_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
+    if get_lang() == 'en':
+        _s1_age_vals = ['18-24', '25-34', '35-44', '45+', 'Unknown']
+    else:
+        _s1_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
     _s1_age_prob = [0.15, 0.35, 0.28, 0.17, 0.05]
-    _s1_age_k    = {'18-24': 0.82, '25-34': 0.85, '35-44': 0.86, '45+': 0.84, '不明': 0.85}
-    _s1_age_lam  = {'18-24': 200,  '25-34': 250,  '35-44': 270,  '45+': 230,  '不明': 140}
+    _s1_age_k    = dict(zip(_s1_age_vals, [0.82, 0.85, 0.86, 0.84, 0.85]))
+    _s1_age_lam  = dict(zip(_s1_age_vals, [200, 250, 270, 230, 140]))
     s1_age       = np.random.choice(_s1_age_vals, n_sample, p=_s1_age_prob)
 
-    _s1_dev_vals = ['PC', 'スマホ', 'タブレット', 'その他']
+    if get_lang() == 'en':
+        _s1_dev_vals = ['PC', 'Mobile', 'Tablet', 'Other']
+    else:
+        _s1_dev_vals = ['PC', 'スマホ', 'タブレット', 'その他']
     _s1_dev_prob = [0.35, 0.45, 0.15, 0.05]
     s1_device    = np.random.choice(_s1_dev_vals, n_sample, p=_s1_dev_prob)
 
@@ -683,24 +692,33 @@ with st.sidebar:
     _s2_dates = list(pd.date_range(SUB2_START, BASE_DATE, periods=n_sample))
     np.random.shuffle(_s2_dates)
     s2_starts = _s2_dates[:n_sample]
-    MONTHLY_2 = 19800
+    MONTHLY_2 = 199 if CUR != 'JPY' else 19800
 
-    _s2_ch_vals  = ['検索広告', 'SNS広告', '紹介', 'Googleマップ', 'その他']
+    if get_lang() == 'en':
+        _s2_ch_vals  = ['Paid Search', 'Social Ads', 'Referral', 'Google Maps', 'Other']
+    else:
+        _s2_ch_vals  = ['検索広告', 'SNS広告', '紹介', 'Googleマップ', 'その他']
     _s2_ch_prob  = [0.25, 0.22, 0.23, 0.25, 0.05]
-    _s2_ch_k     = {'検索広告': 1.08, 'SNS広告': 1.05, '紹介': 1.15, 'Googleマップ': 1.12, 'その他': 1.06}
-    _s2_ch_lam   = {'検索広告': 280,  'SNS広告': 250,  '紹介': 350,  'Googleマップ': 320,  'その他': 260}
+    _s2_ch_k     = dict(zip(_s2_ch_vals, [1.08, 1.05, 1.15, 1.12, 1.06]))
+    _s2_ch_lam   = dict(zip(_s2_ch_vals, [280, 250, 350, 320, 260]))
     s2_channel   = np.random.choice(_s2_ch_vals, n_sample, p=_s2_ch_prob)
 
-    _s2_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
+    if get_lang() == 'en':
+        _s2_age_vals = ['18-24', '25-34', '35-44', '45+', 'Unknown']
+    else:
+        _s2_age_vals = ['18-24', '25-34', '35-44', '45+', '不明']
     _s2_age_prob = [0.12, 0.35, 0.30, 0.18, 0.05]
-    _s2_age_k    = {'18-24': 1.03, '25-34': 1.13, '35-44': 1.16, '45+': 1.08, '不明': 0.98}
-    _s2_age_lam  = {'18-24': 220,  '25-34': 320,  '35-44': 350,  '45+': 280,  '不明': 180}
+    _s2_age_k    = dict(zip(_s2_age_vals, [1.03, 1.13, 1.16, 1.08, 0.98]))
+    _s2_age_lam  = dict(zip(_s2_age_vals, [220, 320, 350, 280, 180]))
     s2_age       = np.random.choice(_s2_age_vals, n_sample, p=_s2_age_prob)
 
-    _s2_occ_vals = ['会社員', '経営者・自営など', '学生', 'その他']
+    if get_lang() == 'en':
+        _s2_occ_vals = ['Employee', 'Self-employed', 'Student', 'Other']
+    else:
+        _s2_occ_vals = ['会社員', '経営者・自営など', '学生', 'その他']
     _s2_occ_prob = [0.35, 0.30, 0.20, 0.15]
-    _s2_occ_k    = {'会社員': 1.10, '経営者・自営など': 1.15, '学生': 1.00, 'その他': 1.05}
-    _s2_occ_lam  = {'会社員': 290,  '経営者・自営など': 360,  '学生': 180,  'その他': 250}
+    _s2_occ_k    = dict(zip(_s2_occ_vals, [1.10, 1.15, 1.00, 1.05]))
+    _s2_occ_lam  = dict(zip(_s2_occ_vals, [290, 360, 180, 250]))
     s2_occupation = np.random.choice(_s2_occ_vals, n_sample, p=_s2_occ_prob)
 
     s2_churned = np.random.random(n_sample) < 0.85
@@ -749,26 +767,35 @@ with st.sidebar:
     np.random.shuffle(_s3_dates)
     s3_starts = _s3_dates[:n_sample]
     _single_cutoff = BASE_DATE - pd.Timedelta(days=180)
-    UNIT_PRICE_3 = 5800
+    UNIT_PRICE_3 = 38 if CUR != 'JPY' else 5800
 
-    _s3_ch_vals  = ['検索広告', 'Instagram広告', 'インフルエンサー', '自然検索', 'その他']
+    if get_lang() == 'en':
+        _s3_ch_vals  = ['Paid Search', 'Instagram Ads', 'Influencer Marketing', 'Organic Search', 'Other']
+    else:
+        _s3_ch_vals  = ['検索広告', 'Instagram広告', 'インフルエンサーマーケ', '自然検索', 'その他']
     _s3_ch_prob  = [0.25, 0.30, 0.15, 0.25, 0.05]
-    _s3_ch_k     = {'検索広告': 0.77, 'Instagram広告': 0.73, 'インフルエンサー': 0.65, '自然検索': 0.85, 'その他': 0.74}
-    _s3_ch_lam   = {'検索広告': 210,  'Instagram広告': 190,  'インフルエンサー': 130,  '自然検索': 280,  'その他': 195}
+    _s3_ch_k     = dict(zip(_s3_ch_vals, [0.77, 0.73, 0.65, 0.85, 0.74]))
+    _s3_ch_lam   = dict(zip(_s3_ch_vals, [210, 190, 130, 280, 195]))
     # チャネル別の単発率（インフルエンサー経由は単発が多い）
-    _s3_ch_single = {'検索広告': 0.50, 'Instagram広告': 0.55, 'インフルエンサー': 0.70, '自然検索': 0.40, 'その他': 0.55}
+    _s3_ch_single = dict(zip(_s3_ch_vals, [0.50, 0.55, 0.70, 0.40, 0.55]))
     s3_channel   = np.random.choice(_s3_ch_vals, n_sample, p=_s3_ch_prob)
 
-    _s3_age_vals = ['18-24', '25-34', '35-44', '45-54', '55+', '不明']
+    if get_lang() == 'en':
+        _s3_age_vals = ['18-24', '25-34', '35-44', '45-54', '55+', 'Unknown']
+    else:
+        _s3_age_vals = ['18-24', '25-34', '35-44', '45-54', '55+', '不明']
     _s3_age_prob = [0.10, 0.30, 0.28, 0.18, 0.09, 0.05]
-    _s3_age_k    = {'18-24': 0.72, '25-34': 0.79, '35-44': 0.82, '45-54': 0.76, '55+': 0.73, '不明': 0.68}
-    _s3_age_lam  = {'18-24': 160,  '25-34': 230,  '35-44': 250,  '45-54': 200,  '55+': 175,  '不明': 140}
+    _s3_age_k    = dict(zip(_s3_age_vals, [0.72, 0.79, 0.82, 0.76, 0.73, 0.68]))
+    _s3_age_lam  = dict(zip(_s3_age_vals, [160, 230, 250, 200, 175, 140]))
     s3_age       = np.random.choice(_s3_age_vals, n_sample, p=_s3_age_prob)
 
-    _s3_gen_vals = ['女性', '男性', '未回答']
+    if get_lang() == 'en':
+        _s3_gen_vals = ['Female', 'Male', 'Not specified']
+    else:
+        _s3_gen_vals = ['女性', '男性', '未回答']
     _s3_gen_prob = [0.58, 0.37, 0.05]
-    _s3_gen_k    = {'女性': 0.80, '男性': 0.70, '未回答': 0.75}
-    _s3_gen_lam  = {'女性': 240,  '男性': 160,  '未回答': 200}
+    _s3_gen_k    = dict(zip(_s3_gen_vals, [0.80, 0.70, 0.75]))
+    _s3_gen_lam  = dict(zip(_s3_gen_vals, [240, 160, 200]))
     s3_gender    = np.random.choice(_s3_gen_vals, n_sample, p=_s3_gen_prob)
 
     # リピートのうちアクティブ18%
@@ -787,8 +814,11 @@ with st.sidebar:
         is_single = np.random.random() < single_rate
         # 購入間隔：平均60日、標準偏差20日でばらつき
         avg_interval = max(20, int(np.random.normal(60, 20)))
-        price = UNIT_PRICE_3 + int(np.random.normal(0, 1000))  # 単価にもばらつき
-        price = max(3000, min(10000, price))  # ¥3,000〜¥10,000の範囲
+        _price_var = 7 if CUR != 'JPY' else 1000
+        _price_min = 20 if CUR != 'JPY' else 3000
+        _price_max = 65 if CUR != 'JPY' else 10000
+        price = UNIT_PRICE_3 + int(np.random.normal(0, _price_var))
+        price = max(_price_min, min(_price_max, price))
         if is_single and sd <= _single_cutoff:
             lp        = sd
             purchases = 1
@@ -1059,7 +1089,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>Advanced</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v346</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v350</div>
 </div>
 """, unsafe_allow_html=True)
 
