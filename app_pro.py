@@ -974,13 +974,13 @@ with st.sidebar:
         outlier_upper_pct = st.number_input(
             T('sidebar_outlier_upper'), min_value=0.0, max_value=20.0,
             value=0.0, step=0.5, format="%.1f",
-            help=T('sidebar_outlier_upper_help')
+            help=T('sidebar_outlier_upper_help'),
         )
     with _oc2:
         outlier_lower_pct = st.number_input(
             T('sidebar_outlier_lower'), min_value=0.0, max_value=20.0,
             value=0.0, step=0.5, format="%.1f",
-            help=T('sidebar_outlier_lower_help')
+            help=T('sidebar_outlier_lower_help'),
         )
     outlier_removal = (outlier_upper_pct > 0) or (outlier_lower_pct > 0)
     st.caption(T('sidebar_outlier_caption'))
@@ -993,10 +993,12 @@ with st.sidebar:
     _biz_default_display = [k for k, v in _biz_options_map.items() if v == _biz_default]
     _biz_default_display = _biz_default_display[0] if _biz_default_display else _biz_display[0]
     _biz_idx = _biz_display.index(_biz_default_display) if _biz_default_display in _biz_display else 0
+    _demo_lock = (APP_MODE == 'demo')
     _biz_selected_display = st.radio(
         T('sidebar_biz_type_label'),
         _biz_display,
         index=_biz_idx,
+        disabled=_demo_lock,
     )
     business_type = _biz_options_map[_biz_selected_display]
 
@@ -1013,17 +1015,18 @@ with st.sidebar:
             T('sidebar_billing_period'),
             _billing_display_list,
             index=0,
+            disabled=_demo_lock,
         )
         billing_cycle = _billing_display_map[billing_cycle_display_text]
 
         if billing_cycle == BILLING_CUSTOM_DAYS:
-            custom_cycle_days = st.number_input(T('sidebar_custom_cycle_days'), min_value=1, max_value=365, value=30)
+            custom_cycle_days = st.number_input(T('sidebar_custom_cycle_days'), min_value=1, max_value=365, value=30, disabled=_demo_lock)
         else:
             custom_cycle_days = None
         st.caption(T('sidebar_billing_caption'))
 
         st.markdown(f"<div style='font-size:0.82rem; color:#c8d0d8; margin-bottom:4px;'>{T('sidebar_prorate_label')}</div>", unsafe_allow_html=True)
-        prorate_cancel = st.toggle(T('sidebar_prorate_label'), value=st.session_state.get("_sample_prorate", False), label_visibility="collapsed")
+        prorate_cancel = st.toggle(T('sidebar_prorate_label'), value=st.session_state.get("_sample_prorate", False), label_visibility="collapsed", disabled=_demo_lock)
         st.caption(T('sidebar_prorate_caption'))
 
     else:  # spot
@@ -1041,11 +1044,12 @@ with st.sidebar:
             T('sidebar_dormancy_period'),
             list(_dormancy_map.keys()),
             index=0,
+            disabled=_demo_lock,
         )
         st.caption(T('sidebar_dormancy_caption'))
         _dormancy_val = _dormancy_map[dormancy_option]
         if _dormancy_val is None:
-            dormancy_days = st.number_input(T('sidebar_dormancy_days_label'), min_value=30, max_value=3650, value=180)
+            dormancy_days = st.number_input(T('sidebar_dormancy_days_label'), min_value=30, max_value=3650, value=180, disabled=_demo_lock)
         else:
             dormancy_days = _dormancy_val
 
@@ -1137,7 +1141,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v354</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v355</div>
 </div>
 """, unsafe_allow_html=True)
 
