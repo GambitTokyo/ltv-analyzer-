@@ -126,7 +126,7 @@ _DICT = {
     # ── サイドバー: 言語/通貨 ─────────────────────────────────
     'sidebar_lang_currency':    {'ja': '### 言語 / 通貨', 'en': '### Language / Currency'},
     'sidebar_lang_label':       {'ja': '言語 / Language', 'en': 'Language'},
-    'sidebar_cur_label':        {'ja': '通貨 / Currency', 'en': 'Currency'},
+    'sidebar_cur_label':        {'ja': '通貨', 'en': 'Currency'},
 
     # ── サイドバー: データ入力 ─────────────────────────────────
     'sidebar_data_input':       {'ja': '### データ入力', 'en': '### Data Input'},
