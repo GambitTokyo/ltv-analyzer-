@@ -985,6 +985,13 @@ with st.sidebar:
     outlier_removal = (outlier_upper_pct > 0) or (outlier_lower_pct > 0)
     st.caption(T('sidebar_outlier_caption'))
 
+    _demo_lock = (APP_MODE == 'demo')
+    if _demo_lock:
+        _preset_msg = 'サンプルデータに合わせた設定です。ご自身のデータではカスタマイズできます。' if get_lang() == 'ja' else 'Preset for sample data. Fully customizable with your own data.'
+        st.markdown(f"""<div style='background:#0d1a28; border:1px solid #1c3a4a; border-radius:8px;
+            padding:10px 14px; margin-bottom:12px; font-size:0.75rem; color:#7ab4c4; line-height:1.5;'>
+            {_preset_msg}</div>""", unsafe_allow_html=True)
+
     st.markdown(T('sidebar_biz_type'))
     _biz_options_map = {T('biz_subscription'): BIZ_SUBSCRIPTION, T('biz_spot'): BIZ_SPOT}
     _biz_display = list(_biz_options_map.keys())
@@ -993,7 +1000,6 @@ with st.sidebar:
     _biz_default_display = [k for k, v in _biz_options_map.items() if v == _biz_default]
     _biz_default_display = _biz_default_display[0] if _biz_default_display else _biz_display[0]
     _biz_idx = _biz_display.index(_biz_default_display) if _biz_default_display in _biz_display else 0
-    _demo_lock = (APP_MODE == 'demo')
     _biz_selected_display = st.radio(
         T('sidebar_biz_type_label'),
         _biz_display,
@@ -1141,7 +1147,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v355</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v356</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1150,7 +1156,11 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════
 
 if uploaded is None and st.session_state.get('sample_df') is None:
-    st.info(T('main_no_file_info'))
+    if APP_MODE == 'demo':
+        _no_file_msg = 'サイドバーからサンプルデータを選択してください。3種類のサンプルで全機能をお試しいただけます。' if get_lang() == 'ja' else 'Select sample data from the sidebar. Try all features with 3 sample datasets.'
+    else:
+        _no_file_msg = T('main_no_file_info')
+    st.info(_no_file_msg)
 
     st.markdown(f"<div class='section-title'>{T('main_csv_format_title')}</div>", unsafe_allow_html=True)
     if get_lang() == 'ja':
