@@ -623,12 +623,15 @@ with st.sidebar:
     _browser_lang = st.query_params.get('lang', 'en')
     _default_idx = 0 if _browser_lang == 'ja' else 1
 
+    # ── デモモード案内用プレースホルダー（最上部に配置） ──
+    _demo_placeholder = st.empty() if APP_MODE == 'demo' else None
+
     _lang_sel = st.selectbox("Language", list(_lang_options.keys()), index=_default_idx)
     LANG = _lang_options[_lang_sel]
     set_lang(LANG)
     # ここから全てのT()が正しい言語で返る
 
-    # ── デモモード案内（言語選択の直後に表示） ──
+    # ── デモモード案内（プレースホルダーに描画） ──
     if APP_MODE == 'demo':
         _PURCHASE_URL = 'https://example.com/purchase'  # TODO: 購入ページURL確定後に差し替え
         if LANG == 'ja':
@@ -637,7 +640,7 @@ with st.sidebar:
         else:
             _demo_note = 'Demo Mode: Try key features with sample data. Some settings are fixed for demo purposes. After purchase, all settings are fully customizable with your own data.'
             _purchase_label = 'Purchase'
-        st.markdown(f"""<div style='background:linear-gradient(135deg, #0d1a28 0%, #142030 100%);
+        _demo_placeholder.markdown(f"""<div style='background:linear-gradient(135deg, #0d1a28 0%, #142030 100%);
             border:1px solid #1c3a4a; border-radius:8px; padding:12px 14px; margin:8px 0 12px 0;
             font-size:0.73rem; color:#7ab4c4; line-height:1.6;'>
             {_demo_note}<br>
@@ -1171,7 +1174,7 @@ st.markdown("""
 
 if uploaded is None and st.session_state.get('sample_df') is None:
     if APP_MODE == 'demo':
-        _no_file_msg = 'サイドバーからサンプルデータを選択してください。3種類のサンプルで全機能をお試しいただけます。' if get_lang() == 'ja' else 'Select sample data from the sidebar. Try all features with 3 sample datasets.'
+        _no_file_msg = 'サイドバーからサンプルデータを選択してください。3種類のサンプルで主要機能をお試しいただけます。' if get_lang() == 'ja' else 'Select sample data from the sidebar. Try all features with 3 sample datasets.'
     else:
         _no_file_msg = T('main_no_file_info')
     st.info(_no_file_msg)
