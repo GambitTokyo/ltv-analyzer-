@@ -622,15 +622,11 @@ with st.sidebar:
         )
     _browser_lang = st.query_params.get('lang', 'en')
     _default_idx = 0 if _browser_lang == 'ja' else 1
-    _lang_sel = st.selectbox("Language", list(_lang_options.keys()), index=_default_idx)
-    LANG = _lang_options[_lang_sel]
-    set_lang(LANG)
-    # ここから全てのT()が正しい言語で返る
 
-    # ── デモモード案内（言語設定の直後） ──
+    # ── デモモード案内（サイドバー最上部） ──
     if APP_MODE == 'demo':
         _PURCHASE_URL = 'https://example.com/purchase'  # TODO: 購入ページURL確定後に差し替え
-        if get_lang() == 'ja':
+        if _browser_lang == 'ja':
             _demo_note = 'デモモード：サンプルデータで主要機能をお試しいただけます。一部の設定はサンプル用に固定されています。ご購入後はご自身のデータで全ての設定を自由にカスタマイズいただけます。'
             _purchase_label = '購入はこちら'
         else:
@@ -644,6 +640,11 @@ with st.sidebar:
             padding:6px 18px; background:#56b4d3; color:#0a0e14; border-radius:5px;
             font-size:0.73rem; font-weight:600; text-decoration:none; letter-spacing:0.04em;">
             {_purchase_label}</a></div>""", unsafe_allow_html=True)
+
+    _lang_sel = st.selectbox("Language", list(_lang_options.keys()), index=_default_idx)
+    LANG = _lang_options[_lang_sel]
+    set_lang(LANG)
+    # ここから全てのT()が正しい言語で返る
     _cur_default = LANG_DEFAULTS.get(LANG, 'JPY')
     _cur_options = list(CURRENCIES.keys())
     _cur_idx = _cur_options.index(_cur_default) if _cur_default in _cur_options else 0
@@ -1160,7 +1161,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v359</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v360</div>
 </div>
 """, unsafe_allow_html=True)
 
