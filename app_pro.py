@@ -635,6 +635,13 @@ with st.sidebar:
     else:
         CUR = st.selectbox(T('sidebar_cur_label'), _cur_options, index=_cur_idx)
 
+    if APP_MODE == 'demo':
+        _demo_note = 'デモモード：サンプルデータで全機能を体験できます。一部の設定はサンプルに最適化されています。ご購入後はご自身のデータで全て自由にカスタマイズ可能です。' if get_lang() == 'ja' else 'Demo Mode: Explore all features with sample data. Some settings are optimized for the samples. After purchase, everything is fully customizable with your own data.'
+        st.markdown(f"""<div style='background:linear-gradient(135deg, #0d1a28 0%, #142030 100%);
+            border:1px solid #1c3a4a; border-radius:8px; padding:12px 14px; margin:8px 0 16px 0;
+            font-size:0.73rem; color:#7ab4c4; line-height:1.6;'>
+            {_demo_note}</div>""", unsafe_allow_html=True)
+
     st.markdown(T('sidebar_data_input'))
 
     # ══════════════════════════════════════════════════════
@@ -986,11 +993,6 @@ with st.sidebar:
     st.caption(T('sidebar_outlier_caption'))
 
     _demo_lock = (APP_MODE == 'demo')
-    if _demo_lock:
-        _preset_msg = 'サンプルデータに合わせた設定です。ご自身のデータではカスタマイズできます。' if get_lang() == 'ja' else 'Preset for sample data. Fully customizable with your own data.'
-        st.markdown(f"""<div style='background:#0d1a28; border:1px solid #1c3a4a; border-radius:8px;
-            padding:10px 14px; margin-bottom:12px; font-size:0.75rem; color:#7ab4c4; line-height:1.5;'>
-            {_preset_msg}</div>""", unsafe_allow_html=True)
 
     st.markdown(T('sidebar_biz_type'))
     _biz_options_map = {T('biz_subscription'): BIZ_SUBSCRIPTION, T('biz_spot'): BIZ_SPOT}
@@ -1147,7 +1149,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v356</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v357</div>
 </div>
 """, unsafe_allow_html=True)
 
