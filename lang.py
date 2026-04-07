@@ -359,8 +359,8 @@ _DICT = {
     # ── セグメント ヒント ─────────────────────────────────────
     'seg_hint_info':            {'ja': 'サイドバーの「セグメント分析」にCSVの列名を入力してください。例：`channel, age_group`',
                                  'en': 'Enter CSV column names in "Segment Analysis" on the sidebar. e.g., `channel, age_group`'},
-    'seg_hint_howto':           {'ja': '**使い方：**\n1. CSVにセグメント列を追加（例：`plan`列に「月額」「年額」など）\n2. サイドバーに列名を入力\n3. セグメント別LTV∞・優先獲得推奨が自動で出力されます',
-                                 'en': '**How to use:**\n1. Add segment columns to your CSV (e.g., a `plan` column with "monthly", "annual", etc.)\n2. Enter column names in the sidebar\n3. LTV∞ by segment and acquisition priorities are automatically generated'},
+    'seg_hint_howto':           {'ja': '**使い方：**\n1. CSVにセグメント列を追加（例：`age_group`列に「20代」「30代」など）\n2. サイドバーに列名を入力\n3. セグメント別LTV∞・優先獲得推奨が自動で出力されます',
+                                 'en': '**How to use:**\n1. Add segment columns to your CSV (e.g., an `age_group` column with "20s", "30s", etc.)\n2. Enter column names in the sidebar\n3. LTV∞ by segment and acquisition priorities are automatically generated'},
     'seg_max_cols':             {'ja': 'セグメント軸は最大{max}列まで指定できます（処理速度の確保のため）。現在{n}列指定されています。先頭{max}列のみ分析します。残りの列は別途入力してください。',
                                  'en': 'Up to {max} segment columns are supported (for performance). {n} columns specified — only the first {max} will be analyzed.'},
 
