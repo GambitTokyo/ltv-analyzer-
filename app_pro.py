@@ -623,10 +623,15 @@ with st.sidebar:
     _browser_lang = st.query_params.get('lang', 'en')
     _default_idx = 0 if _browser_lang == 'ja' else 1
 
-    # ── デモモード案内（サイドバー最上部） ──
+    _lang_sel = st.selectbox("Language", list(_lang_options.keys()), index=_default_idx)
+    LANG = _lang_options[_lang_sel]
+    set_lang(LANG)
+    # ここから全てのT()が正しい言語で返る
+
+    # ── デモモード案内（言語選択の直後に表示） ──
     if APP_MODE == 'demo':
         _PURCHASE_URL = 'https://example.com/purchase'  # TODO: 購入ページURL確定後に差し替え
-        if _browser_lang == 'ja':
+        if LANG == 'ja':
             _demo_note = 'デモモード：サンプルデータで主要機能をお試しいただけます。一部の設定はサンプル用に固定されています。ご購入後はご自身のデータで全ての設定を自由にカスタマイズいただけます。'
             _purchase_label = '購入はこちら'
         else:
@@ -640,11 +645,6 @@ with st.sidebar:
             padding:6px 18px; background:#56b4d3; color:#0a0e14; border-radius:5px;
             font-size:0.73rem; font-weight:600; text-decoration:none; letter-spacing:0.04em;">
             {_purchase_label}</a></div>""", unsafe_allow_html=True)
-
-    _lang_sel = st.selectbox("Language", list(_lang_options.keys()), index=_default_idx)
-    LANG = _lang_options[_lang_sel]
-    set_lang(LANG)
-    # ここから全てのT()が正しい言語で返る
     _cur_default = LANG_DEFAULTS.get(LANG, 'JPY')
     _cur_options = list(CURRENCIES.keys())
     _cur_idx = _cur_options.index(_cur_default) if _cur_default in _cur_options else 0
