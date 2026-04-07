@@ -7,8 +7,8 @@
 # ── 通貨定義 ──────────────────────────────────────────────────
 
 CURRENCIES = {
-    'JPY': {'symbol': '¥',  'prefix': True,  'decimal': 0},
     'USD': {'symbol': '$',  'prefix': True,  'decimal': 0},
+    'JPY': {'symbol': '¥',  'prefix': True,  'decimal': 0},
     'EUR': {'symbol': '€',  'prefix': True,  'decimal': 0},
     'GBP': {'symbol': '£',  'prefix': True,  'decimal': 0},
     'KRW': {'symbol': '₩',  'prefix': True,  'decimal': 0},
