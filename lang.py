@@ -207,9 +207,9 @@ _DICT = {
     # ── サイドバー: セグメント分析 ─────────────────────────────
     'sidebar_segment':          {'ja': '### セグメント分析', 'en': '### Segment Analysis'},
     'sidebar_seg_input_label':  {'ja': 'セグメント列名（カンマ区切りで複数指定可）', 'en': 'Segment column names (comma-separated)'},
-    'sidebar_seg_placeholder':  {'ja': '例：plan, channel, age_group（最大5列）', 'en': 'e.g., plan, channel, age_group (max 5)'},
-    'sidebar_seg_caption':      {'ja': 'CSVの列名をカンマ区切りで入力してください。セグメント別のLTV∞を自動比較し、優先獲得セグメントを特定します。\n1列あたり最大50種類・最大5列。代表的な軸：プラン・チャネル・年齢層・性別・地域など。',
-                                 'en': 'Enter CSV column names separated by commas. LTV∞ is compared across segments to identify priority acquisition targets.\nMax 50 unique values per column, up to 5 columns. Common axes: plan, channel, age group, gender, region, etc.'},
+    'sidebar_seg_placeholder':  {'ja': '例：channel, age_group, gender（最大5列）', 'en': 'e.g., channel, age_group, gender (max 5)'},
+    'sidebar_seg_caption':      {'ja': 'CSVの列名をカンマ区切りで入力してください。セグメント別のLTV∞を自動比較し、優先獲得セグメントを特定します。\n1列あたり最大50種類・最大5列。代表的な軸：チャネル・年齢層・性別・地域など。',
+                                 'en': 'Enter CSV column names separated by commas. LTV∞ is compared across segments to identify priority acquisition targets.\nMax 50 unique values per column, up to 5 columns. Common axes: channel, age group, gender, region, etc.'},
 
     # ── サイドバー: 表示件数 ──────────────────────────────────
     'sidebar_display_limit':    {'ja': '### 表示件数', 'en': '### Display Limit'},
@@ -247,7 +247,7 @@ _DICT = {
     'csv_col_end_date':         {'ja': '解約日（サブスク向け・継続中は**空欄**）', 'en': 'End date (subscription: blank if active)'},
     'csv_col_last_purchase':    {'ja': '最終購買日（都度購入向け・任意）', 'en': 'Last purchase date (spot purchase: optional)'},
     'csv_col_revenue':          {'ja': '**累計売上**', 'en': '**Cumulative revenue**'},
-    'csv_col_segment':          {'ja': '**Advanced機能**：プラン・チャネル・年齢層など', 'en': '**Advanced**: plan, channel, age group, etc.'},
+    'csv_col_segment':          {'ja': '**Advanced機能**：チャネル・年齢層・性別など', 'en': '**Advanced**: channel, age group, gender, etc.'},
     'csv_note_segment':         {'ja': 'Advanced版では必ずセグメント列を追加してください。', 'en': 'Always include segment columns for the Advanced version.'},
     'csv_note_auto_detect':     {'ja': '列名は完全一致でなくてもOKです。`start`・`end`・`last`・`revenue`を含む列名は自動認識します。',
                                  'en': 'Column names don\'t need to match exactly. Columns containing `start`, `end`, `last`, or `revenue` are auto-detected.'},
@@ -357,8 +357,8 @@ _DICT = {
     'pptx_conclusion':          {'ja': '結論', 'en': 'Conclusion'},
 
     # ── セグメント ヒント ─────────────────────────────────────
-    'seg_hint_info':            {'ja': 'サイドバーの「セグメント分析」にCSVの列名を入力してください。例：`plan, channel`',
-                                 'en': 'Enter CSV column names in "Segment Analysis" on the sidebar. e.g., `plan, channel`'},
+    'seg_hint_info':            {'ja': 'サイドバーの「セグメント分析」にCSVの列名を入力してください。例：`channel, age_group`',
+                                 'en': 'Enter CSV column names in "Segment Analysis" on the sidebar. e.g., `channel, age_group`'},
     'seg_hint_howto':           {'ja': '**使い方：**\n1. CSVにセグメント列を追加（例：`plan`列に「月額」「年額」など）\n2. サイドバーに列名を入力\n3. セグメント別LTV∞・優先獲得推奨が自動で出力されます',
                                  'en': '**How to use:**\n1. Add segment columns to your CSV (e.g., a `plan` column with "monthly", "annual", etc.)\n2. Enter column names in the sidebar\n3. LTV∞ by segment and acquisition priorities are automatically generated'},
     'seg_max_cols':             {'ja': 'セグメント軸は最大{max}列まで指定できます（処理速度の確保のため）。現在{n}列指定されています。先頭{max}列のみ分析します。残りの列は別途入力してください。',

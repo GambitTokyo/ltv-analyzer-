@@ -1189,7 +1189,7 @@ if uploaded is None and st.session_state.get('sample_df') is None:
 | `end_date` | 解約日（サブスク向け・継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
 | `last_purchase_date` | 最終購買日（都度購入向け・任意） | YYYY-MM-DD | 2024-06-01 |
 | `revenue` | **累計売上** | 数値 | 48000 |
-| `セグメント列`（任意の列名） | **Advanced機能**：プラン・チャネル・年齢層など | 文字列 | 月額300 |
+| `セグメント列`（任意の列名） | **Advanced機能**：チャネル・年齢層・性別など | 文字列 | 20代 |
 
 > **Advanced版では必ずセグメント列を追加してください。**複数列追加可能です。\n
 > 列名は完全一致でなくてもOKです。`start`・`end`・`last`・`revenue`を含む列名は自動認識します。\n
@@ -1205,7 +1205,7 @@ if uploaded is None and st.session_state.get('sample_df') is None:
 | `end_date` | End date (subscription: blank if active) | YYYY-MM-DD | 2024-03-15 |
 | `last_purchase_date` | Last purchase date (spot purchase: optional) | YYYY-MM-DD | 2024-06-01 |
 | `revenue` | **Cumulative revenue** | Numeric | 48000 |
-| Segment columns (any name) | **Advanced**: plan, channel, age group, etc. | String | plan_A |
+| Segment columns (any name) | **Advanced**: channel, age group, gender, etc. | String | 20s |
 
 > **Always include segment columns for the Advanced version.** Multiple columns supported.\n
 > Column names don't need to match exactly. Columns containing `start`, `end`, `last`, or `revenue` are auto-detected.\n
