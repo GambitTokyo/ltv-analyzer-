@@ -1157,9 +1157,15 @@ with st.sidebar:
     client_name  = st.text_input(T('sidebar_client_name'), st.session_state.get('_sample_client_name', ''), placeholder=T('sidebar_client_name_ph'))
     analyst_name = st.text_input(T('sidebar_analyst_name'), st.session_state.get('_sample_analyst_name', ''), placeholder=T('sidebar_analyst_name_ph'))
 
+    # ── バージョン表示（管理者用・背景に溶け込む）────────────
+    st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
     _deploy_at = st.secrets.get("DEPLOY_AT", "")
-    if _deploy_at:
-        st.markdown(f"<p style='text-align:center;font-size:0.55rem;color:#666;margin-top:40px;'>Deployed: {_deploy_at}</p>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>"
+        f"{_deploy_at}"
+        f"</div>",
+        unsafe_allow_html=True
+    )
 
 # ══════════════════════════════════════════════════════════════
 # Header
@@ -3465,7 +3471,7 @@ if True:
             canvas.saveState()
             canvas.setFont('HeiseiMin-W3', 7)
             canvas.setFillColor(rl_colors.HexColor('#555555'))
-            _footer_text = f'© {datetime.now().year} Gambit, Inc. All rights reserved.  |  Page {doc.page}'
+            _footer_text = f'\u00a9 {datetime.now().year} Gambit, Inc. All rights reserved.  |  Page {doc.page}'
             canvas.drawCentredString(A4[0] / 2, 1.0 * cm, _footer_text)
             canvas.restoreState()
 
