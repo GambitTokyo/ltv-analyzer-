@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from datetime import datetime
 from scipy import stats
 from scipy.special import gamma, gammainc
 import matplotlib.pyplot as plt
@@ -1156,6 +1157,10 @@ with st.sidebar:
     client_name  = st.text_input(T('sidebar_client_name'), st.session_state.get('_sample_client_name', ''), placeholder=T('sidebar_client_name_ph'))
     analyst_name = st.text_input(T('sidebar_analyst_name'), st.session_state.get('_sample_analyst_name', ''), placeholder=T('sidebar_analyst_name_ph'))
 
+    _deploy_at = st.secrets.get("DEPLOY_AT", "")
+    if _deploy_at:
+        st.markdown(f"<p style='text-align:center;font-size:0.55rem;color:#666;margin-top:40px;'>Deployed: {_deploy_at}</p>", unsafe_allow_html=True)
+
 # ══════════════════════════════════════════════════════════════
 # Header
 # ══════════════════════════════════════════════════════════════
@@ -1164,7 +1169,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v360</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -3443,7 +3448,7 @@ if True:
             canvas.saveState()
             canvas.setFont('HeiseiMin-W3', 7)
             canvas.setFillColor(rl_colors.HexColor('#555555'))
-            _footer_text = f'Copyright © LTV-analyzer All rights reserved.  |  Page {doc.page}'
+            _footer_text = f'© {datetime.now().year} Gambit, Inc. All rights reserved.  |  Page {doc.page}'
             canvas.drawCentredString(A4[0] / 2, 1.0 * cm, _footer_text)
             # ページ背景
             canvas.setFillColor(_BG)
@@ -3460,7 +3465,7 @@ if True:
             canvas.saveState()
             canvas.setFont('HeiseiMin-W3', 7)
             canvas.setFillColor(rl_colors.HexColor('#555555'))
-            _footer_text = f'Copyright \u00a9 LTV-analyzer All rights reserved.  |  Page {doc.page}'
+            _footer_text = f'© {datetime.now().year} Gambit, Inc. All rights reserved.  |  Page {doc.page}'
             canvas.drawCentredString(A4[0] / 2, 1.0 * cm, _footer_text)
             canvas.restoreState()
 
@@ -3988,4 +3993,4 @@ with st.expander("Raw Data" if get_lang() == "en" else "読み込んだデータ
     )
 
 st.markdown("---")
-st.markdown("<p style='color:#333; font-size:0.82rem; text-align:center;'>LTV Analyzer — KM × Weibull Model — Built for marketing analytics professionals</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='color:#333; font-size:0.82rem; text-align:center;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</p>", unsafe_allow_html=True)
