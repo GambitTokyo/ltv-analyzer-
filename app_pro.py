@@ -27,8 +27,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.markdown(f"""<style>.fixed-footer{{position:fixed;bottom:0;left:0;width:100%;text-align:center;font-size:0.72rem;color:#555;padding:6px;background:#0a0e14;z-index:9999;border-top:1px solid #1a2a3a;}}</style><div class='fixed-footer'>© {datetime.now().year} Gambit, Inc. All rights reserved.</div>""", unsafe_allow_html=True)
-
 # ── Mode & Authentication ─────────────────────────────────────
 # st.secrets に MODE ("demo"/"standard"/"advanced") と PASSWORD を設定
 # demo: パスワード不要、サンプルデータのみ
@@ -4001,4 +3999,4 @@ with st.expander("Raw Data" if get_lang() == "en" else "読み込んだデータ
     )
 
 st.markdown("---")
-st.markdown(f"<p style='color:#333; font-size:0.82rem; text-align:center;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='color:#555; font-size:0.72rem; text-align:center; padding:8px 0;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</p>", unsafe_allow_html=True)
