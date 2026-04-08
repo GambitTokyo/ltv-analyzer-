@@ -1157,15 +1157,10 @@ with st.sidebar:
     client_name  = st.text_input(T('sidebar_client_name'), st.session_state.get('_sample_client_name', ''), placeholder=T('sidebar_client_name_ph'))
     analyst_name = st.text_input(T('sidebar_analyst_name'), st.session_state.get('_sample_analyst_name', ''), placeholder=T('sidebar_analyst_name_ph'))
 
-    # ── バージョン表示（管理者用・背景に溶け込む）────────────
     st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</div>", unsafe_allow_html=True)
     _deploy_at = st.secrets.get("DEPLOY_AT", "")
-    st.markdown(
-        f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>"
-        f"{_deploy_at}"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>{_deploy_at}</div>", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
 # Header
@@ -3997,6 +3992,3 @@ with st.expander("Raw Data" if get_lang() == "en" else "読み込んだデータ
         df[['customer_id','start_date','end_date','duration','event','arpu_daily']].head(30),
         hide_index=True
     )
-
-st.markdown("---")
-st.markdown(f"<p style='color:#555; font-size:0.72rem; text-align:center; padding:8px 0;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</p>", unsafe_allow_html=True)
