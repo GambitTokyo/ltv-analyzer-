@@ -1180,7 +1180,7 @@ st.markdown("""
 
 if uploaded is None and st.session_state.get('sample_df') is None:
     if APP_MODE == 'demo':
-        _no_file_msg = 'サイドバーからサンプルデータを選択してください。3種類のサンプルで主要機能をお試しいただけます。' if get_lang() == 'ja' else 'Select sample data from the sidebar. Try all features with 3 sample datasets.'
+        _no_file_msg = 'サイドバーからサンプルデータを選択してください。3種類のサンプルで主要機能をお試しいただけます。' if get_lang() == 'ja' else 'Select sample data from the sidebar. Key features with 3 sample datasets.'
     else:
         _no_file_msg = T('main_no_file_info')
     st.info(_no_file_msg)
