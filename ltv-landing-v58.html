@@ -620,14 +620,18 @@ h1.hero-title em {
   display: block;
 }
 .method-overlap {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+}
+.method-row:last-child .method-row-img {
+  align-self: stretch;
 }
 .method-overlap .overlap-front,
 .method-overlap .overlap-back {
-  width: 90%;
+  width: 100%;
   border-radius: 8px;
   border: 1px solid rgba(30,50,65,0.5);
   box-shadow: 0 4px 24px rgba(0,0,0,0.3);
