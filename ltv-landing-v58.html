@@ -619,12 +619,14 @@ h1.hero-title em {
   box-shadow: 0 4px 24px rgba(0,0,0,0.25);
   display: block;
   clip-path: inset(0 100% 0 0);
+}
+.method-row-img img.revealed {
   animation: chartReveal 2.5s ease-out forwards;
 }
-.method-row:nth-child(1) .method-row-img img { animation-delay: 0s; }
-.method-row:nth-child(2) .method-row-img img { animation-delay: 0.4s; }
-.method-overlap .overlap-front { animation-delay: 0.8s; }
-.method-overlap .overlap-back { animation-delay: 1.4s; }
+.method-row:nth-child(1) .method-row-img img.revealed { animation-delay: 0s; }
+.method-row:nth-child(2) .method-row-img img.revealed { animation-delay: 0.4s; }
+.method-overlap .overlap-front.revealed { animation-delay: 0.8s; }
+.method-overlap .overlap-back.revealed { animation-delay: 1.4s; }
 @keyframes chartReveal {
   0%   { clip-path: inset(0 100% 0 0); }
   100% { clip-path: inset(0 0% 0 0); }
@@ -1753,4 +1755,22 @@ footer {
     <li><a href="#faq">FAQ</a></li>
     <li><a href="/cdn-cgi/l/email-protection#3e5d51504a5f5d4a7e524a48135f505f5247445b4c105d5153">Contact</a></li>
   </ul>
-  <div class="footer-copy">© 2026 LTV Analyzer. All rig
+  <div class="footer-copy">© 2026 LTV Analyzer. All rights reserved.</div>
+</footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var imgs = document.querySelectorAll('.method-row-img img');
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('revealed');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  imgs.forEach(function(img) { observer.observe(img); });
+});
+</script>
+</body>
+</html>
