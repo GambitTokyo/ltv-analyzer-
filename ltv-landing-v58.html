@@ -618,18 +618,6 @@ h1.hero-title em {
   border: 1px solid rgba(30,50,65,0.5);
   box-shadow: 0 4px 24px rgba(0,0,0,0.25);
   display: block;
-  clip-path: inset(0 100% 0 0);
-}
-.method-row-img img.revealed {
-  animation: chartReveal 2.5s ease-out forwards;
-}
-.method-row:nth-child(1) .method-row-img img.revealed { animation-delay: 0s; }
-.method-row:nth-child(2) .method-row-img img.revealed { animation-delay: 0.4s; }
-.method-overlap .overlap-front.revealed { animation-delay: 0.8s; }
-.method-overlap .overlap-back.revealed { animation-delay: 1.4s; }
-@keyframes chartReveal {
-  0%   { clip-path: inset(0 100% 0 0); }
-  100% { clip-path: inset(0 0% 0 0); }
 }
 .method-overlap {
   position: relative;
@@ -1758,19 +1746,5 @@ footer {
   <div class="footer-copy">© 2026 LTV Analyzer. All rights reserved.</div>
 </footer>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  var imgs = document.querySelectorAll('.method-row-img img');
-  var observer = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('revealed');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.2 });
-  imgs.forEach(function(img) { observer.observe(img); });
-});
-</script>
 </body>
 </html>
