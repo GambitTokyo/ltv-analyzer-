@@ -1216,6 +1216,11 @@ footer {
   .problem-card, .pricing-card, .faq-item { border-right: none; border-bottom: 1px solid var(--rule); }
   .faq-item:last-child { border-bottom: none; }
   .method-rows { gap: 40px; }
+  .method-row { grid-template-columns: 1fr; gap: 32px; }
+  .method-overlap { height: auto; }
+  .method-overlap .overlap-front,
+  .method-overlap .overlap-back { position: static; width: 100%; }
+  .method-row:last-child .method-row-img { align-self: auto; }
   .author-layout { grid-template-columns: 1fr; gap: 32px; }
   .cta-section { padding: 80px 32px; }
   footer { flex-direction: column; gap: 24px; text-align: center; padding: 40px 32px; }
