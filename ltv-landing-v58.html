@@ -643,16 +643,21 @@ h1.hero-title em {
 .step1-video {
   position: relative;
   z-index: 1;
+  opacity: 0;
+  animation: vidShow 28s ease-in-out infinite;
 }
 @keyframes csvIntro {
-  0%   { opacity: 0; transform: translateY(40px); clip-path: inset(0 0 0 0); }
-  4%   { opacity: 1; transform: translateY(0); clip-path: inset(0 0 0 0); }
-  11%  { opacity: 1; transform: translateY(0); clip-path: inset(0 0 0 0); }
-  15%  { opacity: 0; clip-path: inset(15% 15% 15% 15%); }
+  0%   { opacity: 1; clip-path: inset(0 0 0 0); }
+  11%  { opacity: 1; clip-path: inset(0 0 0 0); }
+  16%  { opacity: 0; clip-path: inset(15% 15% 15% 15%); }
   100% { opacity: 0; clip-path: inset(15% 15% 15% 15%); }
 }
-  3%   { opacity: 1; transform: translateY(0); clip-path: inset(0 0 0 0); }
-  9%   { opacity: 1; transform: translateY(0); clip-path: inset(0 0 0 0); }
+@keyframes vidShow {
+  0%   { opacity: 0; }
+  14%  { opacity: 0; }
+  17%  { opacity: 1; }
+  100% { opacity: 1; }
+}
   13%  { opacity: 0; clip-path: inset(15% 15% 15% 15%); }
   100% { opacity: 0; clip-path: inset(15% 15% 15% 15%); }
 }
