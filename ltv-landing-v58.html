@@ -531,111 +531,103 @@ h1.hero-title em {
 /* ── PIPELINE ANIMATION (Step 2) ── */
 .pipeline-visual {
   background: #0d1117;
-  position: relative;
   overflow: hidden;
 }
 .pipeline {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 24px 16px;
-  box-sizing: border-box;
-  gap: 0;
-}
-.pipe-node {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  opacity: 0;
-  transform: scale(0.85);
-  animation: nodeReveal 10s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.5s);
+  height: 100%;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  gap: 6px;
 }
-.pipe-node-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+.pipe-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  padding: 0 14px;
+  border-radius: 10px;
   background: #131920;
   box-shadow:
-    6px 6px 14px rgba(0,0,0,0.5),
-    -4px -4px 10px rgba(30,45,60,0.25),
-    inset 0 0 0 1px rgba(86,180,211,0.06);
+    4px 4px 10px rgba(0,0,0,0.45),
+    -2px -2px 6px rgba(35,50,65,0.18),
+    inset 0 0 0 1px rgba(86,180,211,0.05);
+  opacity: 0;
+  transform: translateX(-8px);
+  animation: cardSlide 10s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.4s);
+}
+.pipe-card:last-child {
+  box-shadow:
+    4px 4px 10px rgba(0,0,0,0.45),
+    -2px -2px 6px rgba(35,50,65,0.18),
+    inset 0 0 0 1px rgba(86,180,211,0.15),
+    0 0 20px rgba(86,180,211,0.05);
+}
+.pipe-card-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #0d1117;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(35,50,65,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  flex-shrink: 0;
 }
-.pipe-node-icon svg {
-  width: 22px;
-  height: 22px;
-  stroke: rgba(86,180,211,0.6);
+.pipe-card-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: rgba(86,180,211,0.55);
   fill: none;
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.pipe-node:last-child .pipe-node-icon {
-  box-shadow:
-    6px 6px 14px rgba(0,0,0,0.5),
-    -4px -4px 10px rgba(30,45,60,0.25),
-    inset 0 0 0 1px rgba(86,180,211,0.15),
-    0 0 24px rgba(86,180,211,0.08);
-}
-.pipe-node:last-child .pipe-node-icon svg {
+.pipe-card:last-child .pipe-card-icon svg {
   stroke: #56b4d3;
 }
-.pipe-node-label {
+.pipe-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.pipe-card-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(200,215,225,0.8);
+  letter-spacing: 0.02em;
+}
+.pipe-card:last-child .pipe-card-title {
+  color: #f7f4ef;
+}
+.pipe-card-desc {
   font-family: 'DM Sans', sans-serif;
   font-size: 9px;
-  font-weight: 600;
-  color: rgba(200,210,220,0.5);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: center;
-  line-height: 1.3;
+  font-weight: 400;
+  color: rgba(140,160,175,0.5);
+  letter-spacing: 0.02em;
 }
-.pipe-node:last-child .pipe-node-label {
-  color: rgba(86,180,211,0.8);
+.pipe-card:last-child .pipe-card-desc {
+  color: rgba(86,180,211,0.6);
 }
-.pipe-edge {
-  width: 28px;
-  height: 2px;
-  position: relative;
-  flex-shrink: 0;
+.pipe-line {
+  width: 1px;
+  height: 6px;
+  margin: 0 auto;
+  background: linear-gradient(to bottom, rgba(86,180,211,0.08), rgba(86,180,211,0.2));
   opacity: 0;
-  animation: edgeReveal 10s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.5s);
-  align-self: center;
-  margin-bottom: 18px;
+  animation: lineReveal 10s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.4s);
 }
-.pipe-edge::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(to right, rgba(86,180,211,0.15), rgba(86,180,211,0.3));
-  border-radius: 1px;
+@keyframes cardSlide {
+  0%, 100% { opacity: 0; transform: translateX(-8px); }
+  12%, 78% { opacity: 1; transform: translateX(0); }
 }
-.pipe-edge::after {
-  content: '';
-  position: absolute;
-  top: -3px;
-  right: -2px;
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  border-left: 5px solid rgba(86,180,211,0.3);
-}
-@keyframes nodeReveal {
-  0%, 100% { opacity: 0; transform: scale(0.85); }
-  12%, 78% { opacity: 1; transform: scale(1); }
-}
-@keyframes edgeReveal {
+@keyframes lineReveal {
   0%, 100% { opacity: 0; }
   15%, 75% { opacity: 1; }
 }
@@ -1623,32 +1615,24 @@ footer {
         <p>Outlier detection, statistical modeling, LTV projections — methods that normally require a data science team. They run automatically. You get the rigor without needing the expertise.</p>
         <div class="step-visual pipeline-visual">
           <div class="pipeline">
-            <div class="pipe-node" style="--i:0">
-              <div class="pipe-node-icon">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/></svg>
-              </div>
-              <div class="pipe-node-label">Outlier<br>Detection</div>
+            <div class="pipe-card" style="--i:0">
+              <div class="pipe-card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/></svg></div>
+              <div class="pipe-card-text"><div class="pipe-card-title">Outlier Detection</div><div class="pipe-card-desc">Removes noise</div></div>
             </div>
-            <div class="pipe-edge" style="--i:1"></div>
-            <div class="pipe-node" style="--i:2">
-              <div class="pipe-node-icon">
-                <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-              </div>
-              <div class="pipe-node-label">Survival<br>Analysis</div>
+            <div class="pipe-line" style="--i:1"></div>
+            <div class="pipe-card" style="--i:2">
+              <div class="pipe-card-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+              <div class="pipe-card-text"><div class="pipe-card-title">Survival Analysis</div><div class="pipe-card-desc">Kaplan-Meier estimation</div></div>
             </div>
-            <div class="pipe-edge" style="--i:3"></div>
-            <div class="pipe-node" style="--i:4">
-              <div class="pipe-node-icon">
-                <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="17" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
-              </div>
-              <div class="pipe-node-label">Weibull<br>Distribution</div>
+            <div class="pipe-line" style="--i:3"></div>
+            <div class="pipe-card" style="--i:4">
+              <div class="pipe-card-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="17" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/></svg></div>
+              <div class="pipe-card-text"><div class="pipe-card-title">Weibull Distribution</div><div class="pipe-card-desc">Parametric hazard model</div></div>
             </div>
-            <div class="pipe-edge" style="--i:5"></div>
-            <div class="pipe-node" style="--i:6">
-              <div class="pipe-node-icon">
-                <svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><polyline points="18 14 12 20 6 14"/><path d="M4 4h16"/><path d="M4 8h16"/></svg>
-              </div>
-              <div class="pipe-node-label">LTV<br>Projection</div>
+            <div class="pipe-line" style="--i:5"></div>
+            <div class="pipe-card" style="--i:6">
+              <div class="pipe-card-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><polyline points="18 14 12 20 6 14"/><path d="M4 4h16"/><path d="M4 8h16"/></svg></div>
+              <div class="pipe-card-text"><div class="pipe-card-title">LTV Projection</div><div class="pipe-card-desc">Revenue × retention</div></div>
             </div>
           </div>
         </div>
