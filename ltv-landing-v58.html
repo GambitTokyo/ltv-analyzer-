@@ -530,105 +530,114 @@ h1.hero-title em {
 
 /* ── PIPELINE ANIMATION (Step 2) ── */
 .pipeline-visual {
-  background: #0a0e14;
+  background: #0d1117;
   position: relative;
   overflow: hidden;
-}
-.pipeline-visual::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(86,180,211,0.04) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(86,180,211,0.03) 0%, transparent 50%);
 }
 .pipeline {
   position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 20px 24px;
+  padding: 24px 16px;
   box-sizing: border-box;
   gap: 0;
 }
-.pipe-stage {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(86,180,211,0.04);
-  border: 1px solid rgba(86,180,211,0.15);
-  border-radius: 8px;
-  padding: 8px 20px;
-  width: 80%;
-  box-sizing: border-box;
-  opacity: 0;
-  transform: translateY(6px);
-  animation: pipeReveal 8s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.35s);
-}
-.pipe-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 5px;
-  background: rgba(86,180,211,0.1);
-  border: 1px solid rgba(86,180,211,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: rgba(86,180,211,0.7);
-  flex-shrink: 0;
-}
-.pipe-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(86,180,211,0.8);
-  letter-spacing: 0.03em;
-}
-.pipe-stage-final {
-  border-color: rgba(86,180,211,0.35);
-  background: rgba(86,180,211,0.08);
-  box-shadow: 0 0 20px rgba(86,180,211,0.06);
-}
-.pipe-stage-final .pipe-icon {
-  background: rgba(86,180,211,0.2);
-  border-color: rgba(86,180,211,0.4);
-  color: #56b4d3;
-}
-.pipe-stage-final .pipe-label {
-  color: #f7f4ef;
-  font-weight: 600;
-}
-.pipe-connector {
+.pipe-node {
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 16px;
-  justify-content: center;
+  gap: 8px;
+  flex: 1;
   opacity: 0;
-  animation: pipeReveal 8s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 0.35s);
+  transform: scale(0.85);
+  animation: nodeReveal 10s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.5s);
 }
-.pipe-connector::before {
+.pipe-node-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #131920;
+  box-shadow:
+    6px 6px 14px rgba(0,0,0,0.5),
+    -4px -4px 10px rgba(30,45,60,0.25),
+    inset 0 0 0 1px rgba(86,180,211,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.pipe-node-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: rgba(86,180,211,0.6);
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pipe-node:last-child .pipe-node-icon {
+  box-shadow:
+    6px 6px 14px rgba(0,0,0,0.5),
+    -4px -4px 10px rgba(30,45,60,0.25),
+    inset 0 0 0 1px rgba(86,180,211,0.15),
+    0 0 24px rgba(86,180,211,0.08);
+}
+.pipe-node:last-child .pipe-node-icon svg {
+  stroke: #56b4d3;
+}
+.pipe-node-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(200,210,220,0.5);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.3;
+}
+.pipe-node:last-child .pipe-node-label {
+  color: rgba(86,180,211,0.8);
+}
+.pipe-edge {
+  width: 28px;
+  height: 2px;
+  position: relative;
+  flex-shrink: 0;
+  opacity: 0;
+  animation: edgeReveal 10s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 0.5s);
+  align-self: center;
+  margin-bottom: 18px;
+}
+.pipe-edge::before {
   content: '';
-  width: 1px;
-  height: 10px;
-  background: linear-gradient(to bottom, rgba(86,180,211,0.1), rgba(86,180,211,0.3));
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(86,180,211,0.15), rgba(86,180,211,0.3));
+  border-radius: 1px;
 }
-.pipe-connector::after {
+.pipe-edge::after {
   content: '';
-  width: 0;
-  height: 0;
-  border-left: 3px solid transparent;
-  border-right: 3px solid transparent;
-  border-top: 4px solid rgba(86,180,211,0.3);
+  position: absolute;
+  top: -3px;
+  right: -2px;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid rgba(86,180,211,0.3);
 }
-@keyframes pipeReveal {
-  0%, 100% { opacity: 0; transform: translateY(6px); }
-  14%, 76% { opacity: 1; transform: translateY(0); }
+@keyframes nodeReveal {
+  0%, 100% { opacity: 0; transform: scale(0.85); }
+  12%, 78% { opacity: 1; transform: scale(1); }
+}
+@keyframes edgeReveal {
+  0%, 100% { opacity: 0; }
+  15%, 75% { opacity: 1; }
 }
 
 .code-block {
@@ -1614,24 +1623,32 @@ footer {
         <p>Outlier detection, statistical modeling, LTV projections — methods that normally require a data science team. They run automatically. You get the rigor without needing the expertise.</p>
         <div class="step-visual pipeline-visual">
           <div class="pipeline">
-            <div class="pipe-stage" style="--i:0">
-              <div class="pipe-icon">&#9683;</div>
-              <div class="pipe-label">CSV Input</div>
+            <div class="pipe-node" style="--i:0">
+              <div class="pipe-node-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/></svg>
+              </div>
+              <div class="pipe-node-label">Outlier<br>Detection</div>
             </div>
-            <div class="pipe-connector" style="--i:1"></div>
-            <div class="pipe-stage" style="--i:2">
-              <div class="pipe-icon">&#9670;</div>
-              <div class="pipe-label">Outlier Detection</div>
+            <div class="pipe-edge" style="--i:1"></div>
+            <div class="pipe-node" style="--i:2">
+              <div class="pipe-node-icon">
+                <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+              <div class="pipe-node-label">Survival<br>Analysis</div>
             </div>
-            <div class="pipe-connector" style="--i:3"></div>
-            <div class="pipe-stage" style="--i:4">
-              <div class="pipe-icon">&#916;</div>
-              <div class="pipe-label">Statistical Modeling</div>
+            <div class="pipe-edge" style="--i:3"></div>
+            <div class="pipe-node" style="--i:4">
+              <div class="pipe-node-icon">
+                <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="8" x2="17" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+              </div>
+              <div class="pipe-node-label">Weibull<br>Distribution</div>
             </div>
-            <div class="pipe-connector" style="--i:5"></div>
-            <div class="pipe-stage pipe-stage-final" style="--i:6">
-              <div class="pipe-icon">&#8734;</div>
-              <div class="pipe-label">LTV Projection</div>
+            <div class="pipe-edge" style="--i:5"></div>
+            <div class="pipe-node" style="--i:6">
+              <div class="pipe-node-icon">
+                <svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><polyline points="18 14 12 20 6 14"/><path d="M4 4h16"/><path d="M4 8h16"/></svg>
+              </div>
+              <div class="pipe-node-label">LTV<br>Projection</div>
             </div>
           </div>
         </div>
