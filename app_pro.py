@@ -1192,8 +1192,10 @@ if uploaded is None and st.session_state.get('sample_df') is None:
 本ツールは Kaplan–Meier × Weibull の組み合わせで、観測期間を超えた LTV（生涯価値）を推定します。以下の流れで進めてください。
         """)
 
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>Block 2 — まず、自身のビジネスタイプを確認</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>ビジネスタイプの確認</div>""", unsafe_allow_html=True)
         st.markdown("""
+まずご自身のビジネスが **定額課金型（サブスク）** か **都度購入型** かを確認してください。必要なデータ列が異なります。
+
 |  | サブスク型 | 都度購入型 |
 |--|-----------|-----------|
 | **該当例** | 月額/年額課金、SaaS、会員制 | EC、スポット購入、リピート品販売 |
@@ -1214,12 +1216,12 @@ Standard 版をご利用の場合は 1 つの CSV で単一の LTV 推定を行�
 左サイドバーでサンプルデータを選択すると、そのサンプル CSV をダウンロードできます。セグメント列の入れ方や日付形式の実例として参考になります。
         """)
 
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>2. データを準備する</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>データの準備</div>""", unsafe_allow_html=True)
         st.markdown("""
 サイドバーから 3 種類のサンプルデータをダウンロードできます（**サブスク（日割りなし）／サブスク（日割りあり）／都度購入**）。課金形態の異なる 3 タイプを揃えていますので、自社データの形式を整える際の参考にしてください。
         """)
 
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>3. パラメータを調整する</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>パラメータの調整</div>""", unsafe_allow_html=True)
         st.markdown("""
 **休眠期間の設定（都度購入型向け）**
 最新購買日から X 日経過した顧客を「離脱」とみなすための設定です。適切な日数はビジネスによって大きく異なるため、一律の目安はありません。自社の顧客データから購買間隔の傾向を確認し、実態に沿った値を設定してください。サイドバーで調整可能です。
@@ -1233,27 +1235,36 @@ Standard 版をご利用の場合は 1 つの CSV で単一の LTV 推定を行�
 This tool estimates LTV beyond your observation window using Kaplan–Meier × Weibull. Follow the steps below.
         """)
 
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>1. Confirm your business type</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>Business type</div>""", unsafe_allow_html=True)
         st.markdown("""
 First, confirm whether your business is **subscription-based** or **spot purchase**. Required columns differ.
 
-| Business type | Required columns | Churn detection |
-|---------------|------------------|-----------------|
-| **Subscription** | `customer_id`, `start_date`, `end_date`, `revenue` | Churned if `end_date` is present |
-| **Spot purchase** | `customer_id`, `start_date`, `last_purchase_date`, `revenue` | Churned after N days from last purchase date |
-
-`revenue` should be cumulative (total during contract / across all purchases). Daily proration is handled internally.
-
-**Segment analysis (Advanced)**
-Add segment columns (channel, age group, region, etc.) to compare LTV across segments. For Standard, prepare separate datasets per segment. The demo includes sample data with segment columns.
+|  | Subscription | Spot purchase |
+|--|--------------|---------------|
+| **Examples** | Monthly/annual billing, SaaS, membership | EC, spot purchase, repeat-product sales |
+| **Churn detection** | Cancellation date is confirmed | Churned after a fixed period from the latest purchase |
+| **Required columns** | `customer_id` / `start_date` / **`end_date`** / `revenue` | `customer_id` / `start_date` / **`last_purchase_date`** / `revenue` |
+| **Notes** | `end_date` left blank for active customers | Dormancy period setting required (see below) |
         """)
 
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>2. Prepare your data</div>""", unsafe_allow_html=True)
+        st.markdown("#### About segment analysis")
+        st.markdown("""
+This demo lets you try the Advanced version. The sample CSV includes segment columns (channel, age group, region, etc.), and segment-level LTV comparison is generated automatically.
+
+For the Standard version, a single CSV produces a single LTV estimate. To compare segments, prepare a separate CSV per segment (channel, age group, region, etc.) and analyze each individually. If you need automation and bulk comparison, consider Advanced.
+        """)
+
+        st.markdown("#### About the actual CSV format")
+        st.markdown("""
+Selecting a sample dataset in the left sidebar lets you download that sample CSV. It serves as a real example of how to include segment columns and format dates.
+        """)
+
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>Data preparation</div>""", unsafe_allow_html=True)
         st.markdown("""
 Three sample datasets are downloadable from the sidebar (**subscription without proration / subscription with proration / spot purchase**), covering distinct billing models. Use them as a reference when shaping your own data.
         """)
 
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>3. Adjust parameters</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>Parameter settings</div>""", unsafe_allow_html=True)
         st.markdown("""
 **Dormancy period (for spot purchase)**
 Defines how many days after the latest purchase a customer is considered churned. Appropriate values vary widely by business — there is no universal rule. Check purchase intervals in your own data and set a value that matches reality. Adjustable from the sidebar.
