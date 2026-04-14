@@ -1185,7 +1185,77 @@ if uploaded is None and st.session_state.get('sample_df') is None:
         _no_file_msg = T('main_no_file_info')
     st.info(_no_file_msg)
 
-    st.markdown(f"<div class='section-title'>{T('main_csv_format_title')}</div>", unsafe_allow_html=True)
+    # ── How to use ───────────────────────────────────────────
+    if get_lang() == 'ja':
+        st.markdown("""<div class='section-title'>このツールの使い方</div>""", unsafe_allow_html=True)
+        st.markdown("""
+本ツールは Kaplan–Meier × Weibull の組み合わせで、観測期間を超えた LTV（生涯価値）を推定します。以下の流れで進めてください。
+        """)
+
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>1. 業態を確認する</div>""", unsafe_allow_html=True)
+        st.markdown("""
+まずご自身のビジネスが **定額課金型（サブスク）** か **都度購入型** かを確認してください。必要なデータ列が異なります。
+
+| 業態 | 必須列 | 離脱の判定 |
+|------|--------|------------|
+| **定額課金型（サブスク）** | `customer_id`, `start_date`, `end_date`, `revenue` | `end_date` が入っていれば離脱 |
+| **都度購入型** | `customer_id`, `start_date`, `last_purchase_date`, `revenue` | 最新購買日から一定期間経過で離脱とみなす |
+
+`revenue` は累計売上（契約期間中／購入履歴全体の合計）を入れてください。日割り換算は内部で自動処理します。
+
+**セグメント分析（Advanced 機能）**
+チャネル・年代・地域などのセグメント列を追加すると、セグメント別の LTV を比較できます。Standard 版をお使いの場合は、セグメントごとにデータセットを分けてご用意ください。デモではあらかじめセグメント列を含んだサンプルを用意しています。
+        """)
+
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>2. データを準備する</div>""", unsafe_allow_html=True)
+        st.markdown("""
+サイドバーから 3 種類のサンプルデータをダウンロードできます（**サブスク（日割りなし）／サブスク（日割りあり）／都度購入**）。課金形態の異なる 3 タイプを揃えていますので、自社データの形式を整える際の参考にしてください。
+        """)
+
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>3. パラメータを調整する</div>""", unsafe_allow_html=True)
+        st.markdown("""
+**休眠期間の設定（都度購入型向け）**
+最新購買日から X 日経過した顧客を「離脱」とみなすための設定です。適切な日数はビジネスによって大きく異なるため、一律の目安はありません。自社の顧客データから購買間隔の傾向を確認し、実態に沿った値を設定してください。サイドバーで調整可能です。
+
+**外れ値処理**
+極端に高い `revenue` を持つ顧客は推定結果を歪めます。サイドバーで上位パーセンタイルでのクリッピング（例：上位 1%）を有効化できます。
+        """)
+    else:
+        st.markdown("""<div class='section-title'>How to use this tool</div>""", unsafe_allow_html=True)
+        st.markdown("""
+This tool estimates LTV beyond your observation window using Kaplan–Meier × Weibull. Follow the steps below.
+        """)
+
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>1. Confirm your business type</div>""", unsafe_allow_html=True)
+        st.markdown("""
+First, confirm whether your business is **subscription-based** or **spot purchase**. Required columns differ.
+
+| Business type | Required columns | Churn detection |
+|---------------|------------------|-----------------|
+| **Subscription** | `customer_id`, `start_date`, `end_date`, `revenue` | Churned if `end_date` is present |
+| **Spot purchase** | `customer_id`, `start_date`, `last_purchase_date`, `revenue` | Churned after N days from last purchase date |
+
+`revenue` should be cumulative (total during contract / across all purchases). Daily proration is handled internally.
+
+**Segment analysis (Advanced)**
+Add segment columns (channel, age group, region, etc.) to compare LTV across segments. For Standard, prepare separate datasets per segment. The demo includes sample data with segment columns.
+        """)
+
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>2. Prepare your data</div>""", unsafe_allow_html=True)
+        st.markdown("""
+Three sample datasets are downloadable from the sidebar (**subscription without proration / subscription with proration / spot purchase**), covering distinct billing models. Use them as a reference when shaping your own data.
+        """)
+
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>3. Adjust parameters</div>""", unsafe_allow_html=True)
+        st.markdown("""
+**Dormancy period (for spot purchase)**
+Defines how many days after the latest purchase a customer is considered churned. Appropriate values vary widely by business — there is no universal rule. Check purchase intervals in your own data and set a value that matches reality. Adjustable from the sidebar.
+
+**Outlier handling**
+Extremely high `revenue` values can distort estimates. Enable top-percentile clipping (e.g., top 1%) from the sidebar.
+        """)
+
+    st.markdown(f"<div class='section-title' style='margin-top:36px;'>{T('main_csv_format_title')}</div>", unsafe_allow_html=True)
     if get_lang() == 'ja':
         st.markdown("""
 | 列名 | 内容 | 形式 | 例 |
