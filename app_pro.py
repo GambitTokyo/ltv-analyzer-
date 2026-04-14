@@ -1059,15 +1059,15 @@ with st.sidebar:
         custom_cycle_days = None
         prorate_cancel = False
         _dormancy_map = {
+            T('dormancy_90d'): 90,
             T('dormancy_180d'): 180,
             T('dormancy_365d'): 365,
-            T('dormancy_730d'): 730,
             T('dormancy_custom'): None,
         }
         dormancy_option = st.radio(
             T('sidebar_dormancy_period'),
             list(_dormancy_map.keys()),
-            index=0,
+            index=1,
             disabled=_demo_lock,
         )
         st.caption(T('sidebar_dormancy_caption'))
@@ -1192,19 +1192,26 @@ if uploaded is None and st.session_state.get('sample_df') is None:
 本ツールは Kaplan–Meier × Weibull の組み合わせで、観測期間を超えた LTV（生涯価値）を推定します。以下の流れで進めてください。
         """)
 
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>1. 業態を確認する</div>""", unsafe_allow_html=True)
+        st.markdown("""<div class='section-title' style='margin-top:28px;'>Block 2 — まず、自身のビジネスタイプを確認</div>""", unsafe_allow_html=True)
         st.markdown("""
-まずご自身のビジネスが **定額課金型（サブスク）** か **都度購入型** かを確認してください。必要なデータ列が異なります。
+|  | サブスク型 | 都度購入型 |
+|--|-----------|-----------|
+| **該当例** | 月額/年額課金、SaaS、会員制 | EC、スポット購入、リピート品販売 |
+| **離脱の判定** | 解約日が確定している | 最新購買日から一定期間経過で離脱とみなす |
+| **必要列** | `customer_id` / `start_date` / **`end_date`** / `revenue` | `customer_id` / `start_date` / **`last_purchase_date`** / `revenue` |
+| **補足** | 継続中の顧客は `end_date` 空欄 | 休眠期間の設定が必要（後述） |
+        """)
 
-| 業態 | 必須列 | 離脱の判定 |
-|------|--------|------------|
-| **定額課金型（サブスク）** | `customer_id`, `start_date`, `end_date`, `revenue` | `end_date` が入っていれば離脱 |
-| **都度購入型** | `customer_id`, `start_date`, `last_purchase_date`, `revenue` | 最新購買日から一定期間経過で離脱とみなす |
+        st.markdown("#### セグメント分析について")
+        st.markdown("""
+このデモでは Advanced 版を体験できます。サンプル CSV にはセグメント列（チャネル・年代・地域など）が含まれており、セグメント別の LTV 比較が自動で出力されます。
 
-`revenue` は累計売上（契約期間中／購入履歴全体の合計）を入れてください。日割り換算は内部で自動処理します。
+Standard 版をご利用の場合は 1 つの CSV で単一の LTV 推定を行います。セグメント別に比較したい場合は、セグメント（チャネル・年代・地域など）ごとに別 CSV を用意して個別に分析してください。自動化・一括比較が必要な方は Advanced をご検討ください。
+        """)
 
-**セグメント分析（Advanced 機能）**
-チャネル・年代・地域などのセグメント列を追加すると、セグメント別の LTV を比較できます。Standard 版をお使いの場合は、セグメントごとにデータセットを分けてご用意ください。デモではあらかじめセグメント列を含んだサンプルを用意しています。
+        st.markdown("#### 実際の CSV 形式について")
+        st.markdown("""
+左サイドバーでサンプルデータを選択すると、そのサンプル CSV をダウンロードできます。セグメント列の入れ方や日付形式の実例として参考になります。
         """)
 
         st.markdown("""<div class='section-title' style='margin-top:28px;'>2. データを準備する</div>""", unsafe_allow_html=True)
