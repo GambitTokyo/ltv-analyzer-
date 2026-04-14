@@ -1207,21 +1207,14 @@ if uploaded is None and st.session_state.get('sample_df') is None:
         st.markdown("""
 - このデモでは Advanced 版を体験できます。サンプル CSV にはセグメント列（チャネル・年代・地域など）が含まれており、セグメント別の LTV 比較が自動で出力されます。
 - Standard 版をご利用の場合は 1 つの CSV で単一の LTV 推定を行います。セグメント別に比較したい場合は、セグメント（チャネル・年代・地域など）ごとに別 CSV を用意して個別に分析してください。自動化・一括比較が必要な方は Advanced をご検討ください。
-- 左サイドバーでサンプルデータを選択すると、そのサンプル CSV をダウンロードできます。セグメント列の入れ方や日付形式の実例として参考になります。
-        """)
-
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>データの準備</div>""", unsafe_allow_html=True)
-        st.markdown("""
-サイドバーから 3 種類のサンプルデータをダウンロードできます（**サブスク（日割りなし）／サブスク（日割りあり）／都度購入**）。課金形態の異なる 3 タイプを揃えていますので、自社データの形式を整える際の参考にしてください。
+- 左サイドバーから 3 種類のサンプルデータ（**サブスク（日割りOFF）／サブスク（日割りON）／都度購入**）をダウンロードできます。課金形態の異なる 3 タイプを揃えており、セグメント列の入れ方や日付形式の実例として、また自社データの形式を整える際の参考にもなります。
         """)
 
         st.markdown("""<div class='section-title' style='margin-top:28px;'>パラメータの調整</div>""", unsafe_allow_html=True)
         st.markdown("""
-**休眠期間の設定（都度購入型向け）**
-最新購買日から X 日経過した顧客を「離脱」とみなすための設定です。適切な日数はビジネスによって大きく異なるため、一律の目安はありません。自社の顧客データから購買間隔の傾向を確認し、実態に沿った値を設定してください。サイドバーで調整可能です。
+**休眠期間の設定（都度購入型向け）：** 最新購買日から X 日経過した顧客を「離脱」とみなすための設定です。適切な日数はビジネスによって異なります。自社の顧客データなどから購買間隔の傾向を確認し、実態に沿った値を設定してください。サイドバーで調整可能です。
 
-**外れ値処理**
-極端に高い `revenue` を持つ顧客は推定結果を歪めます。サイドバーで上位パーセンタイルでのクリッピング（例：上位 1%）を有効化できます。
+**外れ値処理：** `revenue` が分布から極端に外れた顧客は推定結果を歪めます。サイドバーで上位パーセンタイルのクリッピング（例：上位 1%）を有効化することで高額側の外れ値を、下位パーセンタイルで `revenue` が 0 など不自然な低額側の顧客を除外できます。
         """)
     else:
         st.markdown("""<div class='section-title'>How to use this tool</div>""", unsafe_allow_html=True)
@@ -1244,21 +1237,14 @@ First, confirm whether your business is **subscription-based** or **spot purchas
         st.markdown("""
 - This demo lets you try the Advanced version. The sample CSV includes segment columns (channel, age group, region, etc.), and segment-level LTV comparison is generated automatically.
 - For the Standard version, a single CSV produces a single LTV estimate. To compare segments, prepare a separate CSV per segment (channel, age group, region, etc.) and analyze each individually. If you need automation and bulk comparison, consider Advanced.
-- Selecting a sample dataset in the left sidebar lets you download that sample CSV. It serves as a real example of how to include segment columns and format dates.
-        """)
-
-        st.markdown("""<div class='section-title' style='margin-top:28px;'>Data preparation</div>""", unsafe_allow_html=True)
-        st.markdown("""
-Three sample datasets are downloadable from the sidebar (**subscription without proration / subscription with proration / spot purchase**), covering distinct billing models. Use them as a reference when shaping your own data.
+- Three sample datasets (**subscription without proration / subscription with proration / spot purchase**) are downloadable from the left sidebar. They cover distinct billing models and serve as real examples of how to include segment columns and format dates — useful as a reference when shaping your own data.
         """)
 
         st.markdown("""<div class='section-title' style='margin-top:28px;'>Parameter settings</div>""", unsafe_allow_html=True)
         st.markdown("""
-**Dormancy period (for spot purchase)**
-Defines how many days after the latest purchase a customer is considered churned. Appropriate values vary widely by business — there is no universal rule. Check purchase intervals in your own data and set a value that matches reality. Adjustable from the sidebar.
+**Dormancy period (for spot purchase):** Defines how many days after the latest purchase a customer is considered churned. Appropriate values vary by business. Check purchase intervals in your own data and set a value that matches reality. Adjustable from the sidebar.
 
-**Outlier handling**
-Extremely high `revenue` values can distort estimates. Enable top-percentile clipping (e.g., top 1%) from the sidebar.
+**Outlier handling:** Customers with `revenue` values far from the distribution can distort estimates. Top-percentile clipping (e.g., top 1%) from the sidebar removes high-end outliers, and bottom-percentile clipping removes unnatural low-end customers such as those with `revenue` of 0.
         """)
 
     st.markdown(f"<div class='section-title' style='margin-top:36px;'>{T('main_csv_format_title')}</div>", unsafe_allow_html=True)
@@ -1269,14 +1255,15 @@ Extremely high `revenue` values can distort estimates. Enable top-percentile cli
 | `customer_id` | 顧客ID | 任意の文字列 | C0001 |
 | `start_date` | 契約開始日 / 初回購入日 | YYYY-MM-DD | 2023-01-01 |
 | `end_date` | 解約日（サブスク向け・継続中は**空欄**） | YYYY-MM-DD | 2024-03-15 |
-| `last_purchase_date` | 最終購買日（都度購入向け・任意） | YYYY-MM-DD | 2024-06-01 |
+| `last_purchase_date` | 最新購入日（都度購入向け） | YYYY-MM-DD | 2024-06-01 |
 | `revenue` | **累計売上** | 数値 | 48000 |
-| `セグメント列`（任意の列名） | **Advanced機能**：チャネル・年齢層・性別など | 文字列 | 20代 |
+| `セグメント列`（任意の列名） | チャネル・年齢層・地域など（Advanced機能） | 文字列 | 20代 |
 
-> **Advanced版では必ずセグメント列を追加してください。**複数列追加可能です。\n
-> 列名は完全一致でなくてもOKです。`start`・`end`・`last`・`revenue`を含む列名は自動認識します。\n
-> ARPU daily はビジネスタイプに応じて自動計算されます。\n
-> セグメント列は1列あたり最大50種類のユニーク値まで対応しています（都道府県47個も対応）。
+- **Advanced 版では必ずセグメント列を追加してください。** 複数列追加可能です。
+- 列名は半角英数字（アンダースコア可）で統一してください。値は日本語表記のままで使えます。
+- 列名は完全一致でなくても OK です。`start`・`end`・`last`・`revenue` を含む列名は自動認識します。
+- ARPU daily はビジネスタイプに応じて自動計算されます。
+- セグメント列は 1 列あたり最大 50 種類のユニーク値まで対応しています（都道府県 47 個も対応）。
     """)
     else:
         st.markdown("""
@@ -1285,14 +1272,15 @@ Extremely high `revenue` values can distort estimates. Enable top-percentile cli
 | `customer_id` | Customer ID | Any string | C0001 |
 | `start_date` | Start date / first purchase date | YYYY-MM-DD | 2023-01-01 |
 | `end_date` | End date (subscription: blank if active) | YYYY-MM-DD | 2024-03-15 |
-| `last_purchase_date` | Last purchase date (spot purchase: optional) | YYYY-MM-DD | 2024-06-01 |
+| `last_purchase_date` | Latest purchase date (for spot purchase) | YYYY-MM-DD | 2024-06-01 |
 | `revenue` | **Cumulative revenue** | Numeric | 48000 |
-| Segment columns (any name) | **Advanced**: channel, age group, gender, etc. | String | 20s |
+| Segment columns (any name) | Channel, age group, region, etc. (Advanced) | String | 20s |
 
-> **Always include segment columns for the Advanced version.** Multiple columns supported.\n
-> Column names don't need to match exactly. Columns containing `start`, `end`, `last`, or `revenue` are auto-detected.\n
-> Daily ARPU is automatically calculated based on business type.\n
-> Each segment column supports up to 50 unique values.
+- **Always include segment columns for the Advanced version.** Multiple columns supported.
+- Use half-width alphanumerics (underscores allowed) for column names.
+- Column names don't need to match exactly. Columns containing `start`, `end`, `last`, or `revenue` are auto-detected.
+- Daily ARPU is automatically calculated based on business type.
+- Each segment column supports up to 50 unique values.
     """)
 
     st.markdown(f"<div class='section-title'>{T('main_analysis_flow_title')}</div>", unsafe_allow_html=True)
