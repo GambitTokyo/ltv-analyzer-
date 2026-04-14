@@ -1204,14 +1204,14 @@ if uploaded is None and st.session_state.get('sample_df') is None:
 | **補足** | 継続中の顧客は `end_date` 空欄 | 休眠期間の設定が必要（後述） |
         """)
 
-        st.markdown("#### セグメント分析について")
+        st.markdown("**▸ セグメント分析**")
         st.markdown("""
 このデモでは Advanced 版を体験できます。サンプル CSV にはセグメント列（チャネル・年代・地域など）が含まれており、セグメント別の LTV 比較が自動で出力されます。
 
 Standard 版をご利用の場合は 1 つの CSV で単一の LTV 推定を行います。セグメント別に比較したい場合は、セグメント（チャネル・年代・地域など）ごとに別 CSV を用意して個別に分析してください。自動化・一括比較が必要な方は Advanced をご検討ください。
         """)
 
-        st.markdown("#### 実際の CSV 形式について")
+        st.markdown("**▸ 実際の CSV 形式**")
         st.markdown("""
 左サイドバーでサンプルデータを選択すると、そのサンプル CSV をダウンロードできます。セグメント列の入れ方や日付形式の実例として参考になります。
         """)
@@ -1247,14 +1247,14 @@ First, confirm whether your business is **subscription-based** or **spot purchas
 | **Notes** | `end_date` left blank for active customers | Dormancy period setting required (see below) |
         """)
 
-        st.markdown("#### About segment analysis")
+        st.markdown("**▸ Segment analysis**")
         st.markdown("""
 This demo lets you try the Advanced version. The sample CSV includes segment columns (channel, age group, region, etc.), and segment-level LTV comparison is generated automatically.
 
 For the Standard version, a single CSV produces a single LTV estimate. To compare segments, prepare a separate CSV per segment (channel, age group, region, etc.) and analyze each individually. If you need automation and bulk comparison, consider Advanced.
         """)
 
-        st.markdown("#### About the actual CSV format")
+        st.markdown("**▸ Actual CSV format**")
         st.markdown("""
 Selecting a sample dataset in the left sidebar lets you download that sample CSV. It serves as a real example of how to include segment columns and format dates.
         """)
