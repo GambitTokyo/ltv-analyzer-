@@ -104,6 +104,10 @@ else:
 
     APP_MODE = st.session_state.auth_mode
 
+    # DEBUG: テスト用 - ログイン成功確認
+    st.success(f"Login OK! mode={APP_MODE}, sid={st.session_state.auth_session_id[:8]}")
+    st.stop()
+
     # ── Heartbeat (JS-based, every 60 seconds) ─────────────────
     # TODO: re-enable after testing
     # _hb_payload = json.dumps({
