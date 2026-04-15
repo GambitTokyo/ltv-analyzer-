@@ -105,27 +105,24 @@ else:
     APP_MODE = st.session_state.auth_mode
 
     # ── Heartbeat (JS-based, every 60 seconds) ─────────────────
-    # TODO: re-enable after testing
-    # _hb_payload = json.dumps({
-    #     "action": "heartbeat",
-    #     "password": st.session_state.auth_password,
-    #     "session_id": st.session_state.auth_session_id
-    # })
-    # st.markdown(f"""
-    # <script>
-    # (function() {{
-    #     if (window._ltvHeartbeat) clearInterval(window._ltvHeartbeat);
-    #     window._ltvHeartbeat = setInterval(function() {{
-    #         fetch("{GAS_URL}", {{
-    #             method: "POST",
-    #             headers: {{"Content-Type": "application/json"}},
-    #             body: '{_hb_payload}',
-    #             mode: "no-cors"
-    #         }}).catch(function() {{}});
-    #     }}, 60000);
-    # }})();
-    # </script>
-    # """, unsafe_allow_html=True)
+    _hb_payload = json.dumps({
+        "action": "heartbeat",
+        "password": st.session_state.auth_password,
+        "session_id": st.session_state.auth_session_id
+    })
+    st.html(f"""<script>
+    (function() {{
+        if (window._ltvHeartbeat) clearInterval(window._ltvHeartbeat);
+        window._ltvHeartbeat = setInterval(function() {{
+            fetch("{GAS_URL}", {{
+                method: "POST",
+                headers: {{"Content-Type": "application/json"}},
+                body: '{_hb_payload}',
+                mode: "no-cors"
+            }}).catch(function() {{}});
+        }}, 60000);
+    }})();
+    </script>""")
 
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
