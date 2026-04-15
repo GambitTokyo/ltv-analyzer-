@@ -55,21 +55,21 @@ st.set_page_config(
 # MODE="auth": パスワード認証（GAS経由でmode判定）
 _cfg_mode = st.secrets.get("MODE", "demo").lower()
 
+# Always initialize auth session state (even in demo mode, to avoid AttributeError)
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+if "auth_mode" not in st.session_state:
+    st.session_state.auth_mode = "demo"
+if "auth_session_id" not in st.session_state:
+    st.session_state.auth_session_id = str(uuid.uuid4())
+if "auth_password" not in st.session_state:
+    st.session_state.auth_password = ""
+if "auth_error" not in st.session_state:
+    st.session_state.auth_error = ""
+
 if _cfg_mode == "demo":
     APP_MODE = "demo"
 else:
-    # Initialize session state
-    if "authenticated" not in st.session_state:
-        st.session_state.authenticated = False
-    if "auth_mode" not in st.session_state:
-        st.session_state.auth_mode = "demo"
-    if "auth_session_id" not in st.session_state:
-        st.session_state.auth_session_id = str(uuid.uuid4())
-    if "auth_password" not in st.session_state:
-        st.session_state.auth_password = ""
-    if "auth_error" not in st.session_state:
-        st.session_state.auth_error = ""
-
     def _do_login():
         pw = st.session_state.get("_login_pw", "")
         if pw and GAS_URL:
