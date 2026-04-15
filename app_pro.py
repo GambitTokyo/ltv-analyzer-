@@ -79,10 +79,8 @@ else:
                 st.session_state.auth_mode = result.get("mode", "standard").lower()
                 st.session_state.auth_password = pw
                 st.session_state.auth_error = ""
-            elif result.get("status") == "blocked":
-                st.session_state.auth_error = "This license is currently in use on another device. Please try again later."
             else:
-                st.session_state.auth_error = f"Incorrect password ({result.get('status', '')})"
+                st.session_state.auth_error = "Incorrect password"
         else:
             st.session_state.auth_error = "Incorrect password"
 
@@ -102,27 +100,14 @@ else:
                 st.error(st.session_state.auth_error)
         st.stop()
 
-    APP_MODE = st.session_state.auth_mode
+    # Verify session is still valid (another login with same password kicks this one)
+    _verify = _gas_request("verify", st.session_state.auth_password, st.session_state.auth_session_id)
+    if _verify.get("status") == "kicked":
+        st.session_state.authenticated = False
+        st.session_state.auth_error = "Your session has ended because this license was used to log in from another location."
+        st.rerun()
 
-    # ── Heartbeat (JS-based, every 60 seconds) ─────────────────
-    _hb_payload = json.dumps({
-        "action": "heartbeat",
-        "password": st.session_state.auth_password,
-        "session_id": st.session_state.auth_session_id
-    })
-    st.html(f"""<script>
-    (function() {{
-        if (window._ltvHeartbeat) clearInterval(window._ltvHeartbeat);
-        window._ltvHeartbeat = setInterval(function() {{
-            fetch("{GAS_URL}", {{
-                method: "POST",
-                headers: {{"Content-Type": "application/json"}},
-                body: '{_hb_payload}',
-                mode: "no-cors"
-            }}).catch(function() {{}});
-        }}, 60000);
-    }})();
-    </script>""")
+    APP_MODE = st.session_state.auth_mode
 
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
