@@ -1207,7 +1207,7 @@ LTV Analyzer は、一人あたりの生涯価値（LTV）と CAC（顧客獲得
         st.markdown("""
 - このデモでは Advanced 版を体験できます。サンプル CSV にはセグメント列（チャネル・年代・地域など）が含まれており、セグメント別の LTV 比較が自動で出力されます。
 - Standard 版をご利用の場合は 1 つの CSV で単一の LTV 推定を行います。セグメント別に比較したい場合は、セグメント（チャネル・年代・地域など）ごとに別 CSV を用意して個別に分析してください。自動化・一括比較が必要な方は Advanced をご検討ください。
-- 左サイドバーから 3 種類のサンプルデータ（**サブスク（日割りOFF）／サブスク（日割りON）／都度購入**）をダウンロードできます。課金形態の異なる 3 タイプを揃えており、セグメント列の入れ方や日付形式の実例として、また自社データの形式を整える際の参考にもなります。
+- 左サイドバーから 3 種類のサンプルデータ（**サブスク（日割りOFF）／サブスク（日割りON）／都度購入**）をダウンロードできます。自社データを整備する際の参考にご活用ください。
         """)
 
         st.markdown("""<div class='section-title' style='margin-top:28px;'>パラメータの調整</div>""", unsafe_allow_html=True)
@@ -1237,7 +1237,7 @@ First, confirm whether your business is **subscription-based** or **spot purchas
         st.markdown("""
 - This demo lets you try the Advanced version. The sample CSV includes segment columns (channel, age group, region, etc.), and segment-level LTV comparison is generated automatically.
 - For the Standard version, a single CSV produces a single LTV estimate. To compare segments, prepare a separate CSV per segment (channel, age group, region, etc.) and analyze each individually. If you need automation and bulk comparison, consider Advanced.
-- Three sample datasets (**subscription without proration / subscription with proration / spot purchase**) are downloadable from the left sidebar. They cover distinct billing models and serve as real examples of how to include segment columns and format dates — useful as a reference when shaping your own data.
+- Three sample datasets (**subscription without proration / subscription with proration / spot purchase**) are downloadable from the left sidebar. Use them as a reference when shaping your own data.
         """)
 
         st.markdown("""<div class='section-title' style='margin-top:28px;'>Parameter settings</div>""", unsafe_allow_html=True)
@@ -1259,6 +1259,8 @@ First, confirm whether your business is **subscription-based** or **spot purchas
 | `revenue` | **累計売上** | 数値 | 48000 |
 | `セグメント列`（任意の列名） | チャネル・年齢層・地域など（Advanced機能） | 文字列 | 20代 |
 
+- **`revenue` は累計売上です。** サブスク型は `start_date` から `end_date`（継続中はデータ抽出時点）まで、都度購入型は `start_date` から `last_purchase_date` までの売上合計を入れてください。
+- **観測期間について：** データの観測期間が短すぎるとまだ解約／離脱していない顧客が多く、将来価値の推定が不安定になります。目安として 2〜3 年以上のデータがあると安定しやすくなります（ビジネスモデルにより幅があります）。
 - **Advanced 版では必ずセグメント列を追加してください。** 複数列追加可能です。
 - 列名は半角英数字（アンダースコア可）で統一してください。値は日本語表記のままで使えます。
 - 列名は完全一致でなくても OK です。`start`・`end`・`last`・`revenue` を含む列名は自動認識します。
@@ -1273,9 +1275,11 @@ First, confirm whether your business is **subscription-based** or **spot purchas
 | `start_date` | Start date / first purchase date | YYYY-MM-DD | 2023-01-01 |
 | `end_date` | End date (subscription: blank if active) | YYYY-MM-DD | 2024-03-15 |
 | `last_purchase_date` | Latest purchase date (for spot purchase) | YYYY-MM-DD | 2024-06-01 |
-| `revenue` | **Cumulative revenue** | Numeric | 48000 |
+| `revenue` | **Cumulative revenue** | Numeric | 480 |
 | Segment columns (any name) | Channel, age group, region, etc. (Advanced) | String | 20s |
 
+- **`revenue` is cumulative revenue.** For subscription, total from `start_date` to `end_date` (or to the data extraction date if still active). For spot purchase, total from `start_date` to `last_purchase_date`.
+- **Observation period:** If the observation period is too short, many customers have not churned yet, making future-value estimates unstable. As a rough guide, 2–3 years of data or more produces more stable results (varies by business model).
 - **Always include segment columns for the Advanced version.** Multiple columns supported.
 - Use half-width alphanumerics (underscores allowed) for column names.
 - Column names don't need to match exactly. Columns containing `start`, `end`, `last`, or `revenue` are auto-detected.
