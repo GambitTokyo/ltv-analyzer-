@@ -1134,7 +1134,13 @@ with st.sidebar:
 <div style='background: linear-gradient(135deg, #0d1f2d 0%, #142838 100%);
      border: 1px solid #1a4a5a; border-radius: 10px;
      padding: 14px 16px; margin: 8px 0 12px 0; text-align: center;'>
-  <div style='font-size: 0.82rem; color: #56b4d3; font-weight: 600; margin-bottom: 4px;'>🔒 {_sb_up_title}</div>
+  <div style='font-size: 0.82rem; color: #56b4d3; font-weight: 600; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 6px;'>
+    <svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='#56b4d3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' style='vertical-align: middle;'>
+      <rect x='4' y='11' width='16' height='10' rx='2'/>
+      <path d='M8 11V7a4 4 0 0 1 8 0v4'/>
+    </svg>
+    <span>{_sb_up_title}</span>
+  </div>
   <div style='font-size: 0.72rem; color: #8aa; line-height: 1.5; margin-bottom: 10px;'>{_sb_up_desc}</div>
   <a href='https://ltv-analyzer.com' target='_blank'
      style='display: inline-block; background: #56b4d3; color: #0a1020;
