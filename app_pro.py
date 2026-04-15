@@ -12,6 +12,9 @@ import warnings
 import calendar
 import plotly.graph_objects as go
 from scipy.optimize import brentq
+import json
+import uuid
+import urllib.request
 from lang import (fmt_c, cur_symbol, cur_decimal, CURRENCIES, LANG_DEFAULTS,
                   T, set_lang, get_lang,
                   BIZ_SUBSCRIPTION, BIZ_SPOT,
@@ -19,42 +22,93 @@ from lang import (fmt_c, cur_symbol, cur_decimal, CURRENCIES, LANG_DEFAULTS,
                   BILLING_FIXED_30, BILLING_DAILY_SPOT)
 warnings.filterwarnings('ignore')
 
+# ── GAS Auth Helper ──────────────────────────────────────────
+GAS_URL = st.secrets.get("GAS_URL", "")
+
+def _gas_request(action, password="", session_id=""):
+    """Send request to Google Apps Script Web App."""
+    payload = json.dumps({"action": action, "password": password, "session_id": session_id}).encode("utf-8")
+    req = urllib.request.Request(GAS_URL, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return {"status": "error", "message": "Connection failed"}
+
 # ── Page config ──────────────────────────────────────────────
+_initial_mode = st.secrets.get("MODE", "demo").lower()
 st.set_page_config(
-    page_title="LTV Analyzer Demo" if st.secrets.get("MODE", "demo").lower() == "demo" else "LTV Analyzer Advanced" if st.secrets.get("MODE", "demo").lower() == "advanced" else "LTV Analyzer Standard",
+    page_title="LTV Analyzer Demo" if _initial_mode == "demo" else "LTV Analyzer",
     page_icon="◆",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ── Mode & Authentication ─────────────────────────────────────
-# st.secrets に MODE ("demo"/"standard"/"advanced") と PASSWORD を設定
-# demo: パスワード不要、サンプルデータのみ
-# standard/advanced: パスワード必要、CSVアップロード可
-APP_MODE = st.secrets.get("MODE", "demo").lower()
+# MODE="demo": パスワード不要、サンプルデータのみ
+# MODE="auth": パスワード認証（GAS経由でmode判定）
+_cfg_mode = st.secrets.get("MODE", "demo").lower()
 
-if APP_MODE in ("standard", "advanced") and "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
+if _cfg_mode == "demo":
+    APP_MODE = "demo"
+else:
+    # Initialize session state
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+        st.session_state.auth_mode = "demo"
+        st.session_state.auth_session_id = str(uuid.uuid4())
+        st.session_state.auth_password = ""
 
-if APP_MODE in ("standard", "advanced") and not st.session_state.authenticated:
-    st.set_page_config is None  # already called above
-    _auth_col1, _auth_col2, _auth_col3 = st.columns([1, 1.5, 1])
-    with _auth_col2:
-        st.markdown("<div style='padding-top: 120px;'></div>", unsafe_allow_html=True)
-        st.markdown("""
-        <div style='text-align: center; margin-bottom: 24px;'>
-            <div style='font-size: 1.4rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.02em;'>LTV Analyzer</div>
-            <div style='font-size: 0.75rem; color: #3a6a7a; margin-top: 4px;'>Enter your password to continue</div>
-        </div>
-        """, unsafe_allow_html=True)
-        _pw = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Password")
-        if st.button("Enter", use_container_width=True):
-            if _pw == st.secrets.get("PASSWORD", ""):
-                st.session_state.authenticated = True
-                st.rerun()
-            else:
-                st.error("Incorrect password")
-    st.stop()
+    if not st.session_state.authenticated:
+        _auth_col1, _auth_col2, _auth_col3 = st.columns([1, 1.5, 1])
+        with _auth_col2:
+            st.markdown("<div style='padding-top: 120px;'></div>", unsafe_allow_html=True)
+            st.markdown("""
+            <div style='text-align: center; margin-bottom: 24px;'>
+                <div style='font-size: 1.4rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.02em;'>LTV Analyzer</div>
+                <div style='font-size: 0.75rem; color: #3a6a7a; margin-top: 4px;'>Enter your password to continue</div>
+            </div>
+            """, unsafe_allow_html=True)
+            _pw = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Password")
+            if st.button("Enter", use_container_width=True):
+                if _pw and GAS_URL:
+                    result = _gas_request("login", _pw, st.session_state.auth_session_id)
+                    if result.get("status") == "ok":
+                        st.session_state.authenticated = True
+                        st.session_state.auth_mode = result.get("mode", "standard").lower()
+                        st.session_state.auth_password = _pw
+                        st.rerun()
+                    elif result.get("status") == "blocked":
+                        st.error("This license is currently in use on another device. Please try again later.")
+                    else:
+                        st.error("Incorrect password")
+                else:
+                    st.error("Incorrect password")
+        st.stop()
+
+    APP_MODE = st.session_state.auth_mode
+
+    # ── Heartbeat (JS-based, every 60 seconds) ─────────────────
+    _hb_payload = json.dumps({
+        "action": "heartbeat",
+        "password": st.session_state.auth_password,
+        "session_id": st.session_state.auth_session_id
+    })
+    st.markdown(f"""
+    <script>
+    (function() {{
+        if (window._ltvHeartbeat) clearInterval(window._ltvHeartbeat);
+        window._ltvHeartbeat = setInterval(function() {{
+            fetch("{GAS_URL}", {{
+                method: "POST",
+                headers: {{"Content-Type": "application/json"}},
+                body: '{_hb_payload}',
+                mode: "no-cors"
+            }}).catch(function() {{}});
+        }}, 60000);
+    }})();
+    </script>
+    """, unsafe_allow_html=True)
 
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
