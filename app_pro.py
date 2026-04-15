@@ -55,8 +55,11 @@ else:
     # Initialize session state
     if "authenticated" not in st.session_state:
         st.session_state.authenticated = False
+    if "auth_mode" not in st.session_state:
         st.session_state.auth_mode = "demo"
+    if "auth_session_id" not in st.session_state:
         st.session_state.auth_session_id = str(uuid.uuid4())
+    if "auth_password" not in st.session_state:
         st.session_state.auth_password = ""
 
     if not st.session_state.authenticated:
