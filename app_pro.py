@@ -30,10 +30,16 @@ def _gas_request(action, password="", session_id=""):
     payload = json.dumps({"action": action, "password": password, "session_id": session_id}).encode("utf-8")
     req = urllib.request.Request(GAS_URL, data=payload, headers={"Content-Type": "application/json"}, method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except Exception:
-        return {"status": "error", "message": "Connection failed"}
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode("utf-8")
+            try:
+                return json.loads(body)
+            except json.JSONDecodeError:
+                return {"status": "error", "message": "Invalid response"}
+    except urllib.error.HTTPError as e:
+        return {"status": "error", "message": f"HTTP {e.code}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 # ── Page config ──────────────────────────────────────────────
 _initial_mode = st.secrets.get("MODE", "demo").lower()
@@ -84,7 +90,7 @@ else:
                     elif result.get("status") == "blocked":
                         st.error("This license is currently in use on another device. Please try again later.")
                     else:
-                        st.error("Incorrect password")
+                        st.error(f"Login failed: {result.get('message', 'Unknown error')} | status={result.get('status')}")
                 else:
                     st.error("Incorrect password")
         st.stop()
