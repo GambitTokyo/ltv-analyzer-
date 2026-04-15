@@ -1219,7 +1219,7 @@ LTV Analyzer は、LTV（顧客の生涯価値）と CAC（顧客獲得コスト
         st.markdown("""
 **休眠期間の設定（都度購入型向け）：** 最新購買日から X 日経過した顧客を「離脱」とみなすための設定です。適切な日数はビジネスによって異なります。自社の顧客データなどから購買間隔の傾向を確認し、実態に沿った値を設定してください。サイドバーで調整可能です。
 
-**外れ値処理：** `revenue` が分布から極端に外れた顧客は推定結果を歪めます。サイドバーで上位パーセンタイルのクリッピングを有効化することで高額側の外れ値を、下位パーセンタイルで `revenue` が 0 など不自然な低額側の顧客を除外できます。
+**外れ値処理：** `revenue` が分布から極端に外れた顧客は推定結果を歪めることがあります。必要に応じて、サイドバーで上位パーセンタイルのクリッピングを有効化することで高額側の外れ値を、下位パーセンタイルで `revenue` が 0 など不自然な低額側の顧客を除外できます。分布に問題がなければ有効化は不要です。
         """)
     else:
         st.markdown("""<div class='section-title'>About LTV Analyzer</div>""", unsafe_allow_html=True)
@@ -1254,7 +1254,7 @@ First, confirm whether your business is **subscription-based** or **spot purchas
         st.markdown("""
 **Dormancy period (for spot purchase):** Defines how many days after the latest purchase a customer is considered churned. Appropriate values vary by business. Check purchase intervals in your own data and set a value that matches reality. Adjustable from the sidebar.
 
-**Outlier handling:** Customers with `revenue` values far from the distribution can distort estimates. Top-percentile clipping from the sidebar removes high-end outliers, and bottom-percentile clipping removes unnatural low-end customers such as those with `revenue` of 0.
+**Outlier handling:** Customers with `revenue` values far from the distribution can sometimes distort estimates. When needed, enable top-percentile clipping from the sidebar to remove high-end outliers, or bottom-percentile clipping to remove unnatural low-end customers such as those with `revenue` of 0. If the distribution looks fine, no action is required.
         """)
 
     st.markdown(f"<div class='section-title' style='margin-top:36px;'>{T('main_csv_format_title')}</div>", unsafe_allow_html=True)
