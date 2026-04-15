@@ -1195,14 +1195,19 @@ LTV Analyzer は、LTV（顧客の生涯価値）と CAC（顧客獲得コスト
         st.markdown("""<div class='section-title' style='margin-top:28px;'>ビジネスタイプの確認</div>""", unsafe_allow_html=True)
         st.markdown("""
 まずご自身のビジネスが **定額課金型（サブスク）** か **都度購入型** かを確認してください。必要なデータ列が異なります。
-
-|  | サブスク型 | 都度購入型 |
-|--|-----------|-----------|
-| **該当例** | 月額/年額課金、SaaS、会員制 | EC、スポット購入、リピート品販売 |
-| **離脱の判定** | 解約日が確定している | 最新購買日から一定期間経過で離脱とみなす |
-| **必要列** | `customer_id` / `start_date` / **`end_date`** / `revenue` | `customer_id` / `start_date` / **`last_purchase_date`** / `revenue` |
-| **補足** | 継続中の顧客は `end_date` 空欄 | 休眠期間の設定が必要（後述） |
         """)
+        st.markdown("""
+<table style="width:100%; table-layout:fixed; border-collapse:collapse;">
+  <colgroup><col style="width:16%"><col style="width:42%"><col style="width:42%"></colgroup>
+  <thead><tr><th></th><th>サブスク型</th><th>都度購入型</th></tr></thead>
+  <tbody>
+    <tr><td><strong>該当例</strong></td><td>月額／年額課金、SaaS、会員制</td><td>EC、スポット購入、リピート品販売</td></tr>
+    <tr><td><strong>離脱の判定</strong></td><td>解約日が確定している</td><td>最新購買日から一定期間経過で離脱とみなす</td></tr>
+    <tr><td><strong>必要列</strong></td><td><code>customer_id</code> / <code>start_date</code> / <strong><code>end_date</code></strong> / <code>revenue</code></td><td><code>customer_id</code> / <code>start_date</code> / <strong><code>last_purchase_date</code></strong> / <code>revenue</code></td></tr>
+    <tr><td><strong>補足</strong></td><td>継続中の顧客は <code>end_date</code> 空欄</td><td>休眠期間の設定が必要（後述）</td></tr>
+  </tbody>
+</table>
+        """, unsafe_allow_html=True)
 
         st.markdown("""
 - このデモでは Advanced 版を体験できます。サンプル CSV にはセグメント列（チャネル・年代・地域など）が含まれており、セグメント別の LTV 比較が自動で出力されます。
@@ -1225,14 +1230,19 @@ LTV Analyzer is an analytics tool that automatically computes LTV (customer life
         st.markdown("""<div class='section-title' style='margin-top:28px;'>Business type</div>""", unsafe_allow_html=True)
         st.markdown("""
 First, confirm whether your business is **subscription-based** or **spot purchase**. Required columns differ.
-
-|  | Subscription | Spot purchase |
-|--|--------------|---------------|
-| **Examples** | Monthly/annual billing, SaaS, membership | EC, spot purchase, repeat-product sales |
-| **Churn detection** | Cancellation date is confirmed | Churned after a fixed period from the latest purchase |
-| **Required columns** | `customer_id` / `start_date` / **`end_date`** / `revenue` | `customer_id` / `start_date` / **`last_purchase_date`** / `revenue` |
-| **Notes** | `end_date` left blank for active customers | Dormancy period setting required (see below) |
         """)
+        st.markdown("""
+<table style="width:100%; table-layout:fixed; border-collapse:collapse;">
+  <colgroup><col style="width:18%"><col style="width:41%"><col style="width:41%"></colgroup>
+  <thead><tr><th></th><th>Subscription</th><th>Spot purchase</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Examples</strong></td><td>Monthly/annual billing, SaaS, membership</td><td>EC, spot purchase, repeat-product sales</td></tr>
+    <tr><td><strong>Churn detection</strong></td><td>Cancellation date is confirmed</td><td>Churned after a fixed period from the latest purchase</td></tr>
+    <tr><td><strong>Required columns</strong></td><td><code>customer_id</code> / <code>start_date</code> / <strong><code>end_date</code></strong> / <code>revenue</code></td><td><code>customer_id</code> / <code>start_date</code> / <strong><code>last_purchase_date</code></strong> / <code>revenue</code></td></tr>
+    <tr><td><strong>Notes</strong></td><td><code>end_date</code> left blank for active customers</td><td>Dormancy period setting required (see below)</td></tr>
+  </tbody>
+</table>
+        """, unsafe_allow_html=True)
 
         st.markdown("""
 - This demo lets you try the Advanced version. The sample CSV includes segment columns (channel, age group, region, etc.), and segment-level LTV comparison is generated automatically.
