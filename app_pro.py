@@ -67,6 +67,24 @@ else:
         st.session_state.auth_session_id = str(uuid.uuid4())
     if "auth_password" not in st.session_state:
         st.session_state.auth_password = ""
+    if "auth_error" not in st.session_state:
+        st.session_state.auth_error = ""
+
+    def _do_login():
+        pw = st.session_state.get("_login_pw", "")
+        if pw and GAS_URL:
+            result = _gas_request("login", pw, st.session_state.auth_session_id)
+            if result.get("status") == "ok":
+                st.session_state.authenticated = True
+                st.session_state.auth_mode = result.get("mode", "standard").lower()
+                st.session_state.auth_password = pw
+                st.session_state.auth_error = ""
+            elif result.get("status") == "blocked":
+                st.session_state.auth_error = "This license is currently in use on another device. Please try again later."
+            else:
+                st.session_state.auth_error = f"Incorrect password ({result.get('status', '')})"
+        else:
+            st.session_state.auth_error = "Incorrect password"
 
     if not st.session_state.authenticated:
         _auth_col1, _auth_col2, _auth_col3 = st.columns([1, 1.5, 1])
@@ -78,21 +96,10 @@ else:
                 <div style='font-size: 0.75rem; color: #3a6a7a; margin-top: 4px;'>Enter your password to continue</div>
             </div>
             """, unsafe_allow_html=True)
-            _pw = st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Password")
-            if st.button("Enter", use_container_width=True):
-                if _pw and GAS_URL:
-                    result = _gas_request("login", _pw, st.session_state.auth_session_id)
-                    if result.get("status") == "ok":
-                        st.session_state.authenticated = True
-                        st.session_state.auth_mode = result.get("mode", "standard").lower()
-                        st.session_state.auth_password = _pw
-                        st.rerun()
-                    elif result.get("status") == "blocked":
-                        st.error("This license is currently in use on another device. Please try again later.")
-                    else:
-                        st.error(f"Login failed: {result.get('message', 'Unknown error')} | status={result.get('status')}")
-                else:
-                    st.error("Incorrect password")
+            st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Password", key="_login_pw")
+            st.button("Enter", use_container_width=True, on_click=_do_login)
+            if st.session_state.auth_error:
+                st.error(st.session_state.auth_error)
         st.stop()
 
     APP_MODE = st.session_state.auth_mode
