@@ -104,10 +104,6 @@ else:
 
     APP_MODE = st.session_state.auth_mode
 
-    # DEBUG: テスト用 - ログイン成功確認
-    st.success(f"Login OK! mode={APP_MODE}, sid={st.session_state.auth_session_id[:8]}")
-    st.stop()
-
     # ── Heartbeat (JS-based, every 60 seconds) ─────────────────
     # TODO: re-enable after testing
     # _hb_payload = json.dumps({
@@ -683,19 +679,19 @@ with st.sidebar:
     # ブラウザ言語が日本語の場合のみデフォルト日本語、それ以外は英語
     if '_browser_lang_checked' not in st.session_state:
         st.session_state['_browser_lang_checked'] = True
-        st.components.v1.html(
-            """<script>
-            const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
-            const isJa = lang.startsWith('ja');
-            const params = new URLSearchParams(window.parent.location.search);
-            if (!params.has('lang')) {
-                params.set('lang', isJa ? 'ja' : 'en');
-                window.parent.history.replaceState({}, '', '?' + params.toString());
-                window.parent.location.reload();
-            }
-            </script>""",
-            height=0,
-        )
+        if 'lang' not in st.query_params:
+            st.html(
+                """<script>
+                const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+                const isJa = lang.startsWith('ja');
+                const params = new URLSearchParams(window.parent.location.search);
+                if (!params.has('lang')) {
+                    params.set('lang', isJa ? 'ja' : 'en');
+                    window.parent.history.replaceState({}, '', '?' + params.toString());
+                    window.parent.location.reload();
+                }
+                </script>"""
+            )
     _browser_lang = st.query_params.get('lang', 'en')
     _default_idx = 0 if _browser_lang == 'ja' else 1
 
