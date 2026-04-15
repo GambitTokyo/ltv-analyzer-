@@ -1103,25 +1103,47 @@ with st.sidebar:
     cac_recover_days = None
     st.caption(T('sidebar_cac_caption'))
 
-    if APP_MODE != 'standard':
-        st.markdown(T('sidebar_segment'))
-        _seg_disabled = (APP_MODE == 'demo')
-        segment_cols_input = st.text_input(
-            T('sidebar_seg_input_label'),
-            value=st.session_state.get('_sample_seg', ''),
-            placeholder=T('sidebar_seg_placeholder'),
-            disabled=_seg_disabled,
-        )
-        st.caption(T('sidebar_seg_caption'))
-        st.markdown(T('sidebar_display_limit'))
-        seg_display_limit = st.slider(
-            T('sidebar_display_slider'),
-            min_value=1, max_value=10, value=5,
-        )
-        st.caption(T('sidebar_display_caption'))
-    else:
+    st.markdown(T('sidebar_segment'))
+    _seg_disabled = (APP_MODE in ('demo', 'standard'))
+    segment_cols_input = st.text_input(
+        T('sidebar_seg_input_label'),
+        value='' if APP_MODE == 'standard' else st.session_state.get('_sample_seg', ''),
+        placeholder=T('sidebar_seg_placeholder'),
+        disabled=_seg_disabled,
+    )
+    st.caption(T('sidebar_seg_caption'))
+    st.markdown(T('sidebar_display_limit'))
+    seg_display_limit = st.slider(
+        T('sidebar_display_slider'),
+        min_value=1, max_value=10, value=5,
+        disabled=(APP_MODE == 'standard'),
+    )
+    st.caption(T('sidebar_display_caption'))
+    if APP_MODE == 'standard':
+        # Standard版ではセグメント機能はロック。アップグレード導線を表示
         segment_cols_input = ''
-        seg_display_limit = 5
+        _sb_up_title = 'Advanced 機能' if get_lang() == 'ja' else 'Advanced Feature'
+        _sb_up_desc = (
+            'セグメント別LTV∞分析を利用するには Advanced へのアップグレードが必要です。'
+            if get_lang() == 'ja'
+            else 'Upgrade to Advanced to unlock Segment-level LTV∞ Analysis.'
+        )
+        _sb_up_btn = 'Advanced にアップグレード' if get_lang() == 'ja' else 'Upgrade to Advanced'
+        st.markdown(
+            f"""
+<div style='background: linear-gradient(135deg, #0d1f2d 0%, #142838 100%);
+     border: 1px solid #1a4a5a; border-radius: 10px;
+     padding: 14px 16px; margin: 8px 0 12px 0; text-align: center;'>
+  <div style='font-size: 0.82rem; color: #56b4d3; font-weight: 600; margin-bottom: 4px;'>🔒 {_sb_up_title}</div>
+  <div style='font-size: 0.72rem; color: #8aa; line-height: 1.5; margin-bottom: 10px;'>{_sb_up_desc}</div>
+  <a href='https://ltv-analyzer.com' target='_blank'
+     style='display: inline-block; background: #56b4d3; color: #0a1020;
+     padding: 7px 18px; border-radius: 6px; font-weight: 600;
+     font-size: 0.76rem; text-decoration: none;'>{_sb_up_btn}</a>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
 
     cac_input = 0
     cac_known = False
