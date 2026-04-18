@@ -25,9 +25,9 @@ warnings.filterwarnings('ignore')
 # ── GAS Auth Helper ──────────────────────────────────────────
 GAS_URL = st.secrets.get("GAS_URL", "")
 
-def _gas_request(action, password="", session_id=""):
+def _gas_request(action, email="", product_key="", session_id=""):
     """Send request to Google Apps Script Web App."""
-    payload = json.dumps({"action": action, "password": password, "session_id": session_id}).encode("utf-8")
+    payload = json.dumps({"action": action, "email": email, "product_key": product_key, "session_id": session_id}).encode("utf-8")
     req = urllib.request.Request(GAS_URL, data=payload, headers={"Content-Type": "application/json"}, method="POST")
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
@@ -62,8 +62,10 @@ if "auth_mode" not in st.session_state:
     st.session_state.auth_mode = "demo"
 if "auth_session_id" not in st.session_state:
     st.session_state.auth_session_id = str(uuid.uuid4())
-if "auth_password" not in st.session_state:
-    st.session_state.auth_password = ""
+if "auth_email" not in st.session_state:
+    st.session_state.auth_email = ""
+if "auth_product_key" not in st.session_state:
+    st.session_state.auth_product_key = ""
 if "auth_error" not in st.session_state:
     st.session_state.auth_error = ""
 
@@ -71,18 +73,20 @@ if _cfg_mode == "demo":
     APP_MODE = "demo"
 else:
     def _do_login():
-        pw = st.session_state.get("_login_pw", "")
-        if pw and GAS_URL:
-            result = _gas_request("login", pw, st.session_state.auth_session_id)
+        email = st.session_state.get("_login_email", "").strip()
+        product_key = st.session_state.get("_login_pk", "")
+        if email and product_key and GAS_URL:
+            result = _gas_request("login", email, product_key, st.session_state.auth_session_id)
             if result.get("status") == "ok":
                 st.session_state.authenticated = True
                 st.session_state.auth_mode = result.get("mode", "standard").lower()
-                st.session_state.auth_password = pw
+                st.session_state.auth_email = email
+                st.session_state.auth_product_key = product_key
                 st.session_state.auth_error = ""
             else:
-                st.session_state.auth_error = "Incorrect password"
+                st.session_state.auth_error = "Incorrect email or product key"
         else:
-            st.session_state.auth_error = "Incorrect password"
+            st.session_state.auth_error = "Incorrect email or product key"
 
     if not st.session_state.authenticated:
         _auth_col1, _auth_col2, _auth_col3 = st.columns([1, 1.5, 1])
@@ -91,17 +95,18 @@ else:
             st.markdown("""
             <div style='text-align: center; margin-bottom: 24px;'>
                 <div style='font-size: 1.4rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.02em;'>LTV Analyzer</div>
-                <div style='font-size: 0.75rem; color: #3a6a7a; margin-top: 4px;'>Enter your password to continue</div>
+                <div style='font-size: 0.75rem; color: #3a6a7a; margin-top: 4px;'>Enter your email and product key to continue</div>
             </div>
             """, unsafe_allow_html=True)
-            st.text_input("Password", type="password", label_visibility="collapsed", placeholder="Password", key="_login_pw")
+            st.text_input("Email", label_visibility="collapsed", placeholder="Email", key="_login_email")
+            st.text_input("Product Key", type="password", label_visibility="collapsed", placeholder="Product Key", key="_login_pk")
             st.button("Enter", use_container_width=True, on_click=_do_login)
             if st.session_state.auth_error:
                 st.error(st.session_state.auth_error)
         st.stop()
 
-    # Verify session is still valid (another login with same password kicks this one)
-    _verify = _gas_request("verify", st.session_state.auth_password, st.session_state.auth_session_id)
+    # Verify session is still valid (another login with same credentials kicks this one)
+    _verify = _gas_request("verify", st.session_state.auth_email, st.session_state.auth_product_key, st.session_state.auth_session_id)
     if _verify.get("status") == "kicked":
         st.session_state.authenticated = False
         st.session_state.auth_error = "Your session has ended because this license was used to log in from another location."
@@ -1251,7 +1256,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v361</div>
 </div>
 """, unsafe_allow_html=True)
 
