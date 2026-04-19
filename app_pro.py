@@ -61,12 +61,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ── Hide Streamlit default menu / header / footer ─────────────
+# ── Hide Streamlit default menu / deploy button / footer ──────
+# headerは非表示にしない（サイドバー折りたたみ時の展開ボタンが消えるため）
 st.markdown("""
 <style>
 #MainMenu {visibility: hidden;}
-header {visibility: hidden;}
 footer {visibility: hidden;}
+[data-testid="stToolbarActions"] {visibility: hidden;}
+[data-testid="stDecoration"] {display: none;}
+.stDeployButton {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1309,7 +1312,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v367</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v368</div>
 </div>
 """, unsafe_allow_html=True)
 
