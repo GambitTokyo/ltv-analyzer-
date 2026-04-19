@@ -13,6 +13,7 @@ import calendar
 import plotly.graph_objects as go
 from scipy.optimize import brentq
 import json
+import os
 import uuid
 import urllib.request
 from lang import (fmt_c, cur_symbol, cur_decimal, CURRENCIES, LANG_DEFAULTS,
@@ -23,7 +24,7 @@ from lang import (fmt_c, cur_symbol, cur_decimal, CURRENCIES, LANG_DEFAULTS,
 warnings.filterwarnings('ignore')
 
 # ── GAS Auth Helper ──────────────────────────────────────────
-GAS_URL = st.secrets.get("GAS_URL", "")
+GAS_URL = os.environ.get("GAS_URL", st.secrets.get("GAS_URL", ""))
 
 def _gas_request(action, email="", product_key="", session_id=""):
     """Send request to Google Apps Script Web App."""
@@ -42,7 +43,7 @@ def _gas_request(action, email="", product_key="", session_id=""):
         return {"status": "error", "message": str(e)}
 
 # ── Page config ──────────────────────────────────────────────
-_initial_mode = st.secrets.get("MODE", "demo").lower()
+_initial_mode = os.environ.get("MODE", st.secrets.get("MODE", "demo")).lower()
 st.set_page_config(
     page_title="LTV Analyzer Demo" if _initial_mode == "demo" else "LTV Analyzer",
     page_icon="◆",
@@ -53,7 +54,7 @@ st.set_page_config(
 # ── Mode & Authentication ─────────────────────────────────────
 # MODE="demo": パスワード不要、サンプルデータのみ
 # MODE="auth": パスワード認証（GAS経由でmode判定）
-_cfg_mode = st.secrets.get("MODE", "demo").lower()
+_cfg_mode = os.environ.get("MODE", st.secrets.get("MODE", "demo")).lower()
 
 # Always initialize auth session state (even in demo mode, to avoid AttributeError)
 if "authenticated" not in st.session_state:
@@ -1245,7 +1246,7 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
     st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</div>", unsafe_allow_html=True)
-    _deploy_at = st.secrets.get("DEPLOY_AT", "")
+    _deploy_at = os.environ.get("DEPLOY_AT", st.secrets.get("DEPLOY_AT", ""))
     st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>{_deploy_at}</div>", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
@@ -1256,7 +1257,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v361</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v362</div>
 </div>
 """, unsafe_allow_html=True)
 
