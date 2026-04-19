@@ -754,6 +754,13 @@ with st.sidebar:
             padding:6px 18px; background:#56b4d3; color:#0a0e14; border-radius:5px;
             font-size:0.73rem; font-weight:600; text-decoration:none; letter-spacing:0.04em;">
             {_purchase_label}</a></div>""", unsafe_allow_html=True)
+
+    # ── Login / Logout ボタン（言語/デモ案内の直下） ──────────
+    if APP_MODE == 'demo':
+        st.button("Login", use_container_width=True, on_click=_do_show_login, key="_sb_login_btn")
+    else:
+        st.button("Logout", use_container_width=True, on_click=_do_logout, key="_sb_logout_btn")
+
     _cur_default = LANG_DEFAULTS.get(LANG, 'JPY')
     _cur_options = list(CURRENCIES.keys())
     _cur_idx = _cur_options.index(_cur_default) if _cur_default in _cur_options else 0
@@ -1291,12 +1298,6 @@ with st.sidebar:
     analyst_name = st.text_input(T('sidebar_analyst_name'), st.session_state.get('_sample_analyst_name', ''), placeholder=T('sidebar_analyst_name_ph'))
 
     st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
-    # ── Login / Logout ボタン ─────────────────────────────────
-    if APP_MODE == 'demo':
-        st.button("Login", use_container_width=True, on_click=_do_show_login, key="_sb_login_btn")
-    else:
-        st.button("Logout", use_container_width=True, on_click=_do_logout, key="_sb_logout_btn")
-    st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
     st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</div>", unsafe_allow_html=True)
     _deploy_at = _get_secret("DEPLOY_AT")
     st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>{_deploy_at}</div>", unsafe_allow_html=True)
@@ -1309,7 +1310,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v365</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v366</div>
 </div>
 """, unsafe_allow_html=True)
 
