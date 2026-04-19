@@ -71,11 +71,12 @@ footer {visibility: hidden;}
 """, unsafe_allow_html=True)
 
 # ── Mode & Authentication ─────────────────────────────────────
-# MODE="demo": パスワード不要、サンプルデータのみ
-# MODE="auth": パスワード認証（GAS経由でmode判定）
-_cfg_mode = _get_secret("MODE", "demo").lower()
+# 初回アクセスは常にデモモードで起動。サイドバーのLoginボタンで認証フローへ遷移。
+# 認証成功時、GASレスポンスのmodeに従って user_mode を standard/advanced に切替。
+# ログアウトで user_mode を demo に戻す。
+_cfg_mode = _get_secret("MODE", "demo").lower()  # 互換のため保持（現状ロジックでは未使用）
 
-# Always initialize auth session state (even in demo mode, to avoid AttributeError)
+# Always initialize auth session state
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "auth_mode" not in st.session_state:
@@ -88,51 +89,77 @@ if "auth_product_key" not in st.session_state:
     st.session_state.auth_product_key = ""
 if "auth_error" not in st.session_state:
     st.session_state.auth_error = ""
+if "user_mode" not in st.session_state:
+    st.session_state["user_mode"] = "demo"
+if "show_login" not in st.session_state:
+    st.session_state["show_login"] = False
 
-if _cfg_mode == "demo":
-    APP_MODE = "demo"
-else:
-    def _do_login():
-        email = st.session_state.get("_login_email", "").strip()
-        product_key = st.session_state.get("_login_pk", "")
-        if email and product_key and GAS_URL:
-            result = _gas_request("login", email, product_key, st.session_state.auth_session_id)
-            if result.get("status") == "ok":
-                st.session_state.authenticated = True
-                st.session_state.auth_mode = result.get("mode", "standard").lower()
-                st.session_state.auth_email = email
-                st.session_state.auth_product_key = product_key
-                st.session_state.auth_error = ""
-            else:
-                st.session_state.auth_error = "Incorrect email or product key"
+def _do_login():
+    email = st.session_state.get("_login_email", "").strip()
+    product_key = st.session_state.get("_login_pk", "")
+    if email and product_key and GAS_URL:
+        result = _gas_request("login", email, product_key, st.session_state.auth_session_id)
+        if result.get("status") == "ok":
+            st.session_state.authenticated = True
+            new_mode = result.get("mode", "standard").lower()
+            st.session_state.auth_mode = new_mode
+            st.session_state["user_mode"] = new_mode
+            st.session_state.auth_email = email
+            st.session_state.auth_product_key = product_key
+            st.session_state.auth_error = ""
+            st.session_state["show_login"] = False
         else:
             st.session_state.auth_error = "Incorrect email or product key"
+    else:
+        st.session_state.auth_error = "Incorrect email or product key"
 
-    if not st.session_state.authenticated:
-        _auth_col1, _auth_col2, _auth_col3 = st.columns([1, 1.5, 1])
-        with _auth_col2:
-            st.markdown("<div style='padding-top: 120px;'></div>", unsafe_allow_html=True)
-            st.markdown("""
-            <div style='text-align: center; margin-bottom: 24px;'>
-                <div style='font-size: 1.4rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.02em;'>LTV Analyzer</div>
-                <div style='font-size: 0.75rem; color: #3a6a7a; margin-top: 4px;'>Enter your email and product key to continue</div>
-            </div>
-            """, unsafe_allow_html=True)
-            st.text_input("Email", label_visibility="collapsed", placeholder="Email", key="_login_email")
-            st.text_input("Product Key", type="password", label_visibility="collapsed", placeholder="Product Key", key="_login_pk")
-            st.button("Enter", use_container_width=True, on_click=_do_login)
-            if st.session_state.auth_error:
-                st.error(st.session_state.auth_error)
-        st.stop()
+def _do_show_login():
+    st.session_state["show_login"] = True
+    st.session_state.auth_error = ""
 
-    # Verify session is still valid (another login with same credentials kicks this one)
+def _do_back_to_demo():
+    st.session_state["show_login"] = False
+    st.session_state.auth_error = ""
+
+def _do_logout():
+    st.session_state.authenticated = False
+    st.session_state["user_mode"] = "demo"
+    st.session_state.auth_mode = "demo"
+    st.session_state.auth_email = ""
+    st.session_state.auth_product_key = ""
+    st.session_state.auth_error = ""
+    st.session_state["show_login"] = False
+
+# ログイン画面（show_loginがTrueかつ未認証時のみ）
+if st.session_state["show_login"] and not st.session_state.authenticated:
+    _auth_col1, _auth_col2, _auth_col3 = st.columns([1, 1.5, 1])
+    with _auth_col2:
+        st.markdown("<div style='padding-top: 120px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style='text-align: center; margin-bottom: 24px;'>
+            <div style='font-size: 1.4rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.02em;'>LTV Analyzer</div>
+            <div style='font-size: 0.75rem; color: #3a6a7a; margin-top: 4px;'>Enter your email and product key to continue</div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.text_input("Email", label_visibility="collapsed", placeholder="Email", key="_login_email")
+        st.text_input("Product Key", type="password", label_visibility="collapsed", placeholder="Product Key", key="_login_pk")
+        st.button("Enter", use_container_width=True, on_click=_do_login)
+        st.button("← Back to Demo", use_container_width=True, on_click=_do_back_to_demo)
+        if st.session_state.auth_error:
+            st.error(st.session_state.auth_error)
+    st.stop()
+
+# 認証済みなら毎リクエストでセッション検証（last login wins）
+if st.session_state.authenticated:
     _verify = _gas_request("verify", st.session_state.auth_email, st.session_state.auth_product_key, st.session_state.auth_session_id)
     if _verify.get("status") == "kicked":
         st.session_state.authenticated = False
+        st.session_state["user_mode"] = "demo"
+        st.session_state.auth_mode = "demo"
         st.session_state.auth_error = "Your session has ended because this license was used to log in from another location."
         st.rerun()
 
-    APP_MODE = st.session_state.auth_mode
+APP_MODE = st.session_state["user_mode"]
 
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
@@ -1264,6 +1291,12 @@ with st.sidebar:
     analyst_name = st.text_input(T('sidebar_analyst_name'), st.session_state.get('_sample_analyst_name', ''), placeholder=T('sidebar_analyst_name_ph'))
 
     st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
+    # ── Login / Logout ボタン ─────────────────────────────────
+    if APP_MODE == 'demo':
+        st.button("Login", use_container_width=True, on_click=_do_show_login, key="_sb_login_btn")
+    else:
+        st.button("Logout", use_container_width=True, on_click=_do_logout, key="_sb_logout_btn")
+    st.markdown("<div style='margin-top:16px;'></div>", unsafe_allow_html=True)
     st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</div>", unsafe_allow_html=True)
     _deploy_at = _get_secret("DEPLOY_AT")
     st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>{_deploy_at}</div>", unsafe_allow_html=True)
@@ -1276,7 +1309,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v364</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v365</div>
 </div>
 """, unsafe_allow_html=True)
 
