@@ -61,30 +61,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ── OG / Twitter Card meta tags & favicons ───────────────
-st.markdown("""
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://app.ltv-analyzer.com/">
-<meta property="og:title" content="LTV Analyzer — Try the live demo">
-<meta property="og:description" content="Statistical Customer LTV analysis using Kaplan-Meier survival analysis and Weibull modeling. Try the live demo.">
-<meta property="og:image" content="https://app.ltv-analyzer.com/app/static/og-image-app.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:site_name" content="LTV Analyzer">
-<meta property="og:locale" content="en_US">
-
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="LTV Analyzer — Try the live demo">
-<meta name="twitter:description" content="Statistical Customer LTV analysis using Kaplan-Meier survival analysis and Weibull modeling. Try the live demo.">
-<meta name="twitter:image" content="https://app.ltv-analyzer.com/app/static/og-image-app.png">
-
-<link rel="icon" type="image/x-icon" href="/app/static/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="/app/static/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="/app/static/favicon-32x32.png">
-<link rel="apple-touch-icon" sizes="180x180" href="/app/static/apple-touch-icon.png">
-<link rel="icon" type="image/svg+xml" href="/app/static/favicon.svg">
-""", unsafe_allow_html=True)
-
 # ── Hide Streamlit default menu / deploy button / footer ──────
 # headerは非表示にしない（サイドバー折りたたみ時の展開ボタンが消えるため）
 st.markdown("""
