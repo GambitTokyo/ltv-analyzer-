@@ -1,0 +1,5 @@
+# Enforce LF for Python sources so CRLF editors on Windows don't produce full-file diffs.
+*.py text eol=lf
+
+# Everything else: git auto-detects text vs binary.
+* text=auto
