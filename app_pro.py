@@ -34,22 +34,13 @@ def _get_secret(key, default=""):
         return default
 
 # ── GAS Auth Helper ──────────────────────────────────────────
-def _normalize_gas_url(raw):
-    """Defensive parser: strip malformed env var content like
-    'gas_url = "https://..."' (which can happen if the .env-style
-    syntax is pasted into Railway's Variables UI verbatim) and
-    return just the URL."""
-    if not raw:
-        return ""
-    s = raw.strip()
-    # If "key = value" style, take the right side.
-    if "=" in s and not s.lower().startswith(("http://", "https://")):
-        s = s.split("=", 1)[1].strip()
-    # Strip surrounding quotes (single, double, smart).
-    s = s.strip().strip('"').strip("'").strip("“").strip("”").strip()
-    return s
-
-GAS_URL = _normalize_gas_url(_get_secret("GAS_URL"))
+# GAS Web App endpoint. This URL is "anyone with link" by design —
+# the actual auth check (email + product_key validation against the
+# Auth sheet) happens inside the GAS handleLogin function, not from
+# URL secrecy. Keeping it in source removes a class of silent-failure
+# modes (env var unset / mistyped / lost on redeploy) that bit us
+# before. To rotate, edit this constant and push.
+GAS_URL = "https://script.google.com/macros/s/AKfycbyJrI6nLJO5FunkAKL18BgX0N6UlhdyLfn-fdb_nLa75ay_gsYGpUn61s91sJfwwPVh/exec"
 
 def _gas_request(action, email="", product_key="", session_id=""):
     """Send request to Google Apps Script Web App."""
