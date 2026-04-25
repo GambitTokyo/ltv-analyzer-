@@ -1464,7 +1464,7 @@ First, confirm whether your business is **subscription-based** or **spot purchas
     ]
     for col, (title, desc, utm_camp) in zip(cols, steps):
         with col:
-            _link = f"{_LP_BASE}/#how?utm_source=app&utm_medium=referral&utm_campaign={utm_camp}"
+            _link = f"{_LP_BASE}/?utm_source=app&utm_medium=referral&utm_campaign={utm_camp}#how"
             st.markdown(
                 f"<a href='{_link}' target='_blank' rel='noopener' "
                 f"style='display:block; text-decoration:none; color:inherit;'>"
@@ -1474,7 +1474,7 @@ First, confirm whether your business is **subscription-based** or **spot purchas
                 f"</div></a>",
                 unsafe_allow_html=True,
             )
-    _cta_pricing_url = f"{_LP_BASE}/#pricing?utm_source=app&utm_medium=referral&utm_campaign=app_pricing_cta"
+    _cta_pricing_url = f"{_LP_BASE}/?utm_source=app&utm_medium=referral&utm_campaign=app_pricing_cta#pricing"
     _cta_contact_url = f"{_LP_BASE}/contact.html?utm_source=app&utm_medium=referral&utm_campaign=app_contact"
     st.markdown(
         f"<div style='margin-top:24px; text-align:center;'>"
