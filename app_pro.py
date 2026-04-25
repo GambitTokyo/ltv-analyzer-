@@ -1462,17 +1462,16 @@ First, confirm whether your business is **subscription-based** or **spot purchas
         (T('main_step2_title'), T('main_step2_desc'), 'app_step2_howitworks'),
         (T('main_step3_title'), T('main_step3_desc'), 'app_step3_howitworks'),
     ]
-    _learn_label = T('main_step_learn_more')
     for col, (title, desc, utm_camp) in zip(cols, steps):
         with col:
             _link = f"{_LP_BASE}/#how?utm_source=app&utm_medium=referral&utm_campaign={utm_camp}"
             st.markdown(
-                f"<div class='metric-card'>"
-                f"<div class='metric-value' style='font-size:1.05rem'>{title}</div>"
-                f"<div class='metric-label' style='font-size:0.78rem; color:#666; margin-top:8px;'>{desc}</div>"
-                f"<div style='margin-top:10px;'><a href='{_link}' target='_blank' rel='noopener' "
-                f"style='font-size:0.72rem; color:#3a6a7a; text-decoration:none;'>{_learn_label}</a></div>"
-                f"</div>",
+                f"<a href='{_link}' target='_blank' rel='noopener' "
+                f"style='display:block; text-decoration:none; color:inherit;'>"
+                f"<div class='metric-card' style='cursor:pointer;'>"
+                f"<div class='metric-value' style='font-size:1.1rem'>{title}</div>"
+                f"<div class='metric-label' style='font-size:0.75rem; color:#666; margin-top:8px;'>{desc}</div>"
+                f"</div></a>",
                 unsafe_allow_html=True,
             )
     _cta_pricing_url = f"{_LP_BASE}/#pricing?utm_source=app&utm_medium=referral&utm_campaign=app_pricing_cta"
