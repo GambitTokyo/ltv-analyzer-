@@ -34,7 +34,22 @@ def _get_secret(key, default=""):
         return default
 
 # ── GAS Auth Helper ──────────────────────────────────────────
-GAS_URL = _get_secret("GAS_URL")
+def _normalize_gas_url(raw):
+    """Defensive parser: strip malformed env var content like
+    'gas_url = "https://..."' (which can happen if the .env-style
+    syntax is pasted into Railway's Variables UI verbatim) and
+    return just the URL."""
+    if not raw:
+        return ""
+    s = raw.strip()
+    # If "key = value" style, take the right side.
+    if "=" in s and not s.lower().startswith(("http://", "https://")):
+        s = s.split("=", 1)[1].strip()
+    # Strip surrounding quotes (single, double, smart).
+    s = s.strip().strip('"').strip("'").strip("“").strip("”").strip()
+    return s
+
+GAS_URL = _normalize_gas_url(_get_secret("GAS_URL"))
 
 def _gas_request(action, email="", product_key="", session_id=""):
     """Send request to Google Apps Script Web App."""
