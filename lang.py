@@ -237,7 +237,7 @@ _DICT = {
     'main_step2_desc':          {'ja': '統計手法を自動で実行', 'en': 'Statistical methods run automatically'},
     'main_step3_title':         {'ja': 'STEP 03 — 出力', 'en': 'STEP 03 — Export'},
     'main_step3_desc':          {'ja': 'Excel・PowerPoint・PDF にエクスポート', 'en': 'Export to Excel, PowerPoint, or PDF'},
-    'cta_pricing':              {'ja': '→ 購入はこちら', 'en': '→ Buy now'},
+    'cta_pricing':              {'ja': '→ 購入はこちら', 'en': '→ Purchase here'},
     'cta_contact':              {'ja': '→ ご質問・ご相談はお問い合わせフォームから', 'en': '→ Questions? Contact us'},
     'about_lp_link':            {'ja': '→ 手法と料金の詳細は ltv-analyzer.com', 'en': '→ Learn more about our methodology and pricing at ltv-analyzer.com'},
 
