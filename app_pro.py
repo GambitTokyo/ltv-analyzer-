@@ -100,19 +100,24 @@ if "show_login" not in st.session_state:
 def _do_login():
     email = st.session_state.get("_login_email", "").strip()
     product_key = st.session_state.get("_login_pk", "")
-    if email and product_key and GAS_URL:
-        result = _gas_request("login", email, product_key, st.session_state.auth_session_id)
-        if result.get("status") == "ok":
-            st.session_state.authenticated = True
-            new_mode = result.get("mode", "standard").lower()
-            st.session_state.auth_mode = new_mode
-            st.session_state["user_mode"] = new_mode
-            st.session_state.auth_email = email
-            st.session_state.auth_product_key = product_key
-            st.session_state.auth_error = ""
-            st.session_state["show_login"] = False
-        else:
-            st.session_state.auth_error = "Incorrect email or product key"
+    if not email or not product_key:
+        st.session_state.auth_error = "Please enter both email and product key."
+        return
+    if not GAS_URL:
+        st.session_state.auth_error = "Server configuration error: GAS_URL is not set on the server. Please contact support."
+        return
+    result = _gas_request("login", email, product_key, st.session_state.auth_session_id)
+    if result.get("status") == "ok":
+        st.session_state.authenticated = True
+        new_mode = result.get("mode", "standard").lower()
+        st.session_state.auth_mode = new_mode
+        st.session_state["user_mode"] = new_mode
+        st.session_state.auth_email = email
+        st.session_state.auth_product_key = product_key
+        st.session_state.auth_error = ""
+        st.session_state["show_login"] = False
+    elif result.get("status") == "error":
+        st.session_state.auth_error = f"Could not reach authentication server: {result.get('message', 'unknown error')}"
     else:
         st.session_state.auth_error = "Incorrect email or product key"
 
@@ -1301,7 +1306,7 @@ with st.sidebar:
 
     st.markdown("<div style='margin-top:32px;'></div>", unsafe_allow_html=True)
     st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>© {datetime.now().year} Gambit, Inc. All rights reserved.</div>", unsafe_allow_html=True)
-    _deploy_at = _get_secret("DEPLOY_AT")
+    _deploy_at = "Last updated: 2026-04-25"
     st.markdown(f"<div style='font-size:0.6rem; color:#1a2a3a; text-align:center; letter-spacing:0.05em;'>{_deploy_at}</div>", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
@@ -1312,7 +1317,7 @@ st.markdown("""
 <div style='padding: 16px 0 32px 0; border-bottom: 1px solid #1a2a3a; margin-bottom: 28px;'>
   <div style='font-family: 'BIZ UDPGothic', sans-serif; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #3a6a7a; margin-bottom: 8px;'>Analytics Tool</div>
   <div style='font-family: 'IBM Plex Mono', monospace; font-size: 1.6rem; font-weight: 500; color: #c8d0d8; letter-spacing: -0.03em; line-height: 1;'>LTV Analyzer <span style='color: #56b4d3;'>""" + ("Demo" if APP_MODE == "demo" else "Standard" if APP_MODE == "standard" else "Advanced") + """</span></div>
-  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence &nbsp;·&nbsp; v368</div>
+  <div style='font-size: 0.78rem; color: #3a5a6a; margin-top: 8px; letter-spacing: 0.02em;'>Kaplan–Meier × Weibull — Segment-level LTV Intelligence</div>
 </div>
 """, unsafe_allow_html=True)
 
