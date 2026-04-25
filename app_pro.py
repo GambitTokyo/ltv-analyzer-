@@ -759,7 +759,7 @@ with st.sidebar:
 
     # ── デモモード案内（プレースホルダーに描画） ──
     if APP_MODE == 'demo':
-        _PURCHASE_URL = 'https://example.com/purchase'  # TODO: 購入ページURL確定後に差し替え
+        _PURCHASE_URL = 'https://ltv-analyzer.com/?utm_source=app&utm_medium=referral&utm_campaign=app_sidebar_purchase#pricing'
         if LANG == 'ja':
             _demo_note = 'デモモード：サンプルデータで主要機能をお試しいただけます。一部の設定はサンプル用に固定されています。ご購入後はご自身のデータで全ての設定を自由にカスタマイズいただけます。'
             _purchase_label = '購入はこちら'
