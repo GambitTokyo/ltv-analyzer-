@@ -1255,6 +1255,15 @@ with st.sidebar:
             else 'Upgrade to Advanced to unlock Segment-level LTV∞ Analysis.'
         )
         _sb_up_btn = 'Advanced にアップグレード' if get_lang() == 'ja' else 'Upgrade to Advanced'
+        # v370: Build Paddle-aware upgrade URL with prefilled email + product_key
+        _sb_up_email = st.session_state.get('auth_email', '')
+        _sb_up_key = st.session_state.get('auth_product_key', '')
+        _SB_UP_URL = (
+            'https://ltv-analyzer.com/upgrade.html'
+            f'?email={quote_plus(_sb_up_email)}'
+            f'&key={quote_plus(_sb_up_key)}'
+            '&utm_source=app&utm_medium=referral&utm_campaign=app_sidebar_upgrade'
+        )
         st.markdown(
             f"""
 <div style='background: linear-gradient(135deg, #0d1f2d 0%, #142838 100%);
@@ -1268,7 +1277,7 @@ with st.sidebar:
     <span>{_sb_up_title}</span>
   </div>
   <div style='font-size: 0.72rem; color: #8aa; line-height: 1.5; margin-bottom: 10px;'>{_sb_up_desc}</div>
-  <a href='https://ltv-analyzer.com' target='_blank'
+  <a href='{_SB_UP_URL}' target='_blank' rel='noopener'
      style='display: inline-block; background: #56b4d3; color: #0a1020;
      padding: 7px 18px; border-radius: 6px; font-weight: 600;
      font-size: 0.76rem; text-decoration: none;'>{_sb_up_btn}</a>
@@ -2619,7 +2628,7 @@ st.markdown(insight_html, unsafe_allow_html=True)
 
 _UPGRADE_TITLE = 'Advanced 機能' if get_lang() == 'ja' else 'Advanced Feature'
 _UPGRADE_DESC = 'セグメント別LTV∞分析を利用するにはAdvancedへのアップグレードが必要です。' if get_lang() == 'ja' else 'Upgrade to Advanced to unlock Segment-level LTV∞ Analysis.'
-_UPGRADE_BTN = 'Advanced にアップグレード ($250)' if get_lang() == 'ja' else 'Upgrade to Advanced ($250)'
+_UPGRADE_BTN = 'Advanced にアップグレード' if get_lang() == 'ja' else 'Upgrade to Advanced'
 
 # v370: Build Paddle-aware upgrade URL with prefilled email + product_key.
 # The /upgrade.html landing page on the LP reads these params, displays the
