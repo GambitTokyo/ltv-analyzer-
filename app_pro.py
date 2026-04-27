@@ -2622,8 +2622,9 @@ _UPGRADE_DESC = 'セグメント別LTV∞分析を利用するにはAdvancedへ�
 _UPGRADE_BTN = 'Advanced にアップグレード ($250)' if get_lang() == 'ja' else 'Upgrade to Advanced ($250)'
 
 # v370: Build Paddle-aware upgrade URL with prefilled email + product_key.
-# The /upgrade.html landing page on the LP reads these params and auto-launches
-# Paddle Checkout for the Upgrade product (pri_01kpg8q9m616q72x2p0k1db6bx).
+# The /upgrade.html landing page on the LP reads these params, displays the
+# upgrade overview, and offers a Get Upgrade CTA that opens Paddle Checkout
+# for the Upgrade product (pri_01kpg8q9m616q72x2p0k1db6bx) with prefilled email.
 _upgrade_email = st.session_state.get('auth_email', '')
 _upgrade_key = st.session_state.get('auth_product_key', '')
 _UPGRADE_URL = (
