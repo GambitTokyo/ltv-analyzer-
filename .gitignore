@@ -1,0 +1,8 @@
+# Cowork-added entries
+*.cowork-bak-*
+.streamlit/secrets.toml
+.claude/
+__pycache__/
+*.pyc
+.ruff_cache/
+.gitconfig.test

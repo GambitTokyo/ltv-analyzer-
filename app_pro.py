@@ -16,6 +16,7 @@ import json
 import os
 import uuid
 import urllib.request
+from urllib.parse import quote_plus
 from lang import (fmt_c, cur_symbol, cur_decimal, CURRENCIES, LANG_DEFAULTS,
                   T, set_lang, get_lang,
                   BIZ_SUBSCRIPTION, BIZ_SPOT,
@@ -2618,7 +2619,20 @@ st.markdown(insight_html, unsafe_allow_html=True)
 
 _UPGRADE_TITLE = 'Advanced 機能' if get_lang() == 'ja' else 'Advanced Feature'
 _UPGRADE_DESC = 'セグメント別LTV∞分析を利用するにはAdvancedへのアップグレードが必要です。' if get_lang() == 'ja' else 'Upgrade to Advanced to unlock Segment-level LTV∞ Analysis.'
-_UPGRADE_BTN = 'Advanced にアップグレード' if get_lang() == 'ja' else 'Upgrade to Advanced'
+_UPGRADE_BTN = 'Advanced にアップグレード ($250)' if get_lang() == 'ja' else 'Upgrade to Advanced ($250)'
+
+# v370: Build Paddle-aware upgrade URL with prefilled email + product_key.
+# The /upgrade.html landing page on the LP reads these params and auto-launches
+# Paddle Checkout for the Upgrade product (pri_01kpg8q9m616q72x2p0k1db6bx).
+_upgrade_email = st.session_state.get('auth_email', '')
+_upgrade_key = st.session_state.get('auth_product_key', '')
+_UPGRADE_URL = (
+    'https://ltv-analyzer.com/upgrade.html'
+    f'?email={quote_plus(_upgrade_email)}'
+    f'&key={quote_plus(_upgrade_key)}'
+    '&utm_source=app&utm_medium=referral&utm_campaign=app_upgrade_cta'
+)
+
 _UPGRADE_HTML = f"""
 <div style='background: linear-gradient(135deg, #0d1f2d 0%, #142838 100%); border: 1px solid #1a4a5a;
     border-radius: 12px; padding: 28px 32px; margin: 16px 0 24px 0; text-align: center;'>
@@ -2626,7 +2640,7 @@ _UPGRADE_HTML = f"""
   <div style='font-size: 0.85rem; color: #8aa; line-height: 1.6; margin-bottom: 16px;'>
     {_UPGRADE_DESC}
   </div>
-  <a href='https://ltv-analyzer.com' target='_blank'
+  <a href='{_UPGRADE_URL}' target='_blank' rel='noopener'
      style='display: inline-block; background: #56b4d3; color: #0a1020; padding: 10px 32px;
      border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-decoration: none;'>{_UPGRADE_BTN}</a>
 </div>
