@@ -2338,9 +2338,12 @@ with _col_ltv:
 
 # ── 日本語フォント動的探索ヘルパー ──
 def _find_jp_font_path():
-    """環境に依存せず日本語フォントパスを返す。見つからなければNone。"""
+    """環境に依存せず日本語フォントパスを返す。見つからなければNone。
+    Repo にコミットされた ipag.ttf を最優先(deploy 環境のフォント install 状況に左右されない)。"""
     import os
+    _here = os.path.dirname(os.path.abspath(__file__))
     _candidates = [
+        os.path.join(_here, 'ipag.ttf'),  # Repo-committed font (most reliable)
         '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
         '/usr/share/fonts/opentype/noto/NotoSansCJK-Medium.ttc',
         '/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf',
