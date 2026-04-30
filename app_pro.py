@@ -4,6 +4,11 @@ import numpy as np
 from datetime import datetime
 from scipy import stats
 from scipy.special import gamma, gammainc
+# Force matplotlib to non-interactive Agg backend BEFORE importing pyplot.
+# Without this, on some Streamlit Cloud / Linux deploys, matplotlib picks a
+# display-requiring backend and st.pyplot returns empty PNGs (broken images).
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib import rcParams
