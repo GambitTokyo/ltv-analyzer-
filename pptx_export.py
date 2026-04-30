@@ -17,6 +17,10 @@ from lang import fmt_c, cur_symbol, T, get_lang, BIZ_SUBSCRIPTION, BIZ_SPOT
 
 _JP_FP = None
 def _init():
+    """日本語フォントを探索して matplotlib rcParams + _JP_FP に設定。冪等。
+
+    各チャート関数の冒頭で再呼出すれば、過去に rcParams が他コードで上書きされても復元される。
+    """
     global _JP_FP
     _here = os.path.dirname(os.path.abspath(__file__))
     candidates = [
@@ -25,17 +29,22 @@ def _init():
         '/usr/share/fonts/opentype/ipafont-gothic/ipagp.ttf',
         '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf',
         '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Medium.ttc',
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc',
     ]
     for p in candidates:
         if os.path.exists(p):
             fm.fontManager.addfont(p); _JP_FP = fm.FontProperties(fname=p)
             plt.rcParams['font.family'] = _JP_FP.get_name()
-            plt.rcParams['axes.unicode_minus'] = False; return
+            plt.rcParams['axes.unicode_minus'] = False
+            return _JP_FP
     for p in fm.findSystemFonts():
-        if any(k in p.lower() for k in ['cjk','ipag','japanese','gothic']):
+        if any(k in p.lower() for k in ['cjk','ipag','japanese','gothic','noto']):
             fm.fontManager.addfont(p); _JP_FP = fm.FontProperties(fname=p)
             plt.rcParams['font.family'] = _JP_FP.get_name()
-            plt.rcParams['axes.unicode_minus'] = False; return
+            plt.rcParams['axes.unicode_minus'] = False
+            return _JP_FP
+    return None
 _init()
 BG = '#111820'
 def _fp(): return _JP_FP or fm.FontProperties()
@@ -243,6 +252,7 @@ def _set_s4_guide(sh, g, cur='JPY'):
 
 # ── グラフ（S5: 日本語に戻す） ──
 def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x_max, cur='JPY'):
+    _init()  # 日本語フォント rcParams を再適用(他コードで上書きされていても復元)
     fp = _fp()
     fig, ax = plt.subplots(figsize=(10, 4), dpi=120)
     fig.patch.set_facecolor(BG); ax.set_facecolor(BG)
@@ -283,6 +293,7 @@ def _make_ltv_graph(t_range, rev_line, gp_line, cac_line, ltv_rev, lam_actual, x
 
 # ── S7/S13 棒グラフ：数値ラベル+X軸数値+加重平均ライン数値 ──
 def _make_bar_graph(pp_rows, best, avg_ltv, cur='JPY'):
+    _init()  # 日本語フォント rcParams を再適用
     fp = _fp()
     fig, ax = plt.subplots(figsize=(6, max(2.5, len(pp_rows)*0.45)), dpi=120)
     fig.patch.set_facecolor(BG); ax.set_facecolor(BG)
@@ -506,6 +517,7 @@ def generate_pptx(
                         km_s=_compute_km_df(_df_s_fit)
                     else:
                         km_s=_compute_km_df(df_s)
+                    _init()  # セグメント別 KM チャート: 日本語フォント rcParams 再適用(冪等)
                     fig_km,ax_km=plt.subplots(figsize=(4,2.8),dpi=120); fig_km.patch.set_facecolor(BG); ax_km.set_facecolor(BG)
                     ax_km.step(km_s['time'],km_s['survival'],where='post',color='#56b4d3',lw=1.5)
                     t_fit=list(range(int(km_s['time'].max()))); s_fit=[math.exp(-(t/row['lam'])**row['k']) for t in t_fit]
@@ -519,6 +531,7 @@ def generate_pptx(
                         y_s=[ltv_horizon_spot(row['k'],row['lam'],_arpu_0_dorm_s,_arpu_long_s,t,_dorm_s) for t in x_s]
                     else:
                         y_s=[ltv_horizon_offset(row['k'],row['lam'],_arpu_s,t,ltv_offset_days) for t in x_s]
+                    _init()  # セグメント別 Weibull チャート: 日本語フォント rcParams 再適用(冪等)
                     fig_wb,ax_wb=plt.subplots(figsize=(4,2.8),dpi=120); fig_wb.patch.set_facecolor(BG); ax_wb.set_facecolor(BG)
                     ax_wb.plot(x_s,y_s,color='#56b4d3',lw=1.5)
                     ax_wb.axvline(row['lam'],color='#a8dadc',lw=1,ls='--',alpha=0.7)
