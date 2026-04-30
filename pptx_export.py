@@ -45,7 +45,15 @@ def _init():
             plt.rcParams['axes.unicode_minus'] = False
             return _JP_FP
     return None
-_init()
+
+# Diagnostic: log font init result to stderr (visible in Streamlit Cloud / Railway logs).
+_INIT_RESULT = _init()
+import sys as _sys_diag
+print(
+    f"[pptx_export font_init] _JP_FP="
+    f"{(_INIT_RESULT.get_name() + ' @ ' + str(_INIT_RESULT._file)) if _INIT_RESULT else 'NONE -> Japanese garbles'}",
+    file=_sys_diag.stderr, flush=True,
+)
 BG = '#111820'
 def _fp(): return _JP_FP or fm.FontProperties()
 A = 'http://schemas.openxmlformats.org/drawingml/2006/main'
