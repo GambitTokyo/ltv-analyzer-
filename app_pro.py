@@ -2373,17 +2373,17 @@ def _find_jp_font_path():
 _JP_FONT_PATH = _find_jp_font_path()
 
 # matplotlibにフォントを明示登録（Streamlit Cloud対応）
+# _find_jp_font_path() が repo bundle ipag.ttf を最優先で返すので、それを信頼する。
+# 過去にあった `/usr/share/fonts/truetype/fonts-japanese-gothic.ttf` のハードコード
+# override は削除 — deploy 環境のフォント install 状況に左右され、結果として
+# repo bundle を上書きしてしまうため文字化け再発の原因になっていた。
 try:
-    import matplotlib as _mpl_init
     import matplotlib.font_manager as _fm_init
-    _IPA_TTF = '/usr/share/fonts/truetype/fonts-japanese-gothic.ttf'
-    import os as _os_init
-    if _os_init.path.exists(_IPA_TTF):
-        _fm_init.fontManager.addfont(_IPA_TTF)
-        _JP_FONT_PATH = _IPA_TTF
-    elif _JP_FONT_PATH:
+    if _JP_FONT_PATH:
         _fm_init.fontManager.addfont(_JP_FONT_PATH)
-    _JP_FONT_NAME = _fm_init.FontProperties(fname=_JP_FONT_PATH).get_name() if _JP_FONT_PATH else None
+        _JP_FONT_NAME = _fm_init.FontProperties(fname=_JP_FONT_PATH).get_name()
+    else:
+        _JP_FONT_NAME = None
 except Exception:
     _JP_FONT_NAME = None
 
