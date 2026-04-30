@@ -2380,6 +2380,53 @@ except Exception:
     _JP_FONT_NAME = None
 
 
+# ── 共通ヘルパー: 日本語フォントを matplotlib rcParams に強制適用 ──
+# 全チャート描画関数の冒頭で setup_japanese_font() を呼ぶこと。
+# 呼び忘れると matplotlib のデフォルトフォントが日本語をサポートしないため、
+# PPT/PDF 出力で日本語が「□□□□」または「?」で文字化けする。
+# 過去の文字化け再発例: PPT P5/P7+, PDF P4/P5+ セグメント別 Survival/Weibull.
+_JP_FONT_APPLIED = False
+
+def setup_japanese_font():
+    """matplotlibのrcParamsに日本語フォントを強制適用。冪等(複数回呼んで安全)。
+
+    戻り値: 適用されたフォント名(str) or None(失敗時)。
+    """
+    global _JP_FONT_APPLIED, _JP_FONT_NAME
+    try:
+        import matplotlib.pyplot as _plt_jp
+        import matplotlib.font_manager as _fm_jp
+        # 既存のモジュールレベル _JP_FONT_NAME / _JP_FONT_PATH を優先
+        if _JP_FONT_NAME:
+            _plt_jp.rcParams['font.family'] = _JP_FONT_NAME
+            _plt_jp.rcParams['axes.unicode_minus'] = False
+            _JP_FONT_APPLIED = True
+            return _JP_FONT_NAME
+        # フォールバック: システムフォント名から探索
+        _candidate_names = [
+            'IPAexGothic', 'IPAGothic', 'IPAPGothic',
+            'Noto Sans CJK JP', 'Noto Sans JP',
+            'Hiragino Sans', 'Hiragino Maru Gothic Pro',
+            'Yu Gothic', 'Meiryo', 'MS Gothic',
+        ]
+        _available = {f.name for f in _fm_jp.fontManager.ttflist}
+        for _n in _candidate_names:
+            if _n in _available:
+                _plt_jp.rcParams['font.family'] = _n
+                _plt_jp.rcParams['axes.unicode_minus'] = False
+                _JP_FONT_NAME = _n
+                _JP_FONT_APPLIED = True
+                return _n
+        return None
+    except Exception:
+        return None
+
+
+# モジュール初期化時に1回適用(失敗しても安全、各chart関数で再呼出)
+setup_japanese_font()
+
+
+
 
 # λ時点と99%到達日数を逆算
 try:
@@ -3301,13 +3348,8 @@ if True:
         import matplotlib.pyplot as plt_pdf
         import numpy as np_pdf
 
-        # PDF用グラフの日本語フォント設定
-        if _JP_FONT_NAME:
-            plt_pdf.rcParams['font.family'] = _JP_FONT_NAME
-        elif _JP_FONT_PATH:
-            from matplotlib.font_manager import FontProperties as _FP_pdf
-            _jp_fp = _FP_pdf(fname=_JP_FONT_PATH)
-            plt_pdf.rcParams['font.family'] = _jp_fp.get_name()
+        # 日本語フォント強制適用(共通ヘルパー、冪等)
+        setup_japanese_font()
 
         fig_ltv_pdf, ax_lp = plt_pdf.subplots(figsize=(10, 4.5))
         fig_ltv_pdf.patch.set_facecolor('#0E1117')
@@ -3443,6 +3485,7 @@ if True:
                 # LTV∞バーチャート
                 if len(pdf_rows) > 1:
                     import matplotlib.pyplot as plt_seg_bar
+                    setup_japanese_font()  # 日本語フォント強制適用
                     _seg_names = [r[0] for r in pdf_rows[1:]]
                     _seg_ltvs = [float(r[2].replace(cur_symbol(CUR), '').replace(',', '')) for r in pdf_rows[1:]]
                     # 降順ソートして上位10件に制限
@@ -3579,6 +3622,7 @@ if True:
                         # 2グラフ横並び（dark theme）
                         import matplotlib.pyplot as plt_pdf_seg
                         import numpy as np_pdf_seg
+                        setup_japanese_font()  # セグメント名(日本語)が yticklabel/title に出るので必須
                         fig_2g, (ax_g1, ax_g2) = plt_pdf_seg.subplots(1, 2, figsize=(12, 4))
                         fig_2g.patch.set_facecolor('#0E1117')
                         ax_g1.set_facecolor('#0E1117')

@@ -282,7 +282,7 @@ _DICT = {
     'main_summary_title':       {'ja': '分析結果サマリー', 'en': 'Analysis Summary'},
     'summary_k_early':          {'ja': '初期離脱大・投資回収が比較的長期', 'en': 'High early churn — longer payback period'},
     'summary_k_late':           {'ja': '継続後に解約増・投資回収が比較的短期', 'en': 'Churn increases over time — shorter payback'},
-    'summary_rev_basis':        {'ja': '売上ベース', 'en': 'Revenue basis'},
+    'summary_rev_basis':        {'ja': '期待生涯売上', 'en': 'Expected Lifetime Revenue'},
     'summary_cac_gp_basis':     {'ja': '（粗利ベース）', 'en': '(GP basis)'},
     'summary_k_desc_long':      {'ja': '値が大きいほどLTV∞到達が長期化', 'en': 'Higher = longer time to reach LTV∞'},
     'summary_r2_note':          {'ja': '0.9以上が理想 / 1.0が最高精度', 'en': '≥0.9 ideal / 1.0 = perfect fit'},
@@ -325,20 +325,20 @@ _DICT = {
 
     # ── 結論文テンプレート（動的生成用） ──────────────────────
     'conclusion_spot_early_churn': {
-        'ja': 'k={k:.3f}の初期離脱型です。初回購入後{period}以内に再購入しなかった顧客（単発購入）は{rate:.0f}%です。リピートした顧客の多くは初回購入からλ={lam:.0f}日（約{lam_y:.1f}年）以上購買を継続する傾向があります。LTV∞は{ltv}でCAC上限は{cac}ですが、投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。',
-        'en': 'With k={k:.3f}, this is an early-churn pattern. {rate:.0f}% of customers did not repurchase within {period} after their first purchase (one-time buyers). Repeat customers tend to continue purchasing for λ={lam:.0f} days (~{lam_y:.1f} years) or more. LTV∞ is {ltv} with a CAC cap of {cac}, but payback takes relatively long — check the interim LTV table for realistic payback periods when designing your CAC.',
+        'ja': 'k={k:.3f}の初期離脱型です。初回購入後{period}以内に再購入しなかった顧客（単発購入）は{rate:.0f}%です。リピートした顧客の多くは初回購入からλ={lam:.0f}日（約{lam_y:.1f}年）以上購買を継続する傾向があります。期待される顧客生涯売上（LTV∞）—1顧客あたりの理論上の総売上—は{ltv}で、CAC上限は{cac}です。投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。',
+        'en': 'With k={k:.3f}, this is an early-churn pattern. {rate:.0f}% of customers did not repurchase within {period} after their first purchase (one-time buyers). Repeat customers tend to continue purchasing for λ={lam:.0f} days (~{lam_y:.1f} years) or more. Expected lifetime revenue (LTV∞) — the theoretical total revenue per customer — is {ltv}, with a CAC cap of {cac}. Payback takes relatively long — check the interim LTV table for realistic payback periods when designing your CAC.',
     },
     'conclusion_spot_late_churn': {
-        'ja': 'k={k:.3f}の逓増離脱型です。初回購入後{period}以内に再購入しなかった顧客（単発購入）は{rate:.0f}%です。リピートした顧客の多くは初回購入からλ={lam:.0f}日（約{lam_y:.1f}年）以上購買を継続する傾向があります。LTV∞は{ltv}でCAC上限は{cac}、比較的短期での投資回収が見込めます。',
-        'en': 'With k={k:.3f}, this is an increasing-churn pattern. {rate:.0f}% of customers did not repurchase within {period} after their first purchase (one-time buyers). Repeat customers tend to continue purchasing for λ={lam:.0f} days (~{lam_y:.1f} years) or more. LTV∞ is {ltv} with a CAC cap of {cac} — relatively short payback is expected.',
+        'ja': 'k={k:.3f}の逓増離脱型です。初回購入後{period}以内に再購入しなかった顧客（単発購入）は{rate:.0f}%です。リピートした顧客の多くは初回購入からλ={lam:.0f}日（約{lam_y:.1f}年）以上購買を継続する傾向があります。期待される顧客生涯売上（LTV∞）—1顧客あたりの理論上の総売上—は{ltv}で、CAC上限は{cac}です。比較的短期での投資回収が見込めます。',
+        'en': 'With k={k:.3f}, this is an increasing-churn pattern. {rate:.0f}% of customers did not repurchase within {period} after their first purchase (one-time buyers). Repeat customers tend to continue purchasing for λ={lam:.0f} days (~{lam_y:.1f} years) or more. Expected lifetime revenue (LTV∞) — the theoretical total revenue per customer — is {ltv}, with a CAC cap of {cac}. Relatively short payback is expected.',
     },
     'conclusion_sub_early_churn': {
-        'ja': 'k={k:.3f}の初期離脱型です。最初の契約期間のみで解約した顧客は{rate:.0f}%です。初期を乗り越えた顧客の多くはλ={lam:.0f}日（約{lam_y:.1f}年）以上継続する傾向があります。LTV∞は{ltv}でCAC上限は{cac}ですが、投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。',
-        'en': 'With k={k:.3f}, this is an early-churn pattern. {rate:.0f}% of customers churned within their first billing period. Those who survive the initial period tend to stay for λ={lam:.0f} days (~{lam_y:.1f} years) or more. LTV∞ is {ltv} with a CAC cap of {cac}, but payback takes relatively long — check the interim LTV table for realistic payback periods when designing your CAC.',
+        'ja': 'k={k:.3f}の初期離脱型です。最初の契約期間のみで解約した顧客は{rate:.0f}%です。初期を乗り越えた顧客の多くはλ={lam:.0f}日（約{lam_y:.1f}年）以上継続する傾向があります。期待される顧客生涯売上（LTV∞）—1顧客あたりの理論上の総売上—は{ltv}で、CAC上限は{cac}です。投資回収は比較的長期になるため、暫定LTVテーブルで現実的な回収期間を確認してCACを設計してください。',
+        'en': 'With k={k:.3f}, this is an early-churn pattern. {rate:.0f}% of customers churned within their first billing period. Those who survive the initial period tend to stay for λ={lam:.0f} days (~{lam_y:.1f} years) or more. Expected lifetime revenue (LTV∞) — the theoretical total revenue per customer — is {ltv}, with a CAC cap of {cac}. Payback takes relatively long — check the interim LTV table for realistic payback periods when designing your CAC.',
     },
     'conclusion_sub_late_churn': {
-        'ja': 'k={k:.3f}の逓増離脱型です。最初の契約期間のみで解約した顧客は{rate:.0f}%です。初期を乗り越えた顧客の多くはλ={lam:.0f}日（約{lam_y:.1f}年）以上継続する傾向があります。LTV∞は{ltv}でCAC上限は{cac}、比較的短期での投資回収が見込めます。',
-        'en': 'With k={k:.3f}, this is an increasing-churn pattern. {rate:.0f}% of customers churned within their first billing period. Those who survive the initial period tend to stay for λ={lam:.0f} days (~{lam_y:.1f} years) or more. LTV∞ is {ltv} with a CAC cap of {cac} — relatively short payback is expected.',
+        'ja': 'k={k:.3f}の逓増離脱型です。最初の契約期間のみで解約した顧客は{rate:.0f}%です。初期を乗り越えた顧客の多くはλ={lam:.0f}日（約{lam_y:.1f}年）以上継続する傾向があります。期待される顧客生涯売上（LTV∞）—1顧客あたりの理論上の総売上—は{ltv}で、CAC上限は{cac}です。比較的短期での投資回収が見込めます。',
+        'en': 'With k={k:.3f}, this is an increasing-churn pattern. {rate:.0f}% of customers churned within their first billing period. Those who survive the initial period tend to stay for λ={lam:.0f} days (~{lam_y:.1f} years) or more. Expected lifetime revenue (LTV∞) — the theoretical total revenue per customer — is {ltv}, with a CAC cap of {cac}. Relatively short payback is expected.',
     },
     'conclusion_r2_high':       {'ja': 'R²={r2:.3f}はモデル精度が非常に高く、この推定値は意思決定に十分活用できます。',
                                  'en': 'R²={r2:.3f} indicates very high model accuracy — these estimates are reliable for decision-making.'},
