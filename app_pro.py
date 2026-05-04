@@ -85,6 +85,169 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
+# ── SEO / GEO meta + Schema injection ─────────────────────────
+# Inject Schema.org JSON-LD and meta tags so Google + AI bots
+# (GPTBot, ClaudeBot, PerplexityBot) can index app.ltv-analyzer.com
+# and understand the product structure.
+#
+# Strategy: dual injection.
+#   1) JSON-LD via st.markdown (placed in body — Google accepts JSON-LD
+#      from <body> just as well as <head>).
+#   2) <meta>/<link> via streamlit.components.v1.html running JS that
+#      pushes tags into parent.document.head (Streamlit sandboxes the
+#      head, so JS injection is the only way to get them placed).
+#
+# The injection is idempotent (data-ltv-seo marker prevents duplicates
+# on Streamlit re-runs).
+import streamlit.components.v1 as _st_components
+
+_SEO_SCHEMA = {
+    "@context": "https://schema.org",
+    "@graph": [
+        {
+            "@type": "Organization",
+            "@id": "https://ltv-analyzer.com/#organization",
+            "name": "Gambit, Inc.",
+            "legalName": "Gambit株式会社",
+            "url": "https://ltv-analyzer.com/",
+            "logo": "https://ltv-analyzer.com/gambit-logo.png",
+            "foundingDate": "2021",
+            "founder": {"@id": "https://ltv-analyzer.com/#founder"},
+            "address": {
+                "@type": "PostalAddress",
+                "addressCountry": "JP",
+                "addressLocality": "Tokyo"
+            },
+            "sameAs": [
+                "https://www.linkedin.com/in/tomotake-hirata-35061a15/"
+            ]
+        },
+        {
+            "@type": "SoftwareApplication",
+            "@id": "https://app.ltv-analyzer.com/#software",
+            "name": "LTV Analyzer",
+            "applicationCategory": "BusinessApplication",
+            "applicationSubCategory": "Customer Analytics Software",
+            "operatingSystem": "Web Browser",
+            "url": "https://app.ltv-analyzer.com/",
+            "inLanguage": "en",
+            "description": (
+                "Statistical customer lifetime value analysis tool using "
+                "Kaplan-Meier survival analysis and Weibull distribution modeling. "
+                "LTV estimates with confidence intervals, segment-level insights, "
+                "and exportable reports (Excel, PDF, PowerPoint)."
+            ),
+            "offers": [
+                {
+                    "@type": "Offer",
+                    "name": "Standard",
+                    "price": "499",
+                    "priceCurrency": "USD",
+                    "description": "One-time purchase"
+                },
+                {
+                    "@type": "Offer",
+                    "name": "Advanced",
+                    "price": "749",
+                    "priceCurrency": "USD",
+                    "description": "One-time purchase"
+                }
+            ],
+            "publisher": {"@id": "https://ltv-analyzer.com/#organization"},
+            "author": {"@id": "https://ltv-analyzer.com/#founder"},
+            "featureList": [
+                "Kaplan-Meier survival analysis",
+                "Weibull distribution modeling",
+                "Customer lifetime value forecasting",
+                "Segment-level LTV analysis",
+                "CAC/LTV ratio calculation",
+                "Confidence interval estimation",
+                "Exportable reports (Excel, PDF, PowerPoint)"
+            ]
+        },
+        {
+            "@type": "Person",
+            "@id": "https://ltv-analyzer.com/#founder",
+            "name": "Tomotake Hirata",
+            "jobTitle": "Founder & CEO",
+            "worksFor": {"@id": "https://ltv-analyzer.com/#organization"},
+            "image": "https://ltv-analyzer.com/profile.png",
+            "sameAs": [
+                "https://www.linkedin.com/in/tomotake-hirata-35061a15/"
+            ]
+        }
+    ]
+}
+
+# (1) JSON-LD into body via st.markdown — Google reads from anywhere.
+st.markdown(
+    '<script type="application/ld+json">'
+    + json.dumps(_SEO_SCHEMA, ensure_ascii=False, separators=(",", ":"))
+    + '</script>',
+    unsafe_allow_html=True,
+)
+
+# (2) <meta> / <link> tags pushed into parent <head> via JS.
+_SEO_META_TAGS = [
+    # Standard SEO
+    ("meta", {"name": "description", "content": "Statistical customer lifetime value analysis using Kaplan-Meier survival analysis and Weibull distribution modeling. LTV estimates with confidence intervals, segment insights, and exportable reports."}),
+    ("meta", {"name": "keywords", "content": "customer lifetime value, LTV calculator, LTV analysis, CAC LTV ratio, cohort analysis, Kaplan-Meier, Weibull, SaaS metrics, survival analysis, customer economics"}),
+    ("meta", {"name": "author", "content": "Tomotake Hirata, Gambit, Inc."}),
+    ("meta", {"name": "robots", "content": "index, follow"}),
+    ("link", {"rel": "canonical", "href": "https://app.ltv-analyzer.com/"}),
+    # Open Graph
+    ("meta", {"property": "og:type", "content": "website"}),
+    ("meta", {"property": "og:url", "content": "https://app.ltv-analyzer.com/"}),
+    ("meta", {"property": "og:title", "content": "LTV Analyzer — Statistical Customer Lifetime Value Analysis Tool"}),
+    ("meta", {"property": "og:description", "content": "Statistical LTV forecasts using Kaplan-Meier survival analysis and Weibull modeling. Built for SaaS, e-commerce, and M&A due diligence."}),
+    ("meta", {"property": "og:image", "content": "https://ltv-analyzer.com/og-image.png"}),
+    ("meta", {"property": "og:image:width", "content": "1200"}),
+    ("meta", {"property": "og:image:height", "content": "630"}),
+    ("meta", {"property": "og:site_name", "content": "LTV Analyzer"}),
+    ("meta", {"property": "og:locale", "content": "en_US"}),
+    # Twitter Card
+    ("meta", {"name": "twitter:card", "content": "summary_large_image"}),
+    ("meta", {"name": "twitter:title", "content": "LTV Analyzer — Statistical Customer Lifetime Value Analysis Tool"}),
+    ("meta", {"name": "twitter:description", "content": "Statistical LTV forecasts using Kaplan-Meier survival analysis and Weibull modeling."}),
+    ("meta", {"name": "twitter:image", "content": "https://ltv-analyzer.com/og-image.png"}),
+    # hreflang (future JA version placeholder)
+    ("link", {"rel": "alternate", "hreflang": "en", "href": "https://app.ltv-analyzer.com/"}),
+    ("link", {"rel": "alternate", "hreflang": "x-default", "href": "https://app.ltv-analyzer.com/"}),
+]
+
+_st_components.html(
+    """
+<script>
+(function() {
+  try {
+    var head = window.parent.document.head;
+    if (!head) return;
+    if (head.querySelector('meta[data-ltv-seo]')) return;  // idempotent
+    var tags = """ + json.dumps(_SEO_META_TAGS) + """;
+    tags.forEach(function(pair) {
+      var el = window.parent.document.createElement(pair[0]);
+      var attrs = pair[1];
+      Object.keys(attrs).forEach(function(k) { el.setAttribute(k, attrs[k]); });
+      el.setAttribute('data-ltv-seo', '1');
+      head.appendChild(el);
+    });
+    // Also push a copy of JSON-LD into <head> for crawlers that prefer it there.
+    var existing = window.parent.document.querySelector('script[type="application/ld+json"][data-ltv-seo]');
+    if (!existing) {
+      var ld = window.parent.document.createElement('script');
+      ld.type = 'application/ld+json';
+      ld.setAttribute('data-ltv-seo', '1');
+      ld.textContent = """ + json.dumps(json.dumps(_SEO_SCHEMA, ensure_ascii=False, separators=(",", ":"))) + """;
+      head.appendChild(ld);
+    }
+  } catch (e) { /* fail silently — body-level JSON-LD is the fallback */ }
+})();
+</script>
+""",
+    height=0,
+    width=0,
+)
+
 # ── Mode & Authentication ─────────────────────────────────────
 # 初回アクセスは常にデモモードで起動。サイドバーのLoginボタンで認証フローへ遷移。
 # 認証成功時、GASレスポンスのmodeに従って user_mode を standard/advanced に切替。
