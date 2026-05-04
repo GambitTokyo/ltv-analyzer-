@@ -1654,11 +1654,15 @@ First, confirm whether your business is **subscription-based** or **spot purchas
     # Mode-specific UTM for Contact link so Tomo can identify inquiry origin from email subject
     _contact_campaign = f"{APP_MODE}_contact"  # demo_contact / standard_contact / advanced_contact
     _cta_contact_url = f"{_LP_BASE}/contact.html?utm_source=app&utm_medium=footer&utm_campaign={_contact_campaign}"
-    st.markdown(
-        f"<div style='margin-top:24px; text-align:center;'>"
+    # Pricing CTA shown only in demo mode (Standard/Advanced users already purchased)
+    _pricing_block = (
         f"<div style='font-size:0.78rem; margin-bottom:6px;'>"
         f"<a href='{_cta_pricing_url}' target='_blank' rel='noopener' style='color:#7a8a9a; text-decoration:none;'>{T('cta_pricing')}</a>"
         f"</div>"
+    ) if APP_MODE == 'demo' else ''
+    st.markdown(
+        f"<div style='margin-top:24px; text-align:center;'>"
+        f"{_pricing_block}"
         f"<div style='font-size:0.78rem;'>"
         f"<a href='{_cta_contact_url}' target='_blank' rel='noopener' style='color:#7a8a9a; text-decoration:none;'>{T('cta_contact')}</a>"
         f"</div>"
