@@ -1605,7 +1605,6 @@ First, confirm whether your business is **subscription-based** or **spot purchas
 | `セグメント列`（任意の列名） | チャネル・年齢層・地域など（Advanced機能） | 文字列 | 20代 |
 
 - **`revenue` は累計売上です。** サブスク型は `start_date` から `end_date`（継続中はデータ抽出時点）まで、都度購入型は `start_date` から `last_purchase_date` までの売上合計を入れてください。
-- データの観測期間が短すぎるとまだ解約／離脱していない顧客が多く、将来価値の推定が不安定になります。目安として 2〜3 年以上のデータがあると安定しやすくなります（ビジネスモデルにより幅があります）。
 - **Advanced 版では必ずセグメント列を追加してください。** 複数列追加可能です。
 - 列名は半角英数字（アンダースコア可）で統一してください。値は日本語表記のままで使えます。
 - 列名は完全一致でなくても OK です。`start`・`end`・`last`・`revenue` を含む列名は自動認識します。
@@ -1624,7 +1623,6 @@ First, confirm whether your business is **subscription-based** or **spot purchas
 | Segment columns (any name) | Channel, age group, region, etc. (Advanced) | String | 20s |
 
 - **`revenue` is cumulative revenue.** For subscription, total from `start_date` to `end_date` (or to the data extraction date if still active). For spot purchase, total from `start_date` to `last_purchase_date`.
-- If the observation period is too short, many customers have not churned yet, making future-value estimates unstable. As a rough guide, 2–3 years of data or more produces more stable results (varies by business model).
 - **Always include segment columns for the Advanced version.** Multiple columns supported.
 - Use half-width alphanumerics (underscores allowed) for column names.
 - Column names don't need to match exactly. Columns containing `start`, `end`, `last`, or `revenue` are auto-detected.
@@ -1653,7 +1651,9 @@ First, confirm whether your business is **subscription-based** or **spot purchas
                 unsafe_allow_html=True,
             )
     _cta_pricing_url = f"{_LP_BASE}/?utm_source=app&utm_medium=referral&utm_campaign=app_pricing_cta#pricing"
-    _cta_contact_url = f"{_LP_BASE}/contact.html?utm_source=app&utm_medium=referral&utm_campaign=app_contact"
+    # Mode-specific UTM for Contact link so Tomo can identify inquiry origin from email subject
+    _contact_campaign = f"{APP_MODE}_contact"  # demo_contact / standard_contact / advanced_contact
+    _cta_contact_url = f"{_LP_BASE}/contact.html?utm_source=app&utm_medium=footer&utm_campaign={_contact_campaign}"
     st.markdown(
         f"<div style='margin-top:24px; text-align:center;'>"
         f"<div style='font-size:0.78rem; margin-bottom:6px;'>"
@@ -4444,3 +4444,30 @@ with st.expander("Raw Data" if get_lang() == "en" else "読み込んだデータ
         df[['customer_id','start_date','end_date','duration','event','arpu_daily']].head(30),
         hide_index=True
     )
+
+# ══════════════════════════════════════════════════════════════
+# Footer: Contact us link (mode-specific UTM for inquiry tracking)
+# ══════════════════════════════════════════════════════════════
+# UTM:
+#   utm_source=app
+#   utm_medium=footer
+#   utm_campaign=demo_contact / standard_contact / advanced_contact
+# → Tomo がメール件名で流入元 (どのモードのユーザーか) を即判別できる
+_LP_BASE_FOOTER = "https://ltv-analyzer.com"
+_footer_contact_campaign = f"{APP_MODE}_contact"
+_footer_contact_url = (
+    f"{_LP_BASE_FOOTER}/contact.html"
+    f"?utm_source=app&utm_medium=footer&utm_campaign={_footer_contact_campaign}"
+)
+_footer_contact_label = 'お問い合わせ' if get_lang() == 'ja' else 'Contact us'
+st.markdown(
+    f"""
+<div style='margin-top:48px; padding-top:20px; border-top:1px solid #1a2a3a; text-align:center;'>
+  <a href='{_footer_contact_url}' target='_blank' rel='noopener'
+     style='font-size:0.78rem; color:#7a8a9a; text-decoration:none; letter-spacing:0.04em;'>
+    {_footer_contact_label}
+  </a>
+</div>
+""",
+    unsafe_allow_html=True,
+)
