@@ -1660,11 +1660,16 @@ First, confirm whether your business is **subscription-based** or **spot purchas
         f"<a href='{_cta_pricing_url}' target='_blank' rel='noopener' style='color:#7a8a9a; text-decoration:none;'>{T('cta_pricing')}</a>"
         f"</div>"
     ) if APP_MODE == 'demo' else ''
+    # Demo: keep original verbose label; Standard/Advanced: concise
+    if APP_MODE == 'demo':
+        _welcome_contact_label = T('cta_contact')
+    else:
+        _welcome_contact_label = 'お問い合わせ' if get_lang() == 'ja' else 'Contact us'
     st.markdown(
         f"<div style='margin-top:24px; text-align:center;'>"
         f"{_pricing_block}"
         f"<div style='font-size:0.78rem;'>"
-        f"<a href='{_cta_contact_url}' target='_blank' rel='noopener' style='color:#7a8a9a; text-decoration:none;'>{T('cta_contact')}</a>"
+        f"<a href='{_cta_contact_url}' target='_blank' rel='noopener' style='color:#7a8a9a; text-decoration:none;'>{_welcome_contact_label}</a>"
         f"</div>"
         f"</div>",
         unsafe_allow_html=True,
