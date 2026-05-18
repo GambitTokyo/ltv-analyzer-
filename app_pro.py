@@ -344,6 +344,112 @@ if st.session_state.authenticated:
 
 APP_MODE = st.session_state["user_mode"]
 
+# ── Analytics (GA4 + Microsoft Clarity) ───────────────────────
+# Inject GA4 (G-Y1NGZSGP8H) and Microsoft Clarity (wh4zo0ipbp) into
+# the top-level document.head via the same parent.document.head
+# pattern as the SEO block above. st.markdown(unsafe_allow_html=True)
+# sanitizes <script>, and Streamlit owns the page <head>, so direct
+# injection is not viable; JS executed from a 0-height components.html
+# iframe is. APP_MODE and any captured UTM params are forwarded to
+# gtag so GA4 reports can segment by mode and channel.
+#
+# Idempotent: a data-ltv-tracking marker prevents duplicate loaders
+# across Streamlit reruns. Per-rerun we re-push app_mode + UTM so the
+# values stay current after a Login that switches APP_MODE.
+#
+# Privacy: Clarity is told to mask stDataFrame and stFileUploader so
+# raw customer CSV data is never captured in session recordings.
+
+GA4_MEASUREMENT_ID = "G-Y1NGZSGP8H"
+CLARITY_PROJECT_ID = "wh4zo0ipbp"
+
+# UTM / click-id capture: on first hit, persist into session_state so
+# downstream CTA URLs and (future) GAS contact submissions can carry
+# the original Apollo / Google Ads attribution all the way through.
+_UTM_KEYS = ("utm_source", "utm_medium", "utm_campaign",
+             "utm_term", "utm_content", "gclid", "apid")
+for _utm_k in _UTM_KEYS:
+    if _utm_k in st.query_params and _utm_k not in st.session_state:
+        _utm_v = st.query_params[_utm_k]
+        if isinstance(_utm_v, list):
+            _utm_v = _utm_v[0] if _utm_v else ""
+        st.session_state[_utm_k] = _utm_v
+
+_TRACKING_PARAMS = {"app_mode": APP_MODE}
+for _utm_k in _UTM_KEYS:
+    _utm_v = st.session_state.get(_utm_k)
+    if _utm_v:
+        _TRACKING_PARAMS[_utm_k] = str(_utm_v)
+
+_TRACKING_BOOTSTRAP_JS = '''
+<script>
+(function() {
+  try {
+    var doc = window.parent.document;
+    var win = window.parent;
+    var trackingParams = __LTV_TRACKING_PARAMS__;
+
+    // One-time install (guarded by data-ltv-tracking marker).
+    if (!doc.querySelector('script[data-ltv-tracking="gtag"]')) {
+      // (1) Google Analytics 4 loader.
+      var g = doc.createElement('script');
+      g.async = true;
+      g.src = 'https://www.googletagmanager.com/gtag/js?id=__LTV_GA4_ID__';
+      g.setAttribute('data-ltv-tracking', 'gtag');
+      doc.head.appendChild(g);
+
+      // (2) gtag bootstrap — dataLayer + gtag live on parent window.
+      win.dataLayer = win.dataLayer || [];
+      win.gtag = function() { win.dataLayer.push(arguments); };
+      win.gtag('js', new Date());
+      win.gtag('config', '__LTV_GA4_ID__', { cookie_flags: 'SameSite=None;Secure' });
+
+      // (3) Microsoft Clarity loader. The new <script> is inserted into
+      //     the parent document, so the lib executes in parent context.
+      (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(win, doc, 'clarity', 'script', '__LTV_CLARITY_ID__');
+      // Mask raw CSV preview + upload widget — queued via loader stub,
+      // processed once the real lib loads.
+      try { win.clarity('set', 'mask', ["[data-testid='stDataFrame']", "[data-testid='stFileUploader']"]); } catch (e) {}
+
+      // (4) Click delegate — every anchor with data-ltv-event emits a
+      //     GA4 event. Capture phase so target=_blank fires the event
+      //     before the page navigates away.
+      if (!win._ltvClickHandlerInstalled) {
+        win._ltvClickHandlerInstalled = true;
+        doc.addEventListener('click', function(e) {
+          try {
+            var el = e.target && e.target.closest && e.target.closest('[data-ltv-event]');
+            if (!el) return;
+            if (typeof win.gtag !== 'function') return;
+            win.gtag('event', el.getAttribute('data-ltv-event'), {
+              event_category: 'cta',
+              event_label: el.getAttribute('data-ltv-label') || ''
+            });
+          } catch (err) {}
+        }, true);
+      }
+    }
+
+    // Per-rerun: keep app_mode + UTM forwarded on gtag's session.
+    if (typeof win.gtag === 'function') {
+      win.gtag('set', trackingParams);
+    } else {
+      win.dataLayer = win.dataLayer || [];
+      win.dataLayer.push(['set', trackingParams]);
+    }
+  } catch (e) { /* tracking must never break the app */ }
+})();
+</script>
+'''.replace('__LTV_TRACKING_PARAMS__', json.dumps(_TRACKING_PARAMS)) \
+   .replace('__LTV_GA4_ID__', GA4_MEASUREMENT_ID) \
+   .replace('__LTV_CLARITY_ID__', CLARITY_PROJECT_ID)
+
+_st_components.html(_TRACKING_BOOTSTRAP_JS, height=0, width=0)
+
 # ── CSS ───────────────────────────────────────────────────────
 st.markdown("""
 <style>
@@ -939,7 +1045,7 @@ with st.sidebar:
             border:1px solid #1c3a4a; border-radius:8px; padding:12px 14px; margin:8px 0 12px 0;
             font-size:0.73rem; color:#7ab4c4; line-height:1.6;'>
             {_demo_note}<br>
-            <a href="{_PURCHASE_URL}" target="_blank" style="display:inline-block; margin-top:8px;
+            <a href="{_PURCHASE_URL}" target="_blank" data-ltv-event="purchase_click" data-ltv-label="sidebar_purchase" style="display:inline-block; margin-top:8px;
             padding:6px 18px; background:#56b4d3; color:#0a0e14; border-radius:5px;
             font-size:0.73rem; font-weight:600; text-decoration:none; letter-spacing:0.04em;">
             {_purchase_label}</a></div>""", unsafe_allow_html=True)
@@ -1446,6 +1552,7 @@ with st.sidebar:
   </div>
   <div style='font-size: 0.72rem; color: #8aa; line-height: 1.5; margin-bottom: 10px;'>{_sb_up_desc}</div>
   <a href='{_SB_UP_URL}' target='_blank' rel='noopener'
+     data-ltv-event='upgrade_click' data-ltv-label='sidebar_upgrade'
      style='display: inline-block; background: #56b4d3; color: #0a1020;
      padding: 7px 18px; border-radius: 6px; font-weight: 600;
      font-size: 0.76rem; text-decoration: none;'>{_sb_up_btn}</a>
@@ -1522,7 +1629,7 @@ if uploaded is None and st.session_state.get('sample_df') is None:
         st.markdown("""
 LTV Analyzer は、LTV（顧客の生涯価値）と CAC（顧客獲得コスト）上限を、最小限の顧客データから自動算出する分析ツールです。平均単価・購入頻度・解約率などの単純な計算では見落とされる、まだ継続中の顧客が将来生む価値まで含めて算出します。
 
-<a href="https://ltv-analyzer.com/?utm_source=app&utm_medium=referral&utm_campaign=app_about" target="_blank" rel="noopener" style="font-size:0.85rem; color:#7a8a9a; text-decoration:none;">→ 手法と料金の詳細は ltv-analyzer.com</a>
+<a href="https://ltv-analyzer.com/?utm_source=app&utm_medium=referral&utm_campaign=app_about" target="_blank" rel="noopener" data-ltv-event="learn_more_click" data-ltv-label="app_about_ja" style="font-size:0.85rem; color:#7a8a9a; text-decoration:none;">→ 手法と料金の詳細は ltv-analyzer.com</a>
         """, unsafe_allow_html=True)
 
         st.markdown("""<div class='section-title' style='margin-top:28px;'>ビジネスタイプの確認</div>""", unsafe_allow_html=True)
@@ -1559,7 +1666,7 @@ LTV Analyzer は、LTV（顧客の生涯価値）と CAC（顧客獲得コスト
         st.markdown("""
 LTV Analyzer is an analytics tool that automatically computes LTV (customer lifetime value) and the CAC (customer acquisition cost) ceiling from a minimal customer data file. It captures the future value generated by still-active customers — value missed by simple calculations based on average revenue, purchase frequency, or churn rate.
 
-<a href="https://ltv-analyzer.com/?utm_source=app&utm_medium=referral&utm_campaign=app_about" target="_blank" rel="noopener" style="font-size:0.85rem; color:#7a8a9a; text-decoration:none;">→ Learn more about our methodology and pricing at ltv-analyzer.com</a>
+<a href="https://ltv-analyzer.com/?utm_source=app&utm_medium=referral&utm_campaign=app_about" target="_blank" rel="noopener" data-ltv-event="learn_more_click" data-ltv-label="app_about_en" style="font-size:0.85rem; color:#7a8a9a; text-decoration:none;">→ Learn more about our methodology and pricing at ltv-analyzer.com</a>
         """, unsafe_allow_html=True)
 
         st.markdown("""<div class='section-title' style='margin-top:28px;'>Business type</div>""", unsafe_allow_html=True)
@@ -1643,6 +1750,7 @@ First, confirm whether your business is **subscription-based** or **spot purchas
             _link = f"{_LP_BASE}/?utm_source=app&utm_medium=referral&utm_campaign={utm_camp}#how"
             st.markdown(
                 f"<a href='{_link}' target='_blank' rel='noopener' "
+                f"data-ltv-event='step_card_click' data-ltv-label='{utm_camp}' "
                 f"style='display:block; text-decoration:none; color:inherit;'>"
                 f"<div class='metric-card' style='cursor:pointer;'>"
                 f"<div class='metric-value' style='font-size:1.1rem'>{title}</div>"
@@ -1657,7 +1765,7 @@ First, confirm whether your business is **subscription-based** or **spot purchas
     # Pricing CTA shown only in demo mode (Standard/Advanced users already purchased)
     _pricing_block = (
         f"<div style='font-size:0.78rem; margin-bottom:6px;'>"
-        f"<a href='{_cta_pricing_url}' target='_blank' rel='noopener' style='color:#7a8a9a; text-decoration:none;'>{T('cta_pricing')}</a>"
+        f"<a href='{_cta_pricing_url}' target='_blank' rel='noopener' data-ltv-event='pricing_click' data-ltv-label='welcome_pricing' style='color:#7a8a9a; text-decoration:none;'>{T('cta_pricing')}</a>"
         f"</div>"
     ) if APP_MODE == 'demo' else ''
     # Demo: keep original verbose label; Standard/Advanced: concise
@@ -1669,7 +1777,7 @@ First, confirm whether your business is **subscription-based** or **spot purchas
         f"<div style='margin-top:24px; text-align:center;'>"
         f"{_pricing_block}"
         f"<div style='font-size:0.78rem;'>"
-        f"<a href='{_cta_contact_url}' target='_blank' rel='noopener' style='color:#7a8a9a; text-decoration:none;'>{_welcome_contact_label}</a>"
+        f"<a href='{_cta_contact_url}' target='_blank' rel='noopener' data-ltv-event='contact_click' data-ltv-label='welcome_contact' style='color:#7a8a9a; text-decoration:none;'>{_welcome_contact_label}</a>"
         f"</div>"
         f"</div>",
         unsafe_allow_html=True,
@@ -2831,6 +2939,7 @@ _UPGRADE_HTML = f"""
     {_UPGRADE_DESC}
   </div>
   <a href='{_UPGRADE_URL}' target='_blank' rel='noopener'
+     data-ltv-event='upgrade_click' data-ltv-label='segment_upgrade'
      style='display: inline-block; background: #56b4d3; color: #0a1020; padding: 10px 32px;
      border-radius: 6px; font-weight: 600; font-size: 0.85rem; text-decoration: none;'>{_UPGRADE_BTN}</a>
 </div>
@@ -3200,7 +3309,7 @@ if True:
         import base64 as _b64
         _xl_b64 = _b64.b64encode(xl_buf.read()).decode()
         _fn_xl = f"LTV_Analysis_{client_name or 'report'}.xlsx"
-        _xl_href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{_xl_b64}" download="{_fn_xl}" class="dl-btn">.xlsx</a>'
+        _xl_href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{_xl_b64}" download="{_fn_xl}" data-ltv-event="export_click" data-ltv-label="xlsx" class="dl-btn">.xlsx</a>'
         _xl_html = _xl_href
     except Exception as e:
         _xl_html = f'<span class="dl-btn-err">.xlsx Error</span>'
@@ -3286,7 +3395,8 @@ if True:
         _fn_pp  = f"LTV_Analysis_{client_name or 'report'}.pptx"
         _pp_href = (f'<a href="data:application/vnd.openxmlformats-officedocument'
                     f'.presentationml.presentation;base64,{_pp_b64}" '
-                    f'download="{_fn_pp}" class="dl-btn">.pptx</a>')
+                    f'download="{_fn_pp}" data-ltv-event="export_click" '
+                    f'data-ltv-label="pptx" class="dl-btn">.pptx</a>')
         _pp_html = _pp_href
     except ImportError as _ie:
         _pp_html = f'<span class="dl-btn-err">.pptx Not supported: {str(_ie)[:80]}</span>'
@@ -3937,7 +4047,8 @@ if True:
         _pdf_b64 = _b64.b64encode(pdf_buf.read()).decode()
         _fn_pdf = f"LTV_Analysis_{client_name or 'report'}.pdf"
         _pdf_href = (f'<a href="data:application/pdf;base64,{_pdf_b64}" '
-                     f'download="{_fn_pdf}" class="dl-btn">.pdf</a>')
+                     f'download="{_fn_pdf}" data-ltv-event="export_click" '
+                     f'data-ltv-label="pdf" class="dl-btn">.pdf</a>')
         _pdf_html = _pdf_href
     except ImportError:
         _pdf_html = '<span class="dl-btn-err">.pdf Not supported</span>'
@@ -4473,6 +4584,7 @@ st.markdown(
     f"""
 <div style='margin-top:48px; padding-top:20px; border-top:1px solid #1a2a3a; text-align:center;'>
   <a href='{_footer_contact_url}' target='_blank' rel='noopener'
+     data-ltv-event='contact_click' data-ltv-label='footer_contact'
      style='font-size:0.78rem; color:#7a8a9a; text-decoration:none; letter-spacing:0.04em;'>
     {_footer_contact_label}
   </a>
